@@ -1,5 +1,9 @@
 package adris.altoclef;
 
+import adris.altoclef.butler.ButlerConfig;
+import adris.altoclef.chains.DeathMenuChain;
+import adris.altoclef.util.helpers.MapItemHelper;
+import adris.altoclef.util.helpers.MouseMoveHelper;
 import adris.altoclef.butler.WhisperChecker;
 import adris.altoclef.tasks.construction.compound.ConstructIronGolemTask;
 import adris.altoclef.tasks.container.SmeltInFurnaceTask;
@@ -8,23 +12,16 @@ import adris.altoclef.tasks.construction.PlaceBlockNearbyTask;
 import adris.altoclef.tasks.construction.PlaceSignTask;
 import adris.altoclef.tasks.construction.PlaceStructureBlockTask;
 import adris.altoclef.tasks.construction.compound.ConstructNetherPortalObsidianTask;
-import adris.altoclef.tasks.container.SmeltInFurnaceTask;
 import adris.altoclef.tasks.container.StoreInAnyContainerTask;
 import adris.altoclef.tasks.entity.KillEntityTask;
 import adris.altoclef.tasks.misc.*;
 import adris.altoclef.tasks.resources.TradeWithPiglinsTask;
 import adris.altoclef.tasks.examples.ExampleTask2;
-import adris.altoclef.tasks.construction.PlaceSignTask;
-import adris.altoclef.tasks.speedrun.*;
-import adris.altoclef.tasks.stupid.BeeMovieTask;
-import adris.altoclef.tasks.stupid.ReplaceBlocksTask;
-import adris.altoclef.tasks.stupid.SCP173Task;
-import adris.altoclef.tasks.stupid.TerminatorTask;
+import adris.altoclef.tasks.stupid.*;
 import adris.altoclef.tasks.movement.*;
 import adris.altoclef.tasks.resources.CollectBlazeRodsTask;
 import adris.altoclef.tasks.resources.CollectFlintTask;
 import adris.altoclef.tasks.resources.CollectFoodTask;
-import adris.altoclef.tasks.resources.TradeWithPiglinsTask;
 import adris.altoclef.tasks.speedrun.KillEnderDragonTask;
 import adris.altoclef.tasks.speedrun.KillEnderDragonWithBedsTask;
 import adris.altoclef.tasks.speedrun.WaitForDragonAndPearlTask;
@@ -32,10 +29,12 @@ import adris.altoclef.tasks.stupid.BeeMovieTask;
 import adris.altoclef.tasks.stupid.ReplaceBlocksTask;
 import adris.altoclef.tasks.stupid.SCP173Task;
 import adris.altoclef.tasks.stupid.TerminatorTask;
+import adris.altoclef.tasks.stupid.SkyWarsTask;
 import adris.altoclef.util.*;
 import adris.altoclef.util.helpers.WorldHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.item.Item;
@@ -128,6 +127,58 @@ public class Playground {
             case "":
                 // None specified
                 Debug.logWarning("Please specify a test (ex. stacked, bed, terminate)");
+                break;
+            case "stuckdebug":
+                Debug.logMessage("STUCK DEBUG!!!!");
+                mod.runUserTask(new GetToXZTask(0,0));
+                DeathMenuChain.StuckFixActivate();
+                break;
+            case "task_info":
+                Debug.logMessage("INGAME INFO DICT:\n"+mod.getInfoSender().getTaskChainString());
+                break;
+            case "captmax":
+                mod.getButler().CaptchaSolvingMode = "SOLVE_MAXIMUM";
+                Debug.logMessage("capt set to SOLVE_MAXIMUM");
+                break;
+            case "captdata":
+                mod.getButler().CaptchaSolvingMode = "GET_DATASET";
+                Debug.logMessage("capt set to GET_DATASET");
+                break;
+            case "chatparsedebug":
+                ButlerConfig.getInstance().debugChatParseResult = true;
+                Debug.logMessage("set!");
+                break;
+            case "chatparseddebug_cancel":
+                ButlerConfig.getInstance().debugChatParseResult=false;
+                Debug.logMessage("unset!");
+                break;
+            case "captcha_dataset":
+                //Debug.logMessage(ImageComparer.getCaptchaDatasetFiles().toString());
+                File choDir = new File(MinecraftClient.getInstance().runDirectory, "map_screenshots");
+
+                Debug.logMessage("DEBUG COMPARE"+ImageComparer.compareImage(new File(choDir,"cho1.png"),new File(choDir,"cho2.png")));
+                break;
+            case "savemap":
+                Debug.logMessage("MAP SAVING INIT!!!");
+                MapItemHelper.saveNonExistMapToDataset(mod);
+                //boolean map_result = MapItemHelper.saveNonExistMapToDataset(mod);
+                //Debug.logMessage("MAP SAVING END!!! "+map_result);
+                break;
+            case "groundblock":
+                Debug.logMessage("DEBUG BLOCKNAME = '"+mod.getInfoSender().getGroundBlock()+"'");
+                Debug.logMessage("DEBUG HELDITEM = '"+mod.getInfoSender().getHeldItem()+"'");
+                break;
+            case "cam 0":
+                Debug.logMessage("perspective 0");
+                mod.getInfoSender().setPerspective(0);
+                break;
+            case "cam 1":
+                Debug.logMessage("perspective 1");
+                mod.getInfoSender().setPerspective(1);
+                break;
+            case "cam 2":
+                Debug.logMessage("perspective 2");
+                mod.getInfoSender().setPerspective(2);
                 break;
             case "sign":
                 mod.runUserTask(new PlaceSignTask("Hello there!"));
@@ -223,6 +274,9 @@ public class Playground {
                     mod.runUserTask(new KillEntityTask(entity));
                 }
                 break;
+            case "kill2":
+                mod.getMobDefenseChain().resetTargetEntity();
+                mod.getMobDefenseChain().resetForceField();
             case "craft":
                 // Test de-equip
                 new Thread(() -> {
@@ -301,6 +355,26 @@ public class Playground {
                 break;
             case "terminate":
                 mod.runUserTask(new TerminatorTask(mod.getPlayer().getBlockPos(), 900));
+                break;
+            case "stoprot":
+                MouseMoveHelper.RotationEnabled = false;
+                break;
+            case "startrot":
+                MouseMoveHelper.RotationEnabled = true;
+                break;
+            case "killall":
+                mod.getButler().ClearTeammates();
+                mod.getButler().AddNearestPlayerToFriends(mod,5);
+                mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), 900,false));
+                break;
+            case "murder":
+                int role_int = 0;
+                try {role_int = Integer.parseInt(arg.split(" ")[1]);}
+                catch (Exception e){Debug.logWarning("Не указано значение, значит невиновный");}
+                mod.runUserTask(new MurderMysteryTask(role_int));
+                break;
+            case "kpvp":
+                mod.runUserTask(new KitPVPTask(mod.getPlayer().getBlockPos(),900,false));
                 break;
             case "replace":
                 // Creates a mini valley of crafting tables.

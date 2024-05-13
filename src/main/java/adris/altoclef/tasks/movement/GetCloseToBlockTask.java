@@ -61,7 +61,7 @@ public class GetCloseToBlockTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Approaching " + _toApproach.toShortString();
+        return "Дистация обнаружения " + _toApproach.toShortString(); //Approaching
     }
 
 

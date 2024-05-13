@@ -21,9 +21,16 @@ import java.util.function.Predicate;
 public class EquipArmorTask extends Task {
 
     private final ItemTarget[] _toEquip;
-
-    public EquipArmorTask(ItemTarget... toEquip) {
+    private final boolean _onlyEquip;
+    public EquipArmorTask(boolean OnlyEquip,ItemTarget... toEquip) {
+        _onlyEquip = OnlyEquip;
         _toEquip = toEquip;
+    }
+    public EquipArmorTask(boolean OnlyEquip,Item... toEquip) {
+        this(OnlyEquip, Arrays.stream(toEquip).map(ItemTarget::new).toArray(ItemTarget[]::new));
+    }
+    public EquipArmorTask(ItemTarget... toEquip) {
+        this(false,toEquip);
     }
     public EquipArmorTask(Item... toEquip) {
         this(Arrays.stream(toEquip).map(ItemTarget::new).toArray(ItemTarget[]::new));
@@ -37,19 +44,24 @@ public class EquipArmorTask extends Task {
     @Override
     protected Task onTick(AltoClef mod) {
         ItemTarget[] armorsNotEquipped = Arrays.stream(_toEquip).filter(target -> !StorageHelper.itemTargetsMetInventory(mod, target) && !StorageHelper.isArmorEquipped(mod, target.getMatches())).toArray(ItemTarget[]::new);
+
         boolean armorMet = armorsNotEquipped.length == 0;
         if (!armorMet) {
-            setDebugState("Obtaining armor");
-            return new CataloguedResourceTask(armorsNotEquipped);
+            if(!_onlyEquip) {
+                setDebugState("Добыча брони"); //TRS "Obtaining armor"
+                return new CataloguedResourceTask(armorsNotEquipped);
+            }
+            else{
+                return null;
+            }
         }
-
-        setDebugState("Equipping armor");
+        setDebugState("Переодевание"); //("Equipping armor"
 
         // Now equip
         for (ItemTarget targetArmor : _toEquip) {
             ArmorItem item = (ArmorItem) Objects.requireNonNull(targetArmor.getMatches())[0];
             if (item == null) {
-                Debug.logWarning("Item " + targetArmor + " is not armor! Will not equip.");
+                Debug.logWarning("Item " + targetArmor + " is not armor! Will not equip."); //"Item " + targetArmor + " is not armor! Will not equip."
             } else {
                 if (!StorageHelper.isArmorEquipped(mod, item)) {
                     if (!(mod.getPlayer().currentScreenHandler instanceof PlayerScreenHandler)) {
@@ -57,7 +69,7 @@ public class EquipArmorTask extends Task {
                     }
                     Slot toMove = PlayerSlot.getEquipSlot(item.getSlotType());
                     if (toMove == null) {
-                        Debug.logWarning("Invalid armor equip slot for item " + item.getTranslationKey() + ": " + item.getSlotType());
+                        Debug.logWarning("Invalid armor equip slot for item " + item.getTranslationKey() + ": " + item.getSlotType()); //"Invalid armor equip slot for item "
                     }
                     return new MoveItemToSlotFromInventoryTask(targetArmor, toMove);
                 }
@@ -87,7 +99,7 @@ public class EquipArmorTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Equipping armor " + ArrayUtils.toString(_toEquip);
+        return "Переодевание (ЧО ПАЛИШЬ ИЗВРАЩУГА)" + ArrayUtils.toString(_toEquip); //"Equipping armor "
     }
 
     private boolean armorTestAll(Predicate<Item> armorSatisfies) {

@@ -10,6 +10,7 @@ import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.progresscheck.MovementProgressChecker;
 import baritone.api.pathing.goals.GoalRunAway;
+import net.fabricmc.loader.impl.util.log.Log;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
@@ -57,7 +58,7 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
 
         if (_wanderTask.isActive() && !_wanderTask.isFinished(mod)) {
             _progress.reset();
-            setDebugState("Failed to get to target, wandering for a bit.");
+            setDebugState("Маршрут до цели съел уткопёс. Гуглим карты..."); //TRS "Failed to get to target, wandering for a bit."
             return _wanderTask;
         }
 
@@ -75,9 +76,9 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
         Entity entity = checkEntity.get();
 
         double playerReach = mod.getModSettings().getEntityReachRange();
-
+        double bigReach = 5;
         // TODO: This is basically useless.
-        EntityHitResult result = LookHelper.raycast(mod.getPlayer(), entity, playerReach);
+        EntityHitResult result = LookHelper.raycast(mod.getPlayer(), entity, bigReach);
 
         double sqDist = entity.squaredDistanceTo(mod.getPlayer());
 
@@ -93,21 +94,27 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
         boolean tooClose = sqDist < maintainDistance * maintainDistance;
 
         // Step away if we're too close
-        if (tooClose) {
+        if (tooClose && result != null && result.getType() == HitResult.Type.ENTITY && !result.getEntity().isPlayer()) {
             //setDebugState("Maintaining distance");
             if (!mod.getClientBaritone().getCustomGoalProcess().isActive()) {
                 mod.getClientBaritone().getCustomGoalProcess().setGoalAndPath(new GoalRunAway(maintainDistance, entity.getBlockPos()));
             }
         }
-
-        if (entity.squaredDistanceTo(mod.getPlayer()) < playerReach * playerReach && result != null && result.getType() == HitResult.Type.ENTITY) {
-            _progress.reset();
-            return onEntityInteract(mod, entity);
+        if (entity.squaredDistanceTo(mod.getPlayer()) < bigReach * bigReach && result != null && result.getType() == HitResult.Type.ENTITY) {
+            if (result.getEntity().isPlayer()){
+                _progress.reset();
+                //Debug.logMessage("Гандон найден! " + result.getEntity().getEntityName().toString());
+                return onEntityInteract(mod, entity);
+            }
+            else if (entity.squaredDistanceTo(mod.getPlayer()) < playerReach * playerReach) {
+                _progress.reset();
+                return onEntityInteract(mod, entity);
+            }
         } else if (!tooClose) {
-            setDebugState("Approaching target");
+            setDebugState("Подтверждено обнаружение"); //TRS Approaching target
 
             if (!_progress.check(mod)) {
-                Debug.logMessage("Failed to get to target, wandering.");
+                Debug.logMessage("Маршрут до цели не подтвержден. Поиск другого в Яндекс.Картах..."); //TRS "Failed to get to target, wandering.
                 return _wanderTask;
             }
 

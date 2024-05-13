@@ -102,7 +102,7 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
     protected Task onTick(AltoClef mod) {
 
         if (_unstuckTask != null && _unstuckTask.isActive() && !_unstuckTask.isFinished(mod) && stuckInBlock(mod) != null) {
-            setDebugState("Getting unstuck from block.");
+            setDebugState("Активирован механизм вылезания из этой *****"); //"Getting unstuck from block."
             // Stop other tasks, we are JUST shimmying
             mod.getClientBaritone().getCustomGoalProcess().onLostControl();
             mod.getClientBaritone().getExploreProcess().onLostControl();
@@ -110,12 +110,12 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
         }
 
         if (_executingPlanB) {
-            setDebugState("Plan B: Random direction.");
+            setDebugState("Запасной план: Прогуляемся?"); //"Plan B: Random direction."
             if (!mod.getClientBaritone().getCustomGoalProcess().isActive()) {
                 mod.getClientBaritone().getCustomGoalProcess().setGoalAndPath(getRandomDirectionGoal(mod));
             }
         } else {
-            setDebugState("Exploring.");
+            setDebugState("Исследование местности.");//"Plan B: Random direction."
             if (!mod.getClientBaritone().getExploreProcess().isActive()) {
                 mod.getClientBaritone().getExploreProcess().explore((int) _origin.getX(), (int) _origin.getZ());
             }
@@ -131,14 +131,14 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
             BlockPos blockStuck = stuckInBlock(mod);
             if (blockStuck != null) {
                 _failCounter++;
-                Debug.logMessage("Failed exploring, found stuck block nearby.");
+                Debug.logMessage("Исследование провалено, мы застряли в (стиралке)");//"Failed exploring, found stuck block nearby."
                 _unstuckTask = getFenceUnstuckTask(mod, blockStuck);
                 return _unstuckTask;
             }
 
             if (!_forceExplore) {
                 _failCounter++;
-                Debug.logMessage("Failed exploring.");
+                Debug.logMessage("Исследование местности провалено.");//"Failed exploring, found stuck block nearby."
                 if (_executingPlanB) {
                     // Cancel current plan B
                     mod.getClientBaritone().getCustomGoalProcess().onLostControl();
@@ -162,7 +162,7 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
         if (isFinished(mod)) {
             if (_increaseRange) {
                 _wanderDistanceExtension += _distanceToWander;
-                Debug.logMessage("Increased wander range");
+                Debug.logMessage("Прогуляемся подальше?");//"Failed exploring, found stuck block nearby."
             }
         }
     }
@@ -201,7 +201,7 @@ public class TimeoutWanderTask extends Task implements ITaskRequiresGrounded {
 
     @Override
     protected String toDebugString() {
-        return "Wander for " + (_distanceToWander + _wanderDistanceExtension) + " blocks";
+        return "Прогуляемся " + (_distanceToWander + _wanderDistanceExtension) + " блоков"; //TRS "Wander for " + (_distanceToWander + _wanderDistanceExtension) + " blocks";
     }
 
     // This happens all the time in mineshafts and swamps/jungles

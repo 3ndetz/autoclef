@@ -23,7 +23,7 @@ public class TimerGame extends BaseTimer {
     @Override
     protected double currentTime() {
         if (!AltoClef.inGame()) {
-            Debug.logError("Running game timer while not in game.");
+            //Debug.logError("Running game timer while not in game.");
             return 0;
         }
         // If we change connections, our game time will also be reset. In that case, offset our time to reflect that change.

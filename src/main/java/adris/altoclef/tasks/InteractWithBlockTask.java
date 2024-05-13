@@ -151,7 +151,7 @@ public class InteractWithBlockTask extends Task {
             return _wanderTask;
         }
         if (!_moveChecker.check(mod)) {
-            Debug.logMessage("Failed, blacklisting and wandering.");
+            Debug.logMessage("Не подтверждено; в черный список и оптимизация");//"Failed, blacklisting and wandering.");
             mod.getBlockTracker().requestBlockUnreachable(_target);
             return _wanderTask;
         }
@@ -162,7 +162,7 @@ public class InteractWithBlockTask extends Task {
         _cachedClickStatus = rightClick(mod);
         switch (_cachedClickStatus) {
             case CANT_REACH -> {
-                setDebugState("Getting to our goal");
+                setDebugState("Подтверждено движение к цели"); //"Getting to our goal"
                 // Get to our goal then
                 if (!proc.isActive()) {
                     proc.setGoalAndPath(moveGoal);
@@ -170,14 +170,14 @@ public class InteractWithBlockTask extends Task {
                 _clickTimer.reset();
             }
             case WAIT_FOR_CLICK -> {
-                setDebugState("Waiting for click");
+                setDebugState("Подтверждение клика"); //"Waiting for click"
                 if (proc.isActive()) {
                     proc.onLostControl();
                 }
                 _clickTimer.reset();
             }
             case CLICK_ATTEMPTED -> {
-                Debug.logInternal("(InteractWithBlockTask: Click attempted!)");
+                Debug.logInternal("(АктивацияБлока: Клик запрошен!)");//"(InteractWithBlockTask: Click attempted!)"
                 if (proc.isActive()) {
                     proc.onLostControl();
                 }
@@ -221,7 +221,7 @@ public class InteractWithBlockTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Interact using " + _toUse + " at " + _target + " dir " + _direction;
+        return "Активировать используя " + _toUse + " на крд. " + _target + " по вектору " + _direction; //TRS "Interact using " + _toUse + " at " + _target + " dir " + _direction
     }
 
     public ClickResponse getClickStatus() {
@@ -240,7 +240,8 @@ public class InteractWithBlockTask extends Task {
 
         Optional<Rotation> reachable = getCurrentReach();
         if (reachable.isPresent()) {
-            LookHelper.lookAt(mod, reachable.get());
+            LookHelper.SmoothLook(mod,reachable.get()); //TRS ВАЖНО!!!!! СМЕНИЛ МОДУЛЬ ЛУК ЭТ-а
+            //LookHelper.lookAt(mod, reachable.get());
             if (mod.getClientBaritone().getPlayerContext().isLookingAt(_target)) {
                 if (_toUse != null) {
                     mod.getSlotHandler().forceEquipItem(_toUse, false);

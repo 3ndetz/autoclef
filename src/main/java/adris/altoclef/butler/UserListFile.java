@@ -24,6 +24,10 @@ public class UserListFile implements IListConfigFile {
         _users.add(line);
     }
 
+    public void removeLine(String line) {
+        _users.remove(line);
+    }
+
     public static void load(String path, Consumer<UserListFile> onLoad) {
         ConfigHelper.loadListConfig(path, UserListFile::new, onLoad);
     }

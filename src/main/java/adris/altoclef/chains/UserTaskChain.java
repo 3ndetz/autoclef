@@ -30,16 +30,16 @@ public class UserTaskChain extends SingleTaskChain {
 
         String result = "";
         if (days != 0) {
-            result += days + " days ";
+            result += days + " дн. "; //" days "; //
         }
         if (hours != 0) {
-            result += (hours % 24) + " hours ";
+            result += (hours % 24) + " час ";//" hours "
         }
         if (minutes != 0) {
-            result += (minutes % 60) + " minutes ";
+            result += (minutes % 60) + " мин ";//" minutes "
         }
         if (!result.equals("")) {
-            result += "and ";
+            result += " и "; //" and "
         }
         result += String.format("%.3f", (seconds % 60));
         return result;
@@ -68,8 +68,8 @@ public class UserTaskChain extends SingleTaskChain {
 
     @Override
     public String getName() {
-        return "User Tasks";
-    }
+        return "Кастомные задачи";
+    } //User Tasks"
 
     public void runTask(AltoClef mod, Task task, Runnable onFinish) {
         _runningIdleTask = _nextTaskIdleFlag;
@@ -78,7 +78,7 @@ public class UserTaskChain extends SingleTaskChain {
         _currentOnFinish = onFinish;
 
         if (!_runningIdleTask) {
-            Debug.logMessage("User Task Set: " + task.toString());
+            Debug.logMessage("Задача поставлена: " + task.toString()); //TRS "User Task Set: "
         }
         mod.getTaskRunner().enable();
         _taskStopwatch.begin();
@@ -110,7 +110,7 @@ public class UserTaskChain extends SingleTaskChain {
         boolean actuallyDone = _mainTask == null;
         if (actuallyDone) {
             if (!_runningIdleTask) {
-                Debug.logMessage("User task FINISHED. Took %s seconds.", prettyPrintTimeDuration(seconds));
+                Debug.logMessage("Поставленная задача ЗАВЕРШЕНА за %s сек.", prettyPrintTimeDuration(seconds));//"User task FINISHED. Took %s seconds."
                 EventBus.publish(new TaskFinishedEvent(seconds, oldTask));
             }
             if (shouldIdle) {

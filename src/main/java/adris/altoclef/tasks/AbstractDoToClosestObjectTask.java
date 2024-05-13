@@ -79,7 +79,7 @@ public abstract class AbstractDoToClosestObjectTask<T> extends Task {
                 _currentlyPursuing = newClosest;
             } else {
                 if (isMovingToClosestPos(mod)) {
-                    setDebugState("Moving towards closest...");
+                    setDebugState("Движение навстречу ближайшему...");//"Moving towards closest...");
                     double currentHeuristic = getCurrentCalculatedHeuristic(mod);
                     double closestDistanceSqr = getPos(mod, _currentlyPursuing).squaredDistanceTo(mod.getPlayer().getPos());
                     int lastTick = WorldHelper.getTicks();
@@ -97,7 +97,7 @@ public abstract class AbstractDoToClosestObjectTask<T> extends Task {
                         double maybeClosestDistance = getPos(mod, newClosest).squaredDistanceTo(mod.getPlayer().getPos());
                         // Get considerably closer (divide distance by 2)
                         if (maybeReAttempt.getHeuristicValue() < h.getHeuristicValue() || maybeClosestDistance < maybeReAttempt.getClosestDistanceSqr() / 4) {
-                            setDebugState("Retrying old heuristic!");
+                            setDebugState("Переоптимизация старого маршрута!");//TRS "Retrying old heuristic!"
                             // The currently closest previously calculated heuristic is better, move towards it!
                             _currentlyPursuing = newClosest;
                             // In theory, this next line shouldn't need to be run,
@@ -105,12 +105,12 @@ public abstract class AbstractDoToClosestObjectTask<T> extends Task {
                             maybeReAttempt.updateDistance(maybeClosestDistance);
                         }
                     } else {
-                        setDebugState("Trying out NEW pursuit");
+                        setDebugState("Пробуем НОВЫЙ маршрут"); //TRS "Trying out NEW pursuit"
                         // Our new object does not have a heuristic, TRY IT OUT!
                         _currentlyPursuing = newClosest;
                     }
                 } else {
-                    setDebugState("Waiting for move task to kick in...");
+                    setDebugState("Ожидание задачи перемещения для внедрения...");//TRS "Trying out NEW pursuit"
                     // We should keep moving towards our object until we get some new info.
                 }
             }

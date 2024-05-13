@@ -40,7 +40,7 @@ import java.util.*;
 public class MobDefenseChain extends SingleTaskChain {
 
     private static final double CREEPER_KEEP_DISTANCE = 10;
-    private static final double ARROW_KEEP_DISTANCE_HORIZONTAL = 2;//4;
+    private static final double ARROW_KEEP_DISTANCE_HORIZONTAL = 6;//4;
     private static final double ARROW_KEEP_DISTANCE_VERTICAL = 10;//15;
 
     private static final double DANGER_KEEP_DISTANCE = 15 * 2;
@@ -51,7 +51,7 @@ public class MobDefenseChain extends SingleTaskChain {
     private final KillAura _killAura = new KillAura();
     private final HashMap<Entity, TimerGame> _closeAnnoyingEntities = new HashMap<>();
     private Entity _targetEntity;
-    private boolean _doingFunkyStuff = false;
+    public boolean _doingFunkyStuff = false;
     private boolean _wasPuttingOutFire = false;
     private CustomBaritoneGoalTask _runAwayTask;
 
@@ -333,7 +333,7 @@ public class MobDefenseChain extends SingleTaskChain {
                 }
             }
         } catch (Exception e) {
-            Debug.logWarning("Weird exception caught and ignored while doing force field.");
+            Debug.logWarning("Ошибка при работе системы наведения: проигнорирована."); //TRS Weird exception caught and ignored while doing force field
             e.printStackTrace();
         }
 
@@ -364,7 +364,7 @@ public class MobDefenseChain extends SingleTaskChain {
             }
         } catch (ConcurrentModificationException | ArrayIndexOutOfBoundsException | NullPointerException e) {
             // IDK why but these exceptions happen sometimes. It's extremely bizarre and I have no idea why.
-            Debug.logWarning("Weird Exception caught and ignored while scanning for creepers: " + e.getMessage());
+            Debug.logWarning("Ошибка при сканировании криперов проигнорирована: " + e.getMessage()); //Weird Exception caught and ignored while scanning for creepers:
             return target;
         }
         return target;
@@ -399,7 +399,7 @@ public class MobDefenseChain extends SingleTaskChain {
                     return true;
             }
         } catch (ConcurrentModificationException e) {
-            Debug.logWarning("Weird exception caught and ignored while checking for nearby projectiles.");
+            Debug.logWarning("Ошибка когда чекали потентциальную опасность объектов (стрел и т.п.)."); //Weird exception caught and ignored while checking for nearby projectiles.
         }
         return false;
     }
@@ -447,7 +447,7 @@ public class MobDefenseChain extends SingleTaskChain {
                     }
                 }
             } catch (Exception e) {
-                Debug.logWarning("Weird multithread exception. Will fix later.");
+                Debug.logWarning("Огромная мультипоточная ошибка. Использование RNN для фикса, возможны лаги..."); //Weird multithread exception. Will fix later.
             }
         }
 
@@ -494,6 +494,6 @@ public class MobDefenseChain extends SingleTaskChain {
 
     @Override
     public String getName() {
-        return "Mob Defense";
-    }
+        return "Система защиты 'АНТИДАУН'";
+    } //Mob Defense
 }

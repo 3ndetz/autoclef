@@ -3,11 +3,14 @@ package adris.altoclef.control;
 import adris.altoclef.AltoClef;
 import adris.altoclef.util.time.TimerGame;
 import adris.altoclef.util.helpers.StlHelper;
+import adris.altoclef.util.helpers.LookHelper;
+import baritone.api.utils.Rotation;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.SkeletonEntity;
 import net.minecraft.entity.projectile.FireballEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +117,11 @@ public class KillAura {
                 canAttack = mod.getSlotHandler().forceDeequipHitTool();
             }
             if (canAttack) {
+
+                //Rotation look = LookHelper.getLookRotation();
+                //LookHelper.lookAt(mod,entity.getBlockPos());
                 mod.getControllerExtras().attack(entity);
+                //mod.getClientBaritone().getBuilderProcess().
             }
         }
     }

@@ -1,20 +1,32 @@
 package adris.altoclef.chains;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.TaskCatalogue;
 import adris.altoclef.tasks.movement.MLGBucketTask;
+import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
 import adris.altoclef.tasksystem.ITaskOverridesGrounded;
 import adris.altoclef.tasksystem.TaskRunner;
+import adris.altoclef.util.helpers.ItemHelper;
+import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.time.TimerGame;
 import adris.altoclef.util.helpers.LookHelper;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
+import baritone.pathing.movement.MovementHelper;
+import baritone.utils.BlockBreakHelper;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.RaycastContext;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 @SuppressWarnings("UnnecessaryLocalVariable")
@@ -23,9 +35,10 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
     private final TimerGame _tryCollectWaterTimer = new TimerGame(4);
     private final TimerGame _pickupRepeatTimer = new TimerGame(0.25);
     private MLGBucketTask _lastMLG = null;
+    private ThrowEnderPearlSimpleProjectileTask _lastEP = null;
     private boolean _wasPickingUp = false;
     private boolean _doingChorusFruit = false;
-
+    private int FallIter = 0;
     public MLGBucketFallChain(TaskRunner runner) {
         super(runner);
     }
@@ -34,11 +47,57 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
     protected void onTaskFinish(AltoClef mod) {
         //_lastMLG = null;
     }
-
+    private boolean pearlAllowable(AltoClef mod, PlayerEntity player){
+        if (LookHelper.cleanLineOfSight(player.getPos(),100)& !WorldHelper.isHellHole(mod,player.getBlockPos()))
+            return  true;
+        else return false;
+    }
+    private BlockPos _lastGroundBlockPos;
     @Override
     public float getPriority(AltoClef mod) {
         if (!AltoClef.inGame()) return Float.NEGATIVE_INFINITY;
+        if(mod.getPlayer().isOnGround()){_lastGroundBlockPos = mod.getPlayer().getBlockPos();}
+        if (isInHellHole(mod)){
+            //boolean enderpearl = false; //Block.getBlockFromItem(ItemHelper)
+            //mod.getBlockTracker().any
+            //mod.getBlockTracker().trackBlock();
 
+            //Optional<BlockPos> closestBlock = mod.getBlockTracker().getNearestTracking(
+//
+            //        Blocks.GLASS,
+            //        Blocks.GRASS,
+            //        Blocks.GRASS_BLOCK
+//
+            //        );// mod.getPlayer().getPos(), PlayerEntity.class);
+
+                //WorldHelper.blo
+            if(!mod.getPlayer().isOnGround()){
+                if(mod.getItemStorage().hasItem(Items.ENDER_PEARL)) {
+                    //enderpearl = true;
+                    FallIter++;
+                    if (FallIter > 5) {
+                        Optional<Entity> closestPlayer = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), PearlAllowablePlayer ->
+                                this.pearlAllowable(mod, (PlayerEntity) PearlAllowablePlayer), PlayerEntity.class);//(mod.getPlayer().getPos(), PlayerEntity.class);
+                        if (closestPlayer.isPresent()) {
+
+                            FallIter = 0;
+                            Debug.logMessage("СПИДРАН ПО МАЙНКРАФТУ! ЭНДЕРПЕРЛ КЛАТЧ НА БЛ. ИГРОКА!");
+                            setTask(new ThrowEnderPearlSimpleProjectileTask(closestPlayer.get().getBlockPos()));
+                            _lastEP = (ThrowEnderPearlSimpleProjectileTask) _mainTask;
+                            return 100;
+                        }else{
+                            FallIter = 0;
+                            Debug.logMessage("СПИДРАН ПО МАЙНКРАФТУ! ЭНДЕРПЕРЛ КЛАТЧ НА ПОСЛЕДНИЙ БЛОК! Скорость:"+(mod.getPlayer().getVelocity().getY()));
+                            setTask(new ThrowEnderPearlSimpleProjectileTask(_lastGroundBlockPos.add(0,-0.9-mod.getPlayer().getVelocity().getY(),0)));
+                            _lastEP = (ThrowEnderPearlSimpleProjectileTask) _mainTask;
+                            return 100;
+                        }
+                    }
+                }
+            }
+            //if(closestBlock.isPresent())
+            //    Debug.logMessage("Ближайший блок травы "+closestBlock.get());
+        }
         if (isFallingOhNo(mod)) {
             _tryCollectWaterTimer.reset();
             setTask(new MLGBucketTask());
@@ -105,7 +164,7 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
 
     @Override
     public String getName() {
-        return "MLG Water Bucket Fall Chain";
+        return "КЛАТЧ С ВЕДРОМ"; //TRS "MLG Water Bucket Fall Chain";
     }
 
     @Override
@@ -128,5 +187,8 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
         }
         double ySpeed = mod.getPlayer().getVelocity().y;
         return ySpeed < -0.7;
+    }
+    public boolean isInHellHole(AltoClef mod){
+        return WorldHelper.isHellHole(mod,mod.getPlayer().getBlockPos());
     }
 }

@@ -1,5 +1,16 @@
 package adris.altoclef;
 
+import adris.altoclef.eventbus.events.*;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
+import net.minecraft.entity.Entity;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.world.World;
+import py4j.GatewayServer;
+import py4j.PythonClient;
+import py4j.ClientServer;
 import adris.altoclef.butler.Butler;
 import adris.altoclef.chains.*;
 import adris.altoclef.commandsystem.CommandExecutor;
@@ -7,10 +18,6 @@ import adris.altoclef.control.InputControls;
 import adris.altoclef.control.PlayerExtraController;
 import adris.altoclef.control.SlotHandler;
 import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.events.ClientRenderEvent;
-import adris.altoclef.eventbus.events.ClientTickEvent;
-import adris.altoclef.eventbus.events.SendChatEvent;
-import adris.altoclef.eventbus.events.TitleScreenEntryEvent;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.trackers.*;
@@ -20,19 +27,32 @@ import adris.altoclef.ui.CommandStatusOverlay;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.ui.MessageSender;
 import adris.altoclef.util.helpers.InputHelper;
+import adris.altoclef.util.helpers.ItemHelper;
 import baritone.Baritone;
 import baritone.altoclef.AltoClefSettings;
 import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageRecord;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.ActionResult;
 import org.lwjgl.glfw.GLFW;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.server.MinecraftServer;
+import py4j.PythonClient;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -59,11 +79,15 @@ public class AltoClef implements ModInitializer {
     private UserTaskChain _userTaskChain;
     private FoodChain _foodChain;
     private MobDefenseChain _mobDefenseChain;
+
+    private DeathMenuChain _deathMenuChain;
+
     private MLGBucketFallChain _mlgBucketChain;
     // Trackers
     private ItemStorageTracker _storageTracker;
     private ContainerSubTracker _containerSubTracker;
     private EntityTracker _entityTracker;
+    private DamageTracker _damageTracker;
     private BlockTracker _blockTracker;
     private SimpleChunkTracker _chunkTracker;
     private MiscBlockTracker _miscBlockTracker;
@@ -77,7 +101,8 @@ public class AltoClef implements ModInitializer {
     private SlotHandler _slotHandler;
     // Butler
     private Butler _butler;
-
+    private static GatewayServer _gatewayServer;
+    private static Py4jEntryPoint _py4jEntryPoint;
     // Are we in game (playing in a server/world)
     public static boolean inGame() {
         return MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().getNetworkHandler() != null;
@@ -89,6 +114,7 @@ public class AltoClef implements ModInitializer {
         // However, some things (like resources) may still be uninitialized.
         // As such, nothing will be loaded here but basic initialization.
         EventBus.subscribe(TitleScreenEntryEvent.class, evt -> onInitializeLoad());
+
     }
 
     public void onInitializeLoad() {
@@ -107,7 +133,7 @@ public class AltoClef implements ModInitializer {
         // Task chains
         _userTaskChain = new UserTaskChain(_taskRunner);
         _mobDefenseChain = new MobDefenseChain(_taskRunner);
-        new DeathMenuChain(_taskRunner);
+        _deathMenuChain = new DeathMenuChain(_taskRunner);
         new PlayerInteractionFixChain(_taskRunner);
         _mlgBucketChain = new MLGBucketFallChain(_taskRunner);
         new WorldSurvivalChain(_taskRunner);
@@ -116,6 +142,7 @@ public class AltoClef implements ModInitializer {
         // Trackers
         _storageTracker = new ItemStorageTracker(this, _trackerManager, container -> _containerSubTracker = container);
         _entityTracker = new EntityTracker(_trackerManager);
+        _damageTracker = new DamageTracker(_trackerManager);
         _blockTracker = new BlockTracker(this, _trackerManager);
         _chunkTracker = new SimpleChunkTracker(this);
         _miscBlockTracker = new MiscBlockTracker(this);
@@ -131,15 +158,25 @@ public class AltoClef implements ModInitializer {
         _butler = new Butler(this);
 
         initializeCommands();
-
+        _py4jEntryPoint = new Py4jEntryPoint(this);
+        _gatewayServer = new GatewayServer(_py4jEntryPoint);
+        _gatewayServer.start();
+        //ClientServer clientServer = new ClientServer(null, 25333);
+        //_gatewayServer.getGateway().getCallbackClient().
+        if (_gatewayServer != null ) {
+            System.out.println("Gateway Server started on port "+_gatewayServer.getPort()+". Listeting port: "+_gatewayServer.getListeningPort());
+        }
+        _py4jEntryPoint.InitPythonCallback();
         // Load settings
         adris.altoclef.Settings.load(newSettings -> {
             _settings = newSettings;
             // Baritone's `acceptableThrowawayItems` should match our own.
             List<Item> baritoneCanPlace = Arrays.stream(_settings.getThrowawayItems(this, true))
-                    .filter(item -> item != Items.SOUL_SAND && item != Items.MAGMA_BLOCK) // Don't place soul sand or magma blocks, that messes us up.
+                    .filter(item -> item != Items.SOUL_SAND && item != Items.MAGMA_BLOCK && item != Items.SAND && item != Items.GRAVEL)
+                    // Don't place soul sand or magma blocks, that messes us up.
                     .collect(Collectors.toList());
             getClientBaritoneSettings().acceptableThrowawayItems.value.addAll(baritoneCanPlace);
+            //ItemHelper.
             // If we should run an idle command...
             if ((!getUserTaskChain().isActive() || getUserTaskChain().isRunningIdleTask()) && getModSettings().shouldRunIdleCommandWhenNotActive()) {
                 getUserTaskChain().signalNextTaskToBeIdleTask();
@@ -172,6 +209,74 @@ public class AltoClef implements ModInitializer {
 
         // External mod initialization
         runEnqueuedPostInits();
+        //ServerTickEvents.END_SERVER_TICK.register(AltoClef::onEndTick);
+        //UseEntityCallback.EVENT.register(AltoClef::onUseEntity);
+        //AttackEntityCallback.EVENT.register(this::onAttackEntity);
+
+
+        //РАБОЧИЙ КОД КОТОРЫЙ ВЫСТРЕЛИВАЕТ КОГДА БЬЕШЬ КОГО-ТО
+        //AttackEntityCallback.EVENT.register((player, world, hand, entity, entityHitResult) -> {
+        //    System.out.println("!!! MATE BALL SUKA SUKA SUKA SUKA SUKA SUKA !!! ");
+        //    if (entity instanceof PlayerEntity) {
+        //        PlayerEntity target = (PlayerEntity) entity;
+        //        DamageSource lastDamageSource = target.getRecentDamageSource();
+        //        if (lastDamageSource != null && lastDamageSource.getAttacker() instanceof PlayerEntity) {
+        //            PlayerEntity lastDamager = (PlayerEntity) lastDamageSource.getAttacker();
+        //            Debug.logMessage("!! >>> !! Last damager of " + target.getName().asString() + " is " + lastDamager.getName().asString());
+        //            //System.out.println("Last damager of " + target.getName().asString() + " is " + lastDamager.getName().asString());
+        //        }
+        //    }
+        //    return ActionResult.PASS;
+        //});
+
+        //УРОН НАНОСИМЫЙ ПО ИГРОКАМ И МОБАМ ОТ 1 ЛИЦА ИГРОКА
+        //AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+        //    if (entity instanceof ServerPlayerEntity) {
+        //        // Player attacked another player
+        //        ServerPlayerEntity target = (ServerPlayerEntity) entity;
+        //        System.out.println("Player " + player.getName().asString() + " attacked " + target.getName().asString());
+        //    } else {
+        //        // Player attacked a non-player entity
+        //        System.out.println("Player " + player.getName().asString() + " attacked " + entity.getType().getName().asString());
+        //    }
+        //    return ActionResult.PASS;
+        //});
+
+        //////ServerTickEvents.START_SERVER_TICK.register(server -> {
+        //////    for (LivingEntity player : server.getPlayerManager().getPlayerList())
+        //////    {
+        //////        DamageRecord dmg = player.getDamageTracker().getMostRecentDamage();
+        //////        Debug.logMessage("получил урон последний "+player.getName()+"; аттакер: "+dmg.getAttacker().getName().toString());
+        //////        //for(dmg in player.getDamageTracker().){
+        //////        //    (damageSource, amount) -> {
+        //////        //    if (damageSource.getAttacker() instanceof LivingEntity) {
+        //////        //        LivingEntity attacker = (LivingEntity) damageSource.getAttacker();
+        //////        //        // Do something with the attacker and the amount of damage taken
+        //////        //    }
+        //////        //}};
+//////
+//////
+        //////    };
+        //////});
+
+
+
+    }
+    private static ActionResult onUseEntity(PlayerEntity player, World world, Hand hand, Entity entity, EntityHitResult hitResult) {
+        DamageSource lastDamageSource = player.getRecentDamageSource();
+        if (lastDamageSource != null) {
+            System.out.println("Last attacker: " + lastDamageSource.getAttacker());
+        }
+        return ActionResult.PASS;
+    }
+    private static void onEndTick(MinecraftServer server) { // работает только на локальном сервере
+        //Debug.logMessage("**** ТИК ЗАКОНЧИЛСЯ *****");
+        for (PlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            DamageSource lastDamageSource = player.getRecentDamageSource();
+            if (lastDamageSource != null) {
+                System.out.println("Last attacker: " + lastDamageSource.getAttacker());
+            }
+        }
     }
 
     // Client tick
@@ -194,6 +299,7 @@ public class AltoClef implements ModInitializer {
         _miscBlockTracker.tick();
 
         _trackerManager.tick();
+        _damageTracker.tick();
         _blockTracker.preTickTask();
         _taskRunner.tick();
         _blockTracker.postTickTask();
@@ -247,7 +353,8 @@ public class AltoClef implements ModInitializer {
             e.printStackTrace();
         }
     }
-
+    public static Py4jEntryPoint getInfoSender() {return _py4jEntryPoint; }
+    public GatewayServer getGateway(){return _gatewayServer;}
     /**
      * Executes commands (ex. `@get`/`@gamer`)
      */
@@ -289,6 +396,9 @@ public class AltoClef implements ModInitializer {
      */
     public EntityTracker getEntityTracker() {
         return _entityTracker;
+    }
+    public DamageTracker getDamageTracker(){
+        return _damageTracker;
     }
 
     /**
@@ -436,6 +546,10 @@ public class AltoClef implements ModInitializer {
      */
     public MobDefenseChain getMobDefenseChain() {
         return _mobDefenseChain;
+    }
+
+    public DeathMenuChain getDeathMenuChain() {
+        return _deathMenuChain;
     }
 
     /**

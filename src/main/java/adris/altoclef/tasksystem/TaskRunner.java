@@ -61,7 +61,7 @@ public class TaskRunner {
         }
         _active = false;
 
-        Debug.logMessage("Stopped");
+        Debug.logMessage("Выполнение задачи принудительно остановлено"); //Stopped
     }
 
     public TaskChain getCurrentTaskChain() {

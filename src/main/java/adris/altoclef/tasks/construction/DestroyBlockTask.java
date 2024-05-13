@@ -68,7 +68,7 @@ public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
         // do NOT break if we're standing above it and it's dangerous below...
         if (!WorldHelper.isSolid(mod, _pos.up()) && mod.getPlayer().getPos().y > _pos.getY() && _pos.isWithinDistance(mod.getPlayer().isOnGround()? mod.getPlayer().getPos() : mod.getPlayer().getPos().add(0, -1, 0), 0.89)) {
             if (WorldHelper.dangerousToBreakIfRightAbove(mod, _pos)) {
-                setDebugState("It's dangerous to break as we're right above it, moving away and trying again.");
+                setDebugState("Не в кайф как-то ломать этот блок. Уйдем подальше и попробуем ещё."); //setDebugState("It's dangerous to break as we're right above it, moving away and trying again.")
                 return new RunAwayFromPositionTask(3, _pos.getY(), _pos);
             }
         }
@@ -80,7 +80,7 @@ public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
         }
         if (!_tryToMineTimer.elapsed()) {
             if (reach.isPresent() && (mod.getPlayer().isTouchingWater() || mod.getPlayer().isOnGround())) {
-                setDebugState("Block in range, mining...");
+                setDebugState("Дистанция обнаружения блока! Аннигиляция..."); //блок на нужной дистанции, добыча
                 // Break the block, force it.
                 mod.getClientBaritone().getCustomGoalProcess().onLostControl();
                 mod.getClientBaritone().getBuilderProcess().onLostControl();
@@ -92,16 +92,16 @@ public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
                     mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_LEFT, true);
                 }
             } else {
-                setDebugState("Breaking the normal way.");
+                setDebugState("Разрушение нормального пути");//TRS Breaking the normal way
                 if (!mod.getClientBaritone().getBuilderProcess().isActive()) {
                     // Try breaking normally.
                     mod.getClientBaritone().getCustomGoalProcess().onLostControl();
-                    Debug.logMessage("Break Block: Restarting builder process");
+                    Debug.logMessage("Унитожение блока: Перезапуск процесса-строителя"); //"Break Block: Restarting builder process"
                     mod.getClientBaritone().getBuilderProcess().build("destroy block", new PlaceBlockSchematic(Blocks.AIR), _pos);
                 }
             }
         } else {
-            setDebugState("Getting to block...");
+            setDebugState("Путь до блока..."); //"Getting to block..."
             boolean isClose = _pos.isWithinDistance(mod.getPlayer().getPos(), 1);
             if (isClose != _wasClose) {
                 mod.getClientBaritone().getCustomGoalProcess().onLostControl();
@@ -144,6 +144,6 @@ public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
 
     @Override
     protected String toDebugString() {
-        return "Destroy block at " + _pos.toShortString();
-    }
+        return "Сломать блок на " + _pos.toShortString();
+    } //"Destroy block at "
 }

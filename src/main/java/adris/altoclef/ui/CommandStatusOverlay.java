@@ -33,17 +33,24 @@ public class CommandStatusOverlay {
     }
     private DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.from(ZoneOffset.of("+00:00"))); // The date formatter
     private void drawTaskChain(TextRenderer renderer, MatrixStack stack, float dx, float dy, int color, int maxLines, List<Task> tasks, AltoClef mod) {
+        String info = "| "+mod.getInfoSender().getInfo();
         if (tasks.size() == 0) {
-            renderer.draw(stack, " (no task running) ", dx, dy, color);
+            dy += 15;
+            renderer.draw(stack, " *энергосбережение* "+info, dx, dy, color); //TRS " (no task running) "
             if (_lastTime+10000 < Instant.now().toEpochMilli() && mod.getModSettings().shouldShowTimer()) {//if it doesn't run any task in 10 secs
                 _timeRunning = Instant.now().toEpochMilli();//reset the timer
             }
         } else {
+            dy += 15;
             float fontHeight = renderer.fontHeight;
             if (mod.getModSettings().shouldShowTimer()) { //If it's enabled
                 _lastTime = Instant.now().toEpochMilli(); //keep the last time for the timer reset
                 String _realTime = DATE_TIME_FORMATTER.format(Instant.now().minusMillis(_timeRunning)); //Format the running time to string
                 renderer.draw(stack, "<"+_realTime+">", dx, dy, color);//Draw the timer before drawing tasks list
+                dx += 8;//Do the same thing to list the tasks
+                dy += fontHeight + 2;
+            }else{
+                renderer.draw(stack, " [Система функционирует] "+info, dx, dy, color);
                 dx += 8;//Do the same thing to list the tasks
                 dy += fontHeight + 2;
             }

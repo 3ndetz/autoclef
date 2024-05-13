@@ -22,5 +22,6 @@
   },
   "mixins": [
     "altoclef.mixins.json"
-  ]
+  ],
+  "accessWidener": "altoclef.accesswidener"
 }

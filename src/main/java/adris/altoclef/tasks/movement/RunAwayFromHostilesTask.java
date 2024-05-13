@@ -1,6 +1,7 @@
 package adris.altoclef.tasks.movement;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.BaritoneHelper;
 import adris.altoclef.util.baritone.GoalRunAwayFromEntities;
@@ -31,6 +32,7 @@ public class RunAwayFromHostilesTask extends CustomBaritoneGoalTask {
     protected Goal newGoal(AltoClef mod) {
         // We want to run away NOW
         mod.getClientBaritone().getPathingBehavior().forceCancel();
+        //Debug.logMessage("ЧОООО");
         return new GoalRunAwayFromHostiles(mod, _distanceToRun);
     }
 

@@ -88,7 +88,7 @@ public class ContainerSubTracker extends Tracker {
         // If we haven't registered interacting with a block, try the currently "looking at" block
         if (_containerOpen && _lastBlockPosInteraction == null && _lastBlockInteraction == null) {
             if (MinecraftClient.getInstance().crosshairTarget instanceof BlockHitResult bhit) {
-                Debug.logWarning("Screen open but no block interaction detected, using the block we're currently looking at.");
+                //Debug.logWarning("Screen open but no block interaction detected, using the block we're currently looking at.");
                 _lastBlockPosInteraction = bhit.getBlockPos();
                 _lastBlockInteraction = _mod.getWorld().getBlockState(_lastBlockPosInteraction).getBlock();
             }
@@ -106,7 +106,7 @@ public class ContainerSubTracker extends Tracker {
                 ContainerType currentType = dimCache.get(containerPos).getContainerType();
                 if (!ContainerType.screenHandlerMatches(currentType, handler)) {
                     if (!_hasSentError) {
-                        Debug.logMessage("Mismatched container screen at " + containerPos.toShortString() + ", will overwrite container data: " + handler.getType() + " ?=> " + currentType);
+                        //Debug.logMessage("Mismatched container screen at " + containerPos.toShortString() + ", will overwrite container data: " + handler.getType() + " ?=> " + currentType);
                         _hasSentError = true;
                     }
                     dimCache.remove(containerPos);

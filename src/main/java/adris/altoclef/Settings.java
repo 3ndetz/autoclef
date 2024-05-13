@@ -159,7 +159,7 @@ public class Settings implements IFailableConfigFile {
      * 6 works well for singleplayer
      * 4 works better on more restrictive multiplayer servers
      */
-    private float entityReachRange = 4;
+    private float entityReachRange = 3.2f;
 
     /**
      * Before grabbing ANYTHING, get a pickaxe.
@@ -298,28 +298,79 @@ public class Settings implements IFailableConfigFile {
      */
     @JsonSerialize(using = ItemSerializer.class)
     @JsonDeserialize(using = ItemDeserializer.class)
-    private List<Item> throwawayItems = Arrays.asList(
-            // Overworld junk
-            Items.DIORITE,
-            Items.ANDESITE,
-            Items.GRANITE,
-            Items.TUFF,
-            Items.COBBLESTONE,
-            Items.DIRT,
-            Items.GRAVEL,
-            Items.COBBLED_DEEPSLATE,
-            Items.ACACIA_LEAVES, Items.BIRCH_LEAVES, Items.DARK_OAK_LEAVES, Items.OAK_LEAVES, Items.JUNGLE_LEAVES, Items.SPRUCE_LEAVES,
-            // Nether junk, to be fair it's mostly tuned for the "beat game" task
-            Items.NETHERRACK,
-            Items.MAGMA_BLOCK,
-            Items.SOUL_SOIL,
-            Items.SOUL_SAND,
-            Items.NETHER_BRICKS,
-            Items.NETHER_BRICK,
-            Items.BASALT,
-            Items.BLACKSTONE,
-            Items.END_STONE
-    );
+    private List<Item> throwawayItems = Streams.concat(
+            Stream.of(
+                    //ПРИ МАЙНИНГЕ
+                    Items.DIORITE,
+                    Items.POLISHED_DIORITE,
+                    Items.DEEPSLATE,
+                    Items.COBBLED_DEEPSLATE,
+                    Items.POLISHED_DEEPSLATE,
+                    Items.ANDESITE,
+                    Items.GRANITE,
+                    Items.POLISHED_GRANITE,
+                    Items.BASALT,
+                    Items.BLACKSTONE,
+                    Items.TUFF,
+                    Items.COBBLESTONE,
+                    //ГРЯЗЬ И ЗЕМЛЯ
+                    Items.DIRT,
+                    Items.ROOTED_DIRT,
+                    Items.COARSE_DIRT,
+                    Items.PODZOL,
+                    Items.CLAY,
+                    Items.MYCELIUM,
+                    Items.CRIMSON_NYLIUM,
+                    Items.WARPED_NYLIUM,
+                    //ДЕКОРАТИВНЫЕ
+                    Items.STONE_BRICKS,
+                    Items.MOSSY_STONE_BRICKS,
+                    Items.CRACKED_STONE_BRICKS,
+                    Items.CHISELED_STONE_BRICKS,
+                    Items.QUARTZ_BLOCK,
+                    Items.CHISELED_QUARTZ_BLOCK,
+                    Items.QUARTZ_BRICKS,
+                    Items.QUARTZ_PILLAR,
+                    Items.SANDSTONE,
+                    Items.CHISELED_SANDSTONE,
+                    Items.CUT_SANDSTONE,
+                    Items.GLASS,
+                    Items.TINTED_GLASS,
+                    Items.GRAVEL,
+                    Items.COBBLED_DEEPSLATE,
+                    Items.ACACIA_LEAVES, Items.BIRCH_LEAVES, Items.DARK_OAK_LEAVES, Items.OAK_LEAVES, Items.JUNGLE_LEAVES, Items.SPRUCE_LEAVES,
+// Nether junk, to be fair it's mostly tuned for the "beat game" task
+                    Items.NETHERRACK,
+                    Items.MAGMA_BLOCK,
+                    Items.SOUL_SOIL,
+                    Items.SOUL_SAND,
+                    Items.NETHER_BRICKS,
+                    Items.NETHER_BRICK,
+                    Items.PURPUR_BLOCK,
+                    Items.PURPUR_PILLAR,
+                    Items.END_STONE,
+                    Items.END_STONE_BRICKS
+            ),
+            Stream.of(ItemHelper.WOOL),
+            //Stream.of(ItemHelper.WOOD),
+            Stream.of(ItemHelper.PLANKS),
+            Stream.of(ItemHelper.TERRACOTTA),
+            Stream.of(ItemHelper.CONCRETE)
+    ).toList();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      * How many throwaway blocks to keep as building blocks.
@@ -433,6 +484,11 @@ public class Settings implements IFailableConfigFile {
     public boolean shouldShowTaskChain() {
         return showTaskChains;
     }
+    public void setShowTaskChainSetting(boolean showTaskChains_new_value)
+    {
+        showTaskChains = showTaskChains_new_value;
+    }
+
 
     public boolean shouldHideAllWarningLogs() {
         return hideAllWarningLogs;

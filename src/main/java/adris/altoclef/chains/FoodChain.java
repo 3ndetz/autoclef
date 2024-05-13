@@ -7,6 +7,7 @@ import adris.altoclef.tasks.resources.CollectFoodTask;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.util.helpers.ConfigHelper;
 import adris.altoclef.util.helpers.ItemHelper;
+import adris.altoclef.util.helpers.KillAuraHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import baritone.api.utils.input.Input;
 import net.minecraft.client.MinecraftClient;
@@ -68,7 +69,7 @@ public class FoodChain extends SingleTaskChain {
          */
 
         // We're in danger, don't eat now!!
-        if (mod.getMobDefenseChain().isDoingAcrobatics() || mod.getMLGBucketChain().isFallingOhNo(mod)) {
+        if (mod.getMobDefenseChain().isDoingAcrobatics() || mod.getMLGBucketChain().isFallingOhNo(mod) || KillAuraHelper.IsInBattle()) {
             stopEat(mod);
             return Float.NEGATIVE_INFINITY;
         }

@@ -106,18 +106,18 @@ public class MLGBucketTask extends Task {
             _movingTorwards = bestClutchPos.get().mutableCopy();
             if (!_movingTorwards.equals(oldMovingTorwards)) {
                 if (oldMovingTorwards == null)
-                    Debug.logMessage("(NEW clutch target: " + _movingTorwards + ")");
+                    Debug.logMessage("(Активируем КЛАТЧ: " + _movingTorwards + ")"); //TRS NEW clutch target:
                 else
-                    Debug.logMessage("(changed clutch target: " + _movingTorwards + ")");
+                    Debug.logMessage("(Клатч изменен: " + _movingTorwards + ")"); //  chutch changed
             }
         } else if (oldMovingTorwards != null) {
-            Debug.logMessage("(LOST clutch position!)");
+            Debug.logMessage("(КЛАТЧ съел клещ!)");// LOST clutch position!
         }
         if (willLandOn.isPresent()) {
             handleJumpForLand(mod, willLandOn.get());
             return placeMLGBucketTask(mod, willLandOn.get());
         } else {
-            setDebugState("Wait for it...");
+            setDebugState("Выжидание момента..."); //Wait for it...
             // We must trigger jump as soon as we enter a "climbable" object
             mod.getInputControls().release(Input.JUMP);
             return null;
@@ -126,7 +126,7 @@ public class MLGBucketTask extends Task {
 
     private Task placeMLGBucketTask(AltoClef mod, BlockPos toPlaceOn) {
         if (!hasClutchItem(mod)) {
-            setDebugState("No clutch item");
+            setDebugState("Отсутствует оборудование для клатча =(");//Wait for it...
             return null;
         }
         // If our raycast hit a non-solid block, go DOWN one.
@@ -138,7 +138,7 @@ public class MLGBucketTask extends Task {
         BlockState willLandInState = mod.getWorld().getBlockState(willLandIn);
         if (willLandInState.getBlock() == Blocks.WATER) {
             // We good.
-            setDebugState("Waiting to fall into water");
+            setDebugState("ЩА ПЛЮХНЕМСЯ");//Waiting to fall into water
             mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, false);
             return null;
         }
@@ -146,7 +146,7 @@ public class MLGBucketTask extends Task {
         IPlayerContext ctx = mod.getClientBaritone().getPlayerContext();
         Optional<Rotation> reachable = RotationUtils.reachableCenter(ctx.player(), toPlaceOn, ctx.playerController().getBlockReachDistance(), false);
         if (reachable.isPresent()) {
-            setDebugState("Performing MLG");
+            setDebugState("Е БООООЙ");//Performing MLG
             LookHelper.lookAt(mod, reachable.get());
             // Try water by default
             boolean hasClutch = (!mod.getWorld().getDimension().isUltrawarm() && mod.getSlotHandler().forceEquipItem(Items.WATER_BUCKET));
@@ -162,15 +162,15 @@ public class MLGBucketTask extends Task {
             // Try to capture tall grass as well...
             BlockPos[] toCheckLook = new BlockPos[] {toPlaceOn, toPlaceOn.up(), toPlaceOn.up(2)};
             if (hasClutch && Arrays.stream(toCheckLook).anyMatch(check -> mod.getClientBaritone().getPlayerContext().isLookingAt(check))) {
-                Debug.logMessage("HIT: " + willLandIn);
+                Debug.logMessage("ДОЛБАНЕМСЯ: " + willLandIn);//HIT:
                 _placedPos = willLandIn;
                 mod.getInputControls().tryPress(Input.CLICK_RIGHT);
                 //mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
             } else {
-                setDebugState("NOT LOOKING CORRECTLY!");
+                setDebugState("КУДА ПАЛИШЬ!");//NOT LOOKING CORRECTLY!
             }
         } else {
-            setDebugState("Waiting to reach target block...");
+            setDebugState("Выжидание момента падения на нужный блок...");//Waiting to reach target block.
         }
         return null;
     }
@@ -345,7 +345,7 @@ public class MLGBucketTask extends Task {
             if (Objects.equals(bestBlock, check))
                 return;
             if (WorldHelper.isAir(mod, check)) {
-                Debug.logMessage("(MLG Air block checked for landing, the block broke. We'll try another): " + check);
+                Debug.logMessage("(Твою мать, блок для клатча сломался! Пробуем новый): " + check); //(MLG Air block checked for landing, the block broke. We'll try another):
                 return;
             }
             boolean lava = isLava(check);
@@ -500,9 +500,9 @@ public class MLGBucketTask extends Task {
 
     @Override
     protected String toDebugString() {
-        String result = "Epic gaemer moment";
+        String result = "Эпик момент"; //Epic gaemer moment
         if (_movingTorwards != null) {
-            result += " (CLUTCH AT: " + _movingTorwards + ")";
+            result += " (ЗАБИРАЕМ ЭТОТ КЛАТЧ: " + _movingTorwards + ")";//CLUTCH AT
         }
         return result;
     }

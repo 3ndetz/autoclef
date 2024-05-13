@@ -32,7 +32,8 @@ public class AltoClefCommands {
                 new PunkCommand(),
                 new SetGammaCommand(),
                 new ListCommand(),
-                new CustomCommand()
+                new CustomCommand(),
+                new SetSettingsCommand()
                 //new TestMoveInventoryCommand(),
                 //    new TestSwapInventoryCommand()
         );

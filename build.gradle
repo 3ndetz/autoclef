@@ -22,6 +22,10 @@ repositories {
     }
 }
 
+loom {
+    accessWidenerPath = file("src/main/resources/altoclef.accesswidener")
+}
+
 dependencies {
     //to change the versions see the gradle.properties file
     minecraft("com.mojang:minecraft:${project.minecraft_version}")
@@ -36,6 +40,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.10.1'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.10.1'
 
+    //JavaGateway (bridge между java и python
+    implementation 'net.sf.py4j:py4j:0.10.9.7'
+    modImplementation "net.sf.py4j:py4j:0.10.9.7"
+    include "net.sf.py4j:py4j:0.10.9.7"
     // PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
     // You may need to force-disable transitiveness on them.
     shadow('com.fasterxml.jackson.core:jackson-core:2.10.1')
@@ -52,6 +60,7 @@ dependencies {
     }
     //modImplementation 'baritone-api-fabric:baritone-api-fabric:1.6.3'
     //implementation files('baritone-plus/build/libs/baritone-unoptimized-fabric-1.6.3.jar')
+	//implementation files('libs/py4j0.10.9.7.jar')
 }
 shadowJar {
     configurations = [project.configurations.shadow]

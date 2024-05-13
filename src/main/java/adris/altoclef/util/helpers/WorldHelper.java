@@ -1,6 +1,7 @@
 package adris.altoclef.util.helpers;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.mixins.ClientConnectionAccessor;
 import adris.altoclef.mixins.EntityAccessor;
 import adris.altoclef.util.Dimension;
@@ -184,7 +185,48 @@ public interface WorldHelper {
     static boolean isUnopenedChest(AltoClef mod, BlockPos pos) {
         return mod.getItemStorage().getContainerAtPosition(pos).isEmpty();
     }
+    static String getGroundBlockName(AltoClef mod){
+        //Debug.logMessage("your blockpos="+mod.getPlayer().getBlockPos().subtract(new Vec3i(0,1,0)));
+        String blockname = getBlockName(mod,mod.getPlayer().getBlockPos().subtract(new Vec3i(0,1,0)));
+        int i = 1;
+        while (blockname.equals("воздух") && i<=3){
+            i++;
+            blockname = getBlockName(mod,mod.getPlayer().getBlockPos().subtract(new Vec3i(0,i,0)));
 
+        }
+        return blockname;
+    }
+    static String getBlockName(AltoClef mod, BlockPos pos){
+        BlockState s = mod.getWorld().getBlockState(pos);
+        Block block = s.getBlock();
+        if(s.isAir()){
+            return "воздух";
+        } else {
+            return block.getName().getString().toLowerCase();
+        }
+    }
+    static boolean isHellHole(AltoClef mod, BlockPos pos){
+        if(mod.getPlayer().isOnGround())
+        {
+            return false;
+        } else {
+            int x = pos.getX();
+            int yThis = pos.getY();
+            int z = pos.getZ();
+            int i = 0;
+            for (int y = yThis; y >= WORLD_FLOOR_Y; --y) {
+
+                BlockPos check = new BlockPos(x, y, z);
+                i++;
+
+                //Debug.logMessage(i+" "+isAir(mod,check));
+                if (i > 40) return true;
+                if (!isAir(mod, check)) return false;
+
+            }
+            return true;
+        }
+    }
     static int getGroundHeight(AltoClef mod, int x, int z, Block... groundBlocks) {
         Set<Block> possibleBlocks = new HashSet<>(Arrays.asList(groundBlocks));
         for (int y = WORLD_CEILING_Y; y >= WORLD_FLOOR_Y; --y) {
@@ -255,6 +297,12 @@ public interface WorldHelper {
                 }
             }
         }
+        int middleX = (mod.getPlayer().getBlockPos().getX()+pos.getX())/2;
+        int middleY = Math.max(mod.getPlayer().getBlockPos().getY(),pos.getY());
+        int middleZ = (mod.getPlayer().getBlockPos().getZ()+pos.getZ())/2;
+        if(isHellHole(mod,new BlockPos(middleX,middleY,middleZ))){
+            //Debug.logMessage("НЕДОСТАВАЕМАЯ ХУЕТА");
+            return false;}
         return !mod.getBlockTracker().unreachable(pos);
     }
 

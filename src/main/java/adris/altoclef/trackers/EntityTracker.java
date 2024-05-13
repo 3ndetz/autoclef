@@ -380,7 +380,11 @@ public class EntityTracker extends Tracker {
                         // Ignore some of the harlmess projectiles
                         if (projEntity instanceof FishingBobberEntity || projEntity instanceof EnderPearlEntity || projEntity instanceof ExperienceBottleEntity)
                             continue;
-
+                        if(((ProjectileEntity) entity).getOwner()==_mod.getPlayer()){
+                            //Debug.logMessage("ОБНАРУЖЕНЫ СВОИ!!!");
+                            //!!!! ОБНАРУЖЕН "СВОЙ" СНАРЯД!
+                            continue;
+                        }
                         if (!inGround) {
                             proj.position = projEntity.getPos();
                             proj.velocity = projEntity.getVelocity();
