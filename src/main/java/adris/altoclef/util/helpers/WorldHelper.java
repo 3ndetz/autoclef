@@ -301,7 +301,7 @@ public interface WorldHelper {
         int middleY = Math.max(mod.getPlayer().getBlockPos().getY(),pos.getY());
         int middleZ = (mod.getPlayer().getBlockPos().getZ()+pos.getZ())/2;
         if(isHellHole(mod,new BlockPos(middleX,middleY,middleZ))){
-            //Debug.logMessage("НЕДОСТАВАЕМАЯ ХУЕТА");
+            //Debug.logMessage("НЕДОСТАВАЕМАЯ ****");
             return false;}
         return !mod.getBlockTracker().unreachable(pos);
     }
