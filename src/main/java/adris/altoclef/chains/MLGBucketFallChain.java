@@ -38,7 +38,10 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
     private ThrowEnderPearlSimpleProjectileTask _lastEP = null;
     private boolean _wasPickingUp = false;
     private boolean _doingChorusFruit = false;
-    private int FallIter = 0;
+    //private int FallIter = 0;
+
+    private final TimerGame _voidFallTimer = new TimerGame(0.25);
+
     public MLGBucketFallChain(TaskRunner runner) {
         super(runner);
     }
@@ -56,8 +59,12 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
     @Override
     public float getPriority(AltoClef mod) {
         if (!AltoClef.inGame()) return Float.NEGATIVE_INFINITY;
-        if(mod.getPlayer().isOnGround()){_lastGroundBlockPos = mod.getPlayer().getBlockPos();}
-        if (isInHellHole(mod)){
+        if(mod.getPlayer().isOnGround()){
+            _lastGroundBlockPos = mod.getPlayer().getBlockPos();
+            //FallIter=0;
+            _voidFallTimer.reset();
+        }
+        else if (isInHellHole(mod)){
             //boolean enderpearl = false; //Block.getBlockFromItem(ItemHelper)
             //mod.getBlockTracker().any
             //mod.getBlockTracker().trackBlock();
@@ -70,23 +77,23 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
 //
             //        );// mod.getPlayer().getPos(), PlayerEntity.class);
 
-                //WorldHelper.blo
-            if(!mod.getPlayer().isOnGround()){
                 if(mod.getItemStorage().hasItem(Items.ENDER_PEARL)) {
                     //enderpearl = true;
-                    FallIter++;
-                    if (FallIter > 5) {
+                    //FallIter++;
+                    if (_voidFallTimer.elapsed()) { // old (FallIter > 7) {
                         Optional<Entity> closestPlayer = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), PearlAllowablePlayer ->
                                 this.pearlAllowable(mod, (PlayerEntity) PearlAllowablePlayer), PlayerEntity.class);//(mod.getPlayer().getPos(), PlayerEntity.class);
                         if (closestPlayer.isPresent()) {
 
-                            FallIter = 0;
+                            //FallIter = 0;
+                            _voidFallTimer.reset();
                             Debug.logMessage("СПИДРАН ПО МАЙНКРАФТУ! ЭНДЕРПЕРЛ КЛАТЧ НА БЛ. ИГРОКА!");
                             setTask(new ThrowEnderPearlSimpleProjectileTask(closestPlayer.get().getBlockPos()));
                             _lastEP = (ThrowEnderPearlSimpleProjectileTask) _mainTask;
                             return 100;
                         }else{
-                            FallIter = 0;
+                            //FallIter = 0;
+                            _voidFallTimer.reset();
                             Debug.logMessage("СПИДРАН ПО МАЙНКРАФТУ! ЭНДЕРПЕРЛ КЛАТЧ НА ПОСЛЕДНИЙ БЛОК! Скорость:"+(mod.getPlayer().getVelocity().getY()));
                             setTask(new ThrowEnderPearlSimpleProjectileTask(_lastGroundBlockPos.add(0,-0.9-mod.getPlayer().getVelocity().getY(),0)));
                             _lastEP = (ThrowEnderPearlSimpleProjectileTask) _mainTask;
@@ -94,7 +101,7 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
                         }
                     }
                 }
-            }
+
             //if(closestBlock.isPresent())
             //    Debug.logMessage("Ближайший блок травы "+closestBlock.get());
         }
