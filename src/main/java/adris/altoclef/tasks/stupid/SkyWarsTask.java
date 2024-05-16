@@ -218,6 +218,7 @@ public class SkyWarsTask extends Task {
     private BlockPos _lastLootPos;
     @Override
     protected Task onTick(AltoClef mod){
+        if (mod.getFoodChain().isTryingToEat()) return null;
         Optional<Entity> closest = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> shouldPunk(mod, (PlayerEntity) toPunk), PlayerEntity.class);
         boolean TargetIsNear = false;
 
