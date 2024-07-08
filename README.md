@@ -1,4 +1,53 @@
+[<img src="https://img.shields.io/badge/Habr-%D0%A7%D0%B8%D1%82%D0%B0%D1%82%D1%8C-%23000000?style=for-the-badge&link=https://habr.com/ru/articles/812387&logo=habr&logoColor=%23FFFFFF&labelColor=%2365A3BE"/>](https://habr.com/ru/articles/812387/#SkyWarsBot)
+
 # AutoClef - multiplayer [altoclef](https://github.com/gaucho-matrero/altoclef)
+
+Plays block game. Allows multiplayer and py-scripts support.
+
+![Победа над игроком и сбор выпавших ресурсов](https://github.com/3ndetz/autoclef/assets/30196290/7377ec79-1c3d-493b-9a1d-5d701f19d9c9)
+
+[<img src="https://img.shields.io/github/stars/3ndetz/AutoClef?style=flat&label=this-repo-stars&link=https%3A%2F%2Fgithub.com%2F3ndetz%2FAutoClef"/>](https://github.com/3ndetz/autoclef)
+[<img src="https://img.shields.io/github/stars/3ndetz/NeuroDeva?style=flat&label=virtual-streamer-repo&link=https%3A%2F%2Fgithub.com%2F3ndetz%2FNeuroDeva"/>](https://github.com/3ndetz/NeuroDeva)
+
+A**l**toClef can do a minecraft walkthrough. A**u**toClef can do walkthrough skywars.
+
+_SkyWars is a Minecraft multiplayer minigame with islands._
+
+<details><summary>IDE and other software</summary>
+
+- JB Intellij Idea
+- Made on Windows 10
+</details>
+
+<details><summary>Features differs from the orig AltoClef</summary>
+
+- Smooth mouse look (for multiplayer anticheats killaura bypass)
+  - buggy, but working!
+- New tasks
+  - SkyWarsTask for playing SkyWars
+    - supports teammates
+      - adds nearest people in radius 5 when starting command
+  - ThePitTask and others new is in development
+    - you can help!
+- Support for connecting Python-scripts using Py4J library
+  - it uses the connection port for this
+  - interface is two-way
+    - you can send to Python-side position, etc.
+    - you can send to Java-side AltoClef commands, chat msgs, etc.
+</details>
+
+<details><summary>RepoCodeDisclaimer ⚠️</summary>
+
+The "code" presented in the repository is mostly for prototyping. It should not be considered as a sample, it can be useful only to those who will be interested in repeating my experience, and not for "seekers of other people's mistakes" =)
+
+Furthermore, my experience in Java at the time of writing was extremely small (zero) and improving over time, so bugs or very silly things are possible. Unlike my other repositories, where I was in a hurry and would not really want to receive negative feedback, here it is the opposite, please report if you see something potentially bad in the code, because I still know Java not at a high level and would be happy to understand my mistakes!
+
+In the code you can see huge commented out dumps, don't pay attention, because I had a choice to publish the code or not. I didn't format it in any way and didn't prepare it for publishing, so I didn't hesitate to leave crutches and other nasty things in there, like debug prints. However, I did format some things, but only the most attentive will notice this "feature".
+
+</details>
+
+
+## Коротко о главном
 
 В этом форке по сравнению с оригинальным [altoclef](https://github.com/gaucho-matrero/altoclef) добавлено и адаптировано множество функций. Одна из самых главных - автоматическая игра в режим SkyWars на немодерируемых серверах.
 
