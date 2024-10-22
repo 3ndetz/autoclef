@@ -85,7 +85,7 @@ public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
                 mod.getClientBaritone().getCustomGoalProcess().onLostControl();
                 mod.getClientBaritone().getBuilderProcess().onLostControl();
                 if (!LookHelper.isLookingAt(mod, _pos)) {
-                    LookHelper.lookAt(mod, reach.get());
+                    LookHelper.SmoothLook(mod, reach.get());
                 }
                 if (LookHelper.isLookingAt(mod, _pos)) {
                     // Tool equip is handled in `PlayerInteractionFixChain`. Oof.

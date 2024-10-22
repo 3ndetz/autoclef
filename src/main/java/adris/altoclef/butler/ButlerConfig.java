@@ -53,8 +53,10 @@ public class ButlerConfig {
             {"mc.musteryworld.net","{starterPrefix} [{clan}] | [{rank}] {from} > {message}","survival"},
             {"mc.musteryworld.net","{starterPrefix} | [{rank}] {from} > {message}","survival"},
             {"mc.musteryworld.net","[⚑] {from}: {message}","bedwars"},
-            {"mc.musteryworld.net","[{rank}] <{from}> {message}","skywars"},
-            {"mc.musteryworld.net","{from} ⋙ {message}","murdermystery"},
+            //{"mc.musteryworld.net","[{rank}] <{from}> {message}","skywars"},
+            {"mc.musteryworld.net","{from}: {message}","skywars"},
+            {"mc.musteryworld.net","{rank}: {message}","skywars"},
+            //{"mc.musteryworld.net","{from} ⋙ {message}","murdermystery"},
             // murder
             // BEDWARS
             //[⚑] NetTyan: аа
@@ -119,7 +121,8 @@ public class ButlerConfig {
             {"funnymc.ru","{global} [{rank}] {from} ➯ {message}","survival"},
             {"funnymc.ru","{global} {rank} {from} ➯ {message}","survival"},
 
-
+            {"mlegacy.net","[{rank}] {from}  » {message}","skywars"},
+            {"mlegacy.net","({rank}) {from} > {message}","skywars"},
             {"funnymc.ru","[{rank}] {from}  » {message}","skywars"},
             {"funnymc.ru","({rank}) {from} > {message}","skywars"},
 

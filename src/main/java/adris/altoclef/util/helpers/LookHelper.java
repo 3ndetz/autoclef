@@ -484,6 +484,9 @@ public interface LookHelper {
     static  void SmoothLookAt(AltoClef mod, float rotCoeffF,boolean ForceLook,Entity entity){
         SmoothLookAt(mod,rotCoeffF,ForceLook,entity.getEyePos());
     }
+    static  void SmoothLookAt(AltoClef mod, Vec3d position){
+        SmoothLookAt(mod,0.05f,true, position);
+    }
     static void SmoothLookDirectionaly(AltoClef mod,float rotCoeffF,boolean ForceLook){
 
         new Thread(() -> {

@@ -27,7 +27,7 @@ public class DamageTracker extends Tracker {
     private final HashMap<String, Float> _prevPlayerHealth = new HashMap<>();
 
     private List<AbstractClientPlayerEntity> _prevPlayerList = new ArrayList<>();
-    private String _lastAttackingPlayerName;
+    public String _lastAttackingPlayerName = "undefined";
     private Vec3d _lastAttackingPlayerEye;
     private Vec3d _lastAttackingPlayerDir;
     private Vec3d _lastAttackingPlayerMyEye;

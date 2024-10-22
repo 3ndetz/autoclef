@@ -8,6 +8,7 @@ import adris.altoclef.eventbus.events.BlockBreakingCancelEvent;
 import adris.altoclef.eventbus.events.BlockBreakingEvent;
 import adris.altoclef.util.helpers.KillAuraHelper;
 import baritone.api.utils.RotationUtils;
+import baritone.api.utils.input.Input;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -102,8 +103,14 @@ public class PlayerExtraController {
                 if(IsPitchBoundBox & IsYawNormal &
                         entity.squaredDistanceTo(_mod.getPlayer()) < 3.2 * 3.2 & !_mod.getFoodChain().isTryingToEat()) {
                     //Debug.logMessage("MDA" + IsPitchBoundBox);
-                    _mod.getController().attackEntity(_mod.getPlayer(), entity); //ВОНИКАЕТ ОШИБКА TICKING ENTITY!!!!!
-                    _mod.getPlayer().swingHand(Hand.MAIN_HAND);
+                    try {
+                        _mod.getInputControls().tryPress(Input.CLICK_LEFT);
+
+                        //_mod.getController().attackEntity(_mod.getPlayer(), entity); //ВОНИКАЕТ ОШИБКА TICKING ENTITY!!!!!
+                        //_mod.getPlayer().swingHand(Hand.MAIN_HAND);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     _mod.getDamageTracker().onMeleeAttack(entity);
                     _succesfulHit = true;
                     //new Thread(() -> {

@@ -190,6 +190,7 @@ public class Butler {
 
             } else if (msg.contains("[SkyWars] NetTyan погиб")||msg.contains("[SkyWars] NetTyan был убит")||msg.contains("[SkyWars] NetTyan победил в битве")){
                 _mod.getCommandExecutor().execute("@stop");
+                _mod.getInfoSender().onDeath(_mod.getDamageTracker()._lastAttackingPlayerName);
                 _lobbyMovingTimer.reset();
                 _mod.runUserTask(new LobbyMoveTask());
                 //_mod.getInputControls().hold(Input.MOVE_BACK);
@@ -197,7 +198,7 @@ public class Butler {
                 // todo add win logic reaction
 
             } else if (msg.contains("[SkyWars] Игра начинается через 1")
-                    ||(serverAdress.equals("funnymc.ru")&&msg.contains("Игра начинается через 1 секунду"))) {
+                    ||((serverAdress.equals("funnymc.ru")||serverAdress.equals("mlegacy.net"))&&msg.contains("Игра начинается через 1 секунду"))) {
                 Debug.logMessage("Начался батл SW!");
                 //_mod.cancelUserTask();
                 _mod.getCommandExecutor().execute("@stop");
