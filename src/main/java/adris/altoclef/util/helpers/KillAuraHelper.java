@@ -108,7 +108,7 @@ public abstract class KillAuraHelper {
             sleepSec(0.5);
             if (rotated)
                 mod.getInputControls().release(Input.MOVE_RIGHT);
-                mod.getInputControls().release(Input.MOVE_FORWARD);
+            mod.getInputControls().release(Input.MOVE_FORWARD);
             mod.getInputControls().release(Input.SPRINT);
             mod.getInputControls().release(Input.JUMP);
         }).start();

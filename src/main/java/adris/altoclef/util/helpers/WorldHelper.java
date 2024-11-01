@@ -205,6 +205,34 @@ public interface WorldHelper {
             return block.getName().getString().toLowerCase();
         }
     }
+
+    static boolean isDangerZone(AltoClef mod, BlockPos pos) {
+        int x = pos.getX();
+        int y = pos.getY();
+        int z = pos.getZ();
+
+        // Count safe blocks in 5x5 area
+        int safeBlockCount = 0;
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                BlockPos checkPos = new BlockPos(x + dx, y - 1, z + dz);
+
+                // Check for lava
+                if (isBlock(mod, checkPos, Blocks.LAVA)) {
+                    return true;
+                }
+
+                // Count non-air blocks for void detection
+                if (!isAir(mod, checkPos)) {
+                    safeBlockCount++;
+                }
+            }
+        }
+
+        // If there are very few solid blocks beneath (potential void or thin bridge)
+        return safeBlockCount <= 4;
+    }
+
     static boolean isHellHole(AltoClef mod, BlockPos pos){
         if(mod.getPlayer().isOnGround())
         {

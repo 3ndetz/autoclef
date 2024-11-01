@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 
 public class CachedProjectile {
     public Vec3d velocity;
+    public Vec3d rotation;
     public Vec3d position;
     public double gravity;
     public Type projectileType;

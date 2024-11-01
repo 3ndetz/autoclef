@@ -150,7 +150,8 @@ public class Butler {
                 //_mod.cancelUserTask();
                 //_lobbyMovementTask = new GetToXZTask(-20, 25);
                 //_mod.runUserTask(_lobbyMovementTask); //MusteryWorld
-                _mod.getCommandExecutor().execute("@goto -20 29");
+                //_mod.getCommandExecutor().execute("@goto -20 29"); // mustery world sw
+                _mod.getCommandExecutor().execute("@goto -30 29"); // mustery murder
             } else if (msg.contains("Введите капчу с картинки в чат")) {
                 this.captchaActionsPerform();
             }else if(msg.contains("Войдите в игру - !!! /login [пароль]")){ // for public HIDE!

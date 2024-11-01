@@ -20,7 +20,7 @@ public class ButlerConfig {
      * If true, will use whitelist to only accept users from said whitelist.
      */
     public boolean useButlerWhitelist = true;
-    public boolean autoStuckFix = true;
+    public boolean autoStuckFix = false;
     public boolean debugChatParseResult = false;
     public boolean autoJoin = true;
     /**

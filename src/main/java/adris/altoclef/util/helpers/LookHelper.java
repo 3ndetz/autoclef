@@ -7,17 +7,20 @@ import baritone.api.utils.IPlayerContext;
 import baritone.api.utils.RayTraceUtils;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.RotationUtils;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileUtil;
+import net.minecraft.item.Items;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.*;
 import net.minecraft.world.RaycastContext;
+import org.lwjgl.opengl.GL11;
 
 import java.util.Optional;
 
@@ -532,7 +535,11 @@ public interface LookHelper {
 
 
     }
-
+    public static double getLookingProbability(Vec3d eyeFrom, Vec3d eyeTo, Vec3d RotationFrom){
+        Vec3d toEntity = eyeTo.subtract(eyeFrom);
+        double dot = toEntity.normalize().dotProduct(RotationFrom);
+        return dot; //0.8 60 град, 0.9 30 град 0.95 15 град (точный взгляд
+    }
     static void SmoothLookDirectionaly(AltoClef mod,float rotCoeffF){
         SmoothLookDirectionaly(mod,rotCoeffF,false);
     }

@@ -9,12 +9,9 @@ import adris.altoclef.tasks.movement.RunAwayFromCreepersTask;
 import adris.altoclef.tasks.movement.RunAwayFromHostilesTask;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.control.KillAura;
-import adris.altoclef.util.helpers.BaritoneHelper;
+import adris.altoclef.util.helpers.*;
 import adris.altoclef.util.baritone.CachedProjectile;
 import adris.altoclef.util.time.TimerGame;
-import adris.altoclef.util.helpers.EntityHelper;
-import adris.altoclef.util.helpers.LookHelper;
-import adris.altoclef.util.helpers.ProjectileHelper;
 import baritone.Baritone;
 import baritone.api.utils.IPlayerContext;
 import baritone.api.utils.Rotation;
@@ -40,8 +37,8 @@ import java.util.*;
 public class MobDefenseChain extends SingleTaskChain {
 
     private static final double CREEPER_KEEP_DISTANCE = 10;
-    private static final double ARROW_KEEP_DISTANCE_HORIZONTAL = 6;//4;
-    private static final double ARROW_KEEP_DISTANCE_VERTICAL = 10;//15;
+    private static final double ARROW_KEEP_DISTANCE_HORIZONTAL = 4;//4;
+    private static final double ARROW_KEEP_DISTANCE_VERTICAL = 15;//15;
 
     private static final double DANGER_KEEP_DISTANCE = 15 * 2;
 
@@ -54,7 +51,7 @@ public class MobDefenseChain extends SingleTaskChain {
     public boolean _doingFunkyStuff = false;
     private boolean _wasPuttingOutFire = false;
     private CustomBaritoneGoalTask _runAwayTask;
-
+    private Rotation _suggestedProjectileRotation;
     private float _cachedLastPriority;
 
     public MobDefenseChain(TaskRunner runner) {
@@ -138,8 +135,20 @@ public class MobDefenseChain extends SingleTaskChain {
             _doingFunkyStuff = true;
             //Debug.logMessage("DODGING");
             _runAwayTask = null;
-            setTask(new DodgeProjectilesTask(ARROW_KEEP_DISTANCE_HORIZONTAL, ARROW_KEEP_DISTANCE_VERTICAL));
-            return 65;
+            if(WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos())){
+                //mod.getInputControls().tryPress(Input.JUMP);
+                setTask(new DodgeProjectilesTask(ARROW_KEEP_DISTANCE_HORIZONTAL, ARROW_KEEP_DISTANCE_VERTICAL));
+
+            }else{
+                // GOOD n FAST but not for sw, bw, where bridges
+                if (_suggestedProjectileRotation != null) {
+                    LookHelper.lookAt(mod, _suggestedProjectileRotation);
+                    mod.getInputControls().tryPress(Input.SPRINT);
+                    mod.getInputControls().tryPress(Input.MOVE_FORWARD);
+                    mod.getInputControls().tryPress(Input.JUMP);
+                }
+            }
+           return 65;
         }
 
         // Dodge all mobs cause we boutta die son
@@ -374,29 +383,42 @@ public class MobDefenseChain extends SingleTaskChain {
         List<CachedProjectile> projectiles = mod.getEntityTracker().getProjectiles();
 
         try {
-            for (CachedProjectile projectile : projectiles) {
+            synchronized (BaritoneHelper.MINECRAFT_LOCK) {
+                for (CachedProjectile projectile : projectiles) {
 
-                boolean isGhastBall = projectile.projectileType == FireballEntity.class;
-                if (isGhastBall) {
-                    // Ignore ghast balls
-                    continue;
+                    boolean isGhastBall = projectile.projectileType == FireballEntity.class;
+                    if (isGhastBall) {
+                        // Ignore ghast balls
+                        continue;
+                    }
+                    if (projectile.projectileType == DragonFireballEntity.class) {
+                        // Ignore dragon fireballs
+                        continue;
+                    }
+                    if (projectile==null) continue;
+                    Vec3d plyPos = mod.getPlayer().getPos();
+                    if (projectile.needsToRecache()) {
+                        projectile.setCacheHit(ProjectileHelper.calculateArrowClosestApproach(projectile, plyPos));
+                    }
+
+                    Vec3d expectedHit = ProjectileHelper.calculateArrowClosestApproach(projectile, mod.getPlayer());
+
+                    Vec3d delta = plyPos.subtract(expectedHit);
+
+                    //Debug.logMessage("EXPECTED HIT OFFSET: " + delta + " ( " + projectile.gravity + ")");
+
+                    double horizontalDistanceSq = delta.x * delta.x + delta.z * delta.z;
+                    double verticalDistance = Math.abs(delta.y);
+                    double lookProbablity = LookHelper.getLookingProbability(projectile.position, plyPos, projectile.velocity.normalize());
+                    boolean horizontal_approved = horizontalDistanceSq < 1000; //ARROW_KEEP_DISTANCE_HORIZONTAL*ARROW_KEEP_DISTANCE_HORIZONTAL;
+                    if (lookProbablity > 0.7 && horizontal_approved && verticalDistance < ARROW_KEEP_DISTANCE_VERTICAL) {
+                        Rotation targetRotation = LookHelper.getLookRotation(mod, expectedHit);
+                        float invertedYaw = (targetRotation.getYaw() + 180) % 360;
+                        if (invertedYaw < 0) invertedYaw += 360;
+                        _suggestedProjectileRotation = new Rotation(invertedYaw, 0f);
+                        return true;
+                    }
                 }
-                if (projectile.projectileType == DragonFireballEntity.class) {
-                    // Ignore dragon fireballs
-                    continue;
-                }
-
-                Vec3d expectedHit = ProjectileHelper.calculateArrowClosestApproach(projectile, mod.getPlayer());
-
-                Vec3d delta = mod.getPlayer().getPos().subtract(expectedHit);
-
-                //Debug.logMessage("EXPECTED HIT OFFSET: " + delta + " ( " + projectile.gravity + ")");
-
-                double horizontalDistanceSq = delta.x * delta.x + delta.z * delta.z;
-                double verticalDistance = Math.abs(delta.y);
-
-                if (horizontalDistanceSq < ARROW_KEEP_DISTANCE_HORIZONTAL*ARROW_KEEP_DISTANCE_HORIZONTAL && verticalDistance < ARROW_KEEP_DISTANCE_VERTICAL)
-                    return true;
             }
         } catch (ConcurrentModificationException e) {
             Debug.logWarning("Ошибка когда чекали потентциальную опасность объектов (стрел и т.п.)."); //Weird exception caught and ignored while checking for nearby projectiles.

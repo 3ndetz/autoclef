@@ -6,6 +6,7 @@ import adris.altoclef.Py4jEntryPoint;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.*;
 import adris.altoclef.util.helpers.InputHelper;
+import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
@@ -161,14 +162,10 @@ public class DamageTracker extends Tracker {
     }
     public double getLookingProbability(PlayerEntity plyFrom, PlayerEntity plyTo){
 
-        return getLookingProbability(plyFrom.getEyePos(),plyTo.getEyePos(),plyFrom.getRotationVec(0));
+        return LookHelper.getLookingProbability(plyFrom.getEyePos(),plyTo.getEyePos(),plyFrom.getRotationVec(0));
         //return dot > 0.95D;
     }
-    public double getLookingProbability(Vec3d eyeFrom, Vec3d eyeTo, Vec3d RotationFrom){
-        Vec3d toEntity = eyeTo.subtract(eyeFrom);
-        double dot = toEntity.normalize().dotProduct(RotationFrom);
-        return dot; //0.8 60 град, 0.9 30 град 0.95 15 град (точный взгляд
-    }
+
     public void tick() {
 
         if(AltoClef.inGame() && MinecraftClient.getInstance().world != null) {

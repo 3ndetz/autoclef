@@ -390,6 +390,7 @@ public class EntityTracker extends Tracker {
                             proj.velocity = projEntity.getVelocity();
                             proj.gravity = ProjectileHelper.hasGravity(projEntity) ? ProjectileHelper.ARROW_GRAVITY_ACCEL : 0;
                             proj.projectileType = projEntity.getClass();
+                            proj.rotation = projEntity.getRotationVector();
                             _projectiles.add(proj);
                         }
                     }
