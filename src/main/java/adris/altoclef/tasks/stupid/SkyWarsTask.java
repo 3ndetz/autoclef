@@ -2,7 +2,6 @@ package adris.altoclef.tasks.stupid;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
-import adris.altoclef.TaskCatalogue;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.Subscription;
 import adris.altoclef.eventbus.events.BlockPlaceEvent;
@@ -13,30 +12,21 @@ import adris.altoclef.tasks.misc.EquipArmorTask;
 import adris.altoclef.tasks.movement.PickupDroppedItemTask;
 import adris.altoclef.tasks.movement.SearchChunksExploreTask;
 import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
-import adris.altoclef.tasks.resources.CollectFoodTask;
+import adris.altoclef.tasks.resources.GetBuildingMaterialsTask;
+import adris.altoclef.tasks.resources.MineAndCollectTask;
 import adris.altoclef.tasksystem.Task;
-import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.util.ItemTarget;
-import adris.altoclef.util.helpers.InputHelper;
-import adris.altoclef.util.helpers.ItemHelper;
-import adris.altoclef.util.helpers.LookHelper;
-import adris.altoclef.util.helpers.StorageHelper;
-import adris.altoclef.util.helpers.TimersHelper;
-import adris.altoclef.util.helpers.WorldHelper;
+import adris.altoclef.util.MiningRequirement;
+import adris.altoclef.util.helpers.*;
 import adris.altoclef.util.time.TimerGame;
+import baritone.api.pathing.goals.Goal;
+import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.utils.input.Input;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
@@ -45,53 +35,58 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import static java.beans.Beans.isInstanceOf;
+
 /**
  * SlotHandler 39 timer override изменил
  */
 public class SkyWarsTask extends Task {
 
-    private static final int FEAR_SEE_DISTANCE = 30;
-    private static final int FEAR_DISTANCE = 20;
-    private static final int RUN_AWAY_DISTANCE = 80;
-
-    private static final int MIN_BUILDING_BLOCKS = 10;
-    private static final int PREFERRED_BUILDING_BLOCKS = 60;
-
-    private static Item[] GEAR_TO_COLLECT = new Item[] {
-            Items.DIAMOND_PICKAXE, Items.DIAMOND_SHOVEL, Items.DIAMOND_SWORD, Items.WATER_BUCKET
-    };
-    private final Task _prepareDiamondMiningEquipmentTask = TaskCatalogue.getSquashedItemTask(
-            new ItemTarget(Items.IRON_PICKAXE, 3), new ItemTarget(Items.IRON_SWORD, 1)
-    );
-    private final Task _foodTask = new CollectFoodTask(80);
-    private final TimerGame _runAwayExtraTime = new TimerGame(10);
     private final Predicate<PlayerEntity> _canTerminate;
     private final ScanChunksInRadius _scanTask;
-    private final TimerGame _funnyMessageTimer = new TimerGame(10);
-    private final TimerGame _performExtraActionsTimer = new TimerGame(2.5);
     private Vec3d _closestPlayerLastPos;
     private Vec3d _closestPlayerLastObservePos;
-    private double _closestDistance;
-
-
-    private Task _runAwayTask;
-    private String _currentVisibleTarget;
     private boolean _forceWait = false;
-    private boolean _isEatingStrength = false;
-    private boolean _isEatingGapple = false;
-    private final TimerGame _eatingGappleTimer = new TimerGame(3);
-    private Task _armorTask;
-    private Task _shootArrowTask;
-    private Task _lootTask;//new CataloguedResourceTask(new ItemTarget(Items.ENDER_PEARL));
-    private Task _pickupTask;
+    boolean _thePitTask = false;
+    private BlockPos _startedPos;
     private boolean _finishOnKilled = false;
     private static Item[] _itemsToLoot = ItemHelper.DIAMOND_TOOLS;
+
+    private static final int SEARCH_RADIUS = 10;
+    private static final int TARGET_RANGE = 20;
+    private static final int LOOT_RANGE = 10;
+    private static final double COMBAT_RANGE = 3.0;
+
+    // Allow these to be configured
+    private Task _armorTask;
+    private int searchRadius = SEARCH_RADIUS;
+    private int targetRange = TARGET_RANGE;
+    private int lootRange = LOOT_RANGE;
+    private double combatRange = COMBAT_RANGE;
+    private boolean _started = false;
+    private LootContainerTask _lootTask;
+    private Task _structureMaterialsTask;
+    private TimerGame _buildBlocksCollectTimer = new TimerGame(3);
+    private Block[] buildableBlocks = {Blocks.STONE, Blocks.COBBLESTONE, Blocks.DIRT, Blocks.GRASS_BLOCK};
 
     private List<Item> lootableItems(AltoClef mod) {
         List<Item> lootable = new ArrayList<>();
         lootable.addAll(ArmorAndToolsNeeded(mod));
+        //lootable.addAll(Arrays.stream(ItemHelper.NETHERITE_TOOLS).toList());
+        //lootable.addAll(Arrays.stream(ItemHelper.DIAMOND_TOOLS).toList());
+        //lootable.addAll(Arrays.stream(ItemHelper.HelmetsTopPriority).toList());
+        //lootable.addAll(Arrays.stream(ItemHelper.ChestplatesTopPriority).toList());
+        //lootable.addAll(Arrays.stream(ItemHelper.LeggingsTopPriority).toList());
+        //lootable.addAll(Arrays.stream(ItemHelper.BootsTopPriority).toList());
         lootable.addAll(Arrays.stream(ItemHelper.PLANKS).toList());
+        lootable.addAll(Arrays.stream(ItemHelper.blocksToItems(buildableBlocks)).toList());
         lootable.add(Items.GOLDEN_APPLE);
+        lootable.add(Items.COBBLESTONE);
+        lootable.add(Items.STONE);
+        lootable.add(Items.DIRT);
         lootable.add(Items.ENCHANTED_GOLDEN_APPLE);
         lootable.add(Items.GOLDEN_CARROT);
         lootable.add(Items.STONE);
@@ -106,69 +101,139 @@ public class SkyWarsTask extends Task {
     }
 
 
+
+
     private Subscription<BlockPlaceEvent> _blockPlaceSubscription;
 
-    public SkyWarsTask(BlockPos center, double scanRadius, Predicate<PlayerEntity> canTerminate,
-                       boolean FinishOnKilled) {
+    public SkyWarsTask(BlockPos center, double scanRadius, Predicate<PlayerEntity> canTerminate, boolean FinishOnKilled, boolean thePitTask) {
+        _thePitTask = thePitTask;
         _canTerminate = canTerminate;
         _finishOnKilled = FinishOnKilled;
+        _startedPos = center;
+        _structureMaterialsTask = new GetBuildingMaterialsTask(ItemHelper.blocksToItems(buildableBlocks)); //new MineAndCollectTask(toItemTargets(ItemHelper.blocksToItems(buildableBlocks)), MiningRequirement.HAND);//new GetBuildingMaterialsTask(32);
+        //_structureMaterialsTask = new GetBuildingMaterialsTask(32);
         _scanTask = new ScanChunksInRadius(center, scanRadius);
+    }
+
+    public SkyWarsTask(BlockPos center, double scanRadius, Predicate<PlayerEntity> canTerminate, boolean FinishOnKilled) {
+        this(center, scanRadius, canTerminate, FinishOnKilled, false);
+    }
+
+    public SkyWarsTask(BlockPos center, boolean thePitTask, boolean FinishOnKilled) {
+        this(center, 100, accept -> true, FinishOnKilled, thePitTask);
     }
 
     public SkyWarsTask(BlockPos center, double scanRadius, boolean FinishOnKilled) {
         this(center, scanRadius, accept -> true, FinishOnKilled);
     }
 
-    private static final Block[] TO_SCAN = Stream.concat(
-            Arrays.stream(new Block[] {Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.BARREL}),
-            Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.SHULKER_BOXES))).toArray(Block[]::new);
+    private static final Block[] TO_SCAN = Stream.concat(Arrays.stream(new Block[]{Blocks.CHEST, Blocks.TRAPPED_CHEST, Blocks.BARREL}), Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.SHULKER_BOXES))).toArray(Block[]::new);
 
     @Override
     protected void onStart(AltoClef mod) {
-
-        mod.getInfoSender().setState(String.valueOf(mod.getItemStorage().hasItem(Items.ENDER_PEARL)));
+        //Debug.logMessage("стейт = "+mod.getInfoSender().getState());
         mod.getBehaviour().push();
+        mod.getInfoSender().setState(String.valueOf(mod.getItemStorage().hasItem(Items.ENDER_PEARL)));
+
         mod.getBlockTracker().trackBlock(TO_SCAN);
+
         mod.getBehaviour().setForceFieldPlayers(true);
+        //mod.getExtraBaritoneSettings()
+
+        if (_thePitTask) {
+            mod.getBehaviour().avoidBlockBreaking(this::avoidBlockBreak);
+            mod.getBehaviour().avoidBlockPlacing(this::avoidBlockBreak);
+        }
+
         _blockPlaceSubscription = EventBus.subscribe(BlockPlaceEvent.class, evt -> {
             OnBlockPlace(mod, evt.blockPos, evt.blockState);
         });
+        //Debug.logMessage("мдааа");
+        //AddNearestPlayerToFriends(mod,10);
 
+        if(_started){
+            mod.getItemStorage().invalidateCachedCotainers();
+        }
+    }
+
+    private boolean avoidBlockBreak(BlockPos pos) {
+        return true;
     }
 
     protected void OnBlockPlace(AltoClef mod, BlockPos blockPos, BlockState blockState) {
 
         if (this._forceWait == false && mod.getClientBaritone().getCustomGoalProcess().isActive() &
                 mod.getPlayer().isSneaking() &
-                mod.getPlayer().getBlockPos()
-                        .isWithinDistance(new Vec3i(blockPos.getX(), blockPos.getY(), blockPos.getZ()), 3)) {
+                mod.getPlayer().getBlockPos().isWithinDistance(new Vec3i(blockPos.getX(), blockPos.getY(), blockPos.getZ()), 3)) {
+            //mod.getClientBaritone().getGetToBlockProcess().
+            //Debug.logMessage("!!Блок поставил я!");
+
 
             new Thread(() -> {
 
                 int ping = 100;
+                //try{
+                //    ping = mod.getPlayer().networkHandler.getPlayerListEntry(mod.getPlayer().getUuid()).getLatency();}
+                //catch (NullPointerException e){e.printStackTrace(); ping = 500;}
+                //Goal goal = mod.getClientBaritone().getCustomGoalProcess().getGoal();
+                //boolean oldval = mod.getClientBaritoneSettings().allowPlace.value;
+                //mod.getClientBaritoneSettings().
+
+                //mod.getClientBaritone().getCustomGoalProcess().setGoal(new GoalBlock(0,0,0));
+                //mod.getClientBaritoneSettings().allowPlace.value = false;
                 this._forceWait = true;
+                //if(mod.getClientBaritone().getPathingBehavior().isPathing()) # БЫЛО ДО ЭТОГО!
+                //mod.getClientBaritone().getPathingBehavior().forceCancel();
+                //mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SNEAK,true);
+                //mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD,true);
                 mod.getInputControls().hold(Input.SNEAK);
                 mod.getInputControls().hold(Input.MOVE_FORWARD);
                 mod.getInputControls().hold(Input.CLICK_RIGHT);
+                //Debug.logMessage("Остановка.. ");
+                //mod.getMobDefenseChain()._doingFunkyStuff =true;
                 sleepSec(0.4);
 
+                //mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SNEAK,false);
+                //mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD,false);
                 mod.getInputControls().release(Input.CLICK_RIGHT);
                 mod.getInputControls().release(Input.SNEAK);
                 mod.getInputControls().release(Input.MOVE_FORWARD);
 
+                //mod.getPlayer().
                 Debug.logMessage("Блок поставила я!  " + WorldHelper.isAir(mod, blockPos) + " ыы пинг " + ping);
                 if (WorldHelper.isAir(mod, blockPos)) {
                     Debug.logMessage("Блок на позиции " + blockPos + " не поставился! пинг " + ping);
+                    //for(int i = 0;i<10;i++){
+                    //LookHelper.SmoothLookDirectionaly(mod,0.0015f);
                     mod.getInputControls().hold(Input.SNEAK);
                     mod.getInputControls().hold(Input.MOVE_BACK);
                     mod.getInputControls().hold(Input.CLICK_RIGHT);
                     sleepSec(6);
+                    //sleepSec(3+((30+ping)*2)/1000);
                     mod.getInputControls().release(Input.MOVE_BACK);
                     sleepSec(1);
                     mod.getInputControls().release(Input.SNEAK);
                     mod.getInputControls().release(Input.CLICK_RIGHT);
+                    //}
+                    //sleepSec(4);
                 }
+                //mod.getBehaviour().
+                //mod.getMobDefenseChain()._doingFunkyStuff =false;
                 this._forceWait = false;
+
+                //mod.getClientBaritoneSettings().allowPlace.value = oldval;
+
+                //if(mod.getClientBaritone().getCustomGoalProcess().isActive()){
+                //    mod.getClientBaritone().getCustomGoalProcess().setGoalAndPath(goal);
+                //}
+                //try{
+                //    mod.getClientBaritone().getCustomGoalProcess().wait(200);
+                //} catch (InterruptedException e) {
+                //    e.printStackTrace();
+                //}
+                //mod.getClientBaritone().getBuilderProcess().pause();
+                //sleepSec(0.5);
+                //mod.getClientBaritone().getBuilderProcess().resume();
             }).start();
         }
     }
@@ -177,229 +242,234 @@ public class SkyWarsTask extends Task {
 
     @Override
     protected Task onTick(AltoClef mod) {
-        if (mod.getFoodChain().isTryingToEat()) {
-            return null;
-        }
-        Optional<Entity> closest = mod.getEntityTracker()
-                .getClosestEntity(mod.getPlayer().getPos(), toPunk -> shouldPunk(mod, (PlayerEntity) toPunk),
-                        PlayerEntity.class);
-        boolean TargetIsNear = false;
+        if (mod.getFoodChain().isTryingToEat()) return null;
+        boolean alert = false;
 
-        if (InputHelper.isKeyPressed(71) && mod.getClientBaritone().getPathingBehavior().estimatedTicksToGoal()
-                .isPresent()) {
-            Debug.logMessage(
-                    "Эвристика **стика " + mod.getClientBaritone().getPathingBehavior().estimatedTicksToGoal().get());
-        }
-
-        if (closest.isPresent()) {
-
-            _closestPlayerLastPos = closest.get().getPos();
-            _closestPlayerLastObservePos = mod.getPlayer().getPos();
-            _closestDistance = _closestPlayerLastPos.distanceTo(_closestPlayerLastObservePos);
-            if (_closestDistance <= 8 & mod.getEntityTracker().isEntityReachable(closest.get())) {
-                TargetIsNear = true;
-            }
-            //Debug.logMessage("дистанция"+_closestDistance);
-
-        }
-        int ping = 100;
-        if (ping > 499) {
-            setDebugState("ИСПЫТЫВАЕМ ЛЮТЫЙ ПИНГ = " + ping + "!!! Ожидаем окончания этого ..");
-            return null;
-        }
-
-        if (_forceWait && !TargetIsNear) {
-            return null;
-        }
-        if (shouldForce(mod, _shootArrowTask)) {
-            return _shootArrowTask;
-        }
-
-        if (!TargetIsNear) {
-            //ОДЕВАЕМСЯ КАК ПОЛОЖЕНО!!!
-
-            if (shouldForce(mod, _armorTask)) {
-                return _armorTask;
-            }
-
-            boolean reachableLootCont = true;
-            if (_lastLootPos != null) {
-                reachableLootCont = WorldHelper.canReach(mod, _lastLootPos);
-            }
-            if (reachableLootCont && shouldForce(mod, _lootTask)) {
-                return _lootTask;
-            }
-
-            if (_isEatingStrength) {
-                _isEatingStrength = false;
-            }
-            //ЮЗАТЬ СМЕСЬ СИЛЫ
-            if (!mod.getPlayer().hasStatusEffect(StatusEffects.STRENGTH) && mod.getItemStorage()
-                    .hasItem(Items.GUNPOWDER)) {
-                //mod.getItemStorage().getItem
-                if (LookHelper.tryAvoidingInteractable(mod, true)) {
-                    setDebugState("Найдена смесь силы; надо понюхать");
-                    mod.getSlotHandler().forceEquipItem(new Item[] {Items.GUNPOWDER}); //"true" because it's food
-                    mod.getInputControls().hold(Input.CLICK_RIGHT);
-                    //mod.getExtraBaritoneSettings().setInteractionPaused(true);
-                    mod.getInputControls().release(Input.CLICK_RIGHT);
-                    //mod.getExtraBaritoneSettings().setInteractionPaused(false);
-                    _isEatingStrength = true;
-
-
-                } else {
-                    setDebugState("Нюхаем смесь силы: меняем угол обзора чтобы не интерактить ни с какими блоками");
-                }
+        if (_thePitTask) {
+            setDebugState("ThePit");
+            if (mod.getPlayer().getBlockPos().isWithinDistance(_startedPos, 10)) {
+                setDebugState("МЫ НА СПАВНЕ! НАДО ВЫБРАТЬСЯ");
+                mod.getInputControls().tryPress(Input.MOVE_FORWARD);
                 return null;
             }
+        }
+        if (mod.getFoodChain().isTryingToEat()) return null;
 
-            //
-            //ЖРАТЬ ЯБЛОЧКИ
-            boolean NeedEatGapple =
-                    !mod.getPlayer().hasStatusEffect(StatusEffects.ABSORPTION) || (mod.getPlayer().getHealth() < 18
-                            && _eatingGappleTimer.getDuration() > 6);
-            if (NeedEatGapple && mod.getItemStorage()
-                    .hasItemInventoryOnly(Items.GOLDEN_APPLE, Items.ENCHANTED_GOLDEN_APPLE)) {
-                if (LookHelper.tryAvoidingInteractable(mod) && !_isEatingGapple) {
-                    setDebugState("Есть яблоко, почему бы не пожрать..");
-                    //mod.getSlotHandler().forceEquipSlot(new Slot(0,0,0,0));
-                    mod.getSlotHandler().forceEquipItem(new Item[] {Items.GOLDEN_APPLE, Items.ENCHANTED_GOLDEN_APPLE},
-                            true);//,true); //"true" because it's food
-                    mod.getInputControls().hold(Input.CLICK_RIGHT);
-                    //mod.getSlotHandler().wait();
-                    mod.getExtraBaritoneSettings().setInteractionPaused(true);
-                    _eatingGappleTimer.reset();
-                    _isEatingGapple = true;
-                } else {
-                    if (_isEatingGapple && _eatingGappleTimer.elapsed()) {
-                        _isEatingGapple = false;
-                        setDebugState("Яблоко не съелось! Попытка 2!");
-                    } else {
-                        setDebugState("Жрем геплы: меняем угол обзора чтобы не интерактить с сущностями");
-                    }
-                }
-                return null;
-            } else {
-                if (_isEatingGapple) {
-                    mod.getInputControls().release(Input.CLICK_RIGHT);
-                    mod.getExtraBaritoneSettings().setInteractionPaused(false);
-                    _isEatingGapple = false;
-                }
-            }
-            //if(_pickupTask.)
-            //if(mod.getPlayer().getEf){}
-            //ШЛЕМ
-            int armorEquipNeed = IsArmorNeededToEquip(mod, ItemHelper.HelmetsTopPriority);
-            if (armorEquipNeed != -1) {
-                _armorTask = new EquipArmorTask(true,
-                        Arrays.stream(ItemHelper.HelmetsTopPriority).toList().get(armorEquipNeed));
-                return _armorTask;
-            }
-            //ЧЕСТПЛЕЙТ
-            armorEquipNeed = IsArmorNeededToEquip(mod, ItemHelper.ChestplatesTopPriority);
-            if (armorEquipNeed != -1) {
-                _armorTask = new EquipArmorTask(true,
-                        Arrays.stream(ItemHelper.ChestplatesTopPriority).toList().get(armorEquipNeed));
-                return _armorTask;
-            }
-            //ПЕНТС
-            armorEquipNeed = IsArmorNeededToEquip(mod, ItemHelper.LeggingsTopPriority);
-            if (armorEquipNeed != -1) {
-                _armorTask = new EquipArmorTask(true,
-                        Arrays.stream(ItemHelper.LeggingsTopPriority).toList().get(armorEquipNeed));
-                return _armorTask;
-            }
-            //БУТС
-            armorEquipNeed = IsArmorNeededToEquip(mod, ItemHelper.BootsTopPriority);
-            if (armorEquipNeed != -1) {
-                _armorTask = new EquipArmorTask(true,
-                        Arrays.stream(ItemHelper.BootsTopPriority).toList().get(armorEquipNeed));
-                return _armorTask;
-            }
-
-            //if (!StorageHelper.isArmorEquipped(mod, topHelmet )) {
-            //    if (mod.getItemStorage().hasItem(topHelmet)) {
-            //        _armorTask = new EquipArmorTask(true, topHelmet);
-            //        return _armorTask;
-            //    }
-            //}
-
-            //ТЕПЕРЬ ЛУТАЕМ СУНДУЧАРЫ!!!
-
-            //Optional<BlockPos> closestCont = mod.getBlockTracker().getNearestTracking(validContainer,TO_SCAN);
-            Optional<BlockPos> closestCont = mod.getBlockTracker().getNearestTracking(
-                    blockPos -> WorldHelper.isUnopenedChest(mod, blockPos) &&
-                            mod.getPlayer().getBlockPos().isWithinDistance(blockPos, 10) &&
-                            WorldHelper.canReach(mod, blockPos), Blocks.CHEST);
-            if (closestCont.isPresent() && WorldHelper.canReach(mod, closestCont.get())
-                    && TimersHelper.CanChestInteract()) {
-                setDebugState("Поиск ресурсов -> контейнеры:");
-                _lastLootPos = closestCont.get();
-                _lootTask = new LootContainerTask(closestCont.get(), lootableItems(mod));
-                //_lootTask = new MineAndCollectTask(new ItemTarget(Items.CHEST), new Block[]{Blocks.CHEST}, MiningRequirement.HAND);
-                return _lootTask;
-            }
-
-            //ПИКАЕМ ДРОП
-            for (Item check : lootableItems(mod)) {
-                if (mod.getEntityTracker().itemDropped(check)) {
-
-                    Optional<ItemEntity> closestEnt = mod.getEntityTracker().getClosestItemDrop(
-                            ent -> mod.getPlayer().getPos().isInRange(ent.getEyePos(), 10), check);
-                    //
-                    if (closestEnt.isPresent()) {
-                        _pickupTask = new PickupDroppedItemTask(new ItemTarget(check), true);
-                        return _pickupTask;
-                    }
-                }
-            }
-
-            if (closest.isPresent() && ShouldBow(mod, closest.get())) {
-                _shootArrowTask = new ShootArrowSimpleProjectileTask(closest.get());
-                return _shootArrowTask;
-            }
-        } else {
-            if (_isEatingGapple) {
-                mod.getInputControls().release(Input.CLICK_RIGHT);
-                mod.getExtraBaritoneSettings().setInteractionPaused(false);
-                _isEatingGapple = false;
-            }
-
+        if (shouldForce(mod, _armorTask)) {
+            return _armorTask;
+        }
+        if(shouldForce(mod, _lootTask) && _lootTask.isInChest()){
+            return _lootTask;
+        }
+        _armorTask = autoArmor(mod);
+        if (_armorTask != null){
+            return _armorTask;
         }
 
-        if (closest.isPresent()) {
-            setDebugState("УНИЧТОЖИТЬ");
-            PlayerEntity entity = (PlayerEntity) closest.get();
-            if (mod.getPlayer().distanceTo(entity) > 10 && LookHelper.cleanLineOfSight(entity.getPos(), 100)) {
-                if (mod.getItemStorage().getItemCount(Items.ENDER_PEARL) > 2) {
-                    return new ThrowEnderPearlSimpleProjectileTask(entity.getBlockPos().add(0, -1, 0));
-                } else if (ShouldBow(mod, entity)) {
-                    _shootArrowTask = new ShootArrowSimpleProjectileTask(entity);
-                    return _shootArrowTask;
-                }
-            }
-            //tryDoFunnyMessageTo(mod, (PlayerEntity) entity);
-            return new KillPlayerTask(entity.getName().getString());
+        // Get nearest target
+        Optional<Entity> target = mod.getEntityTracker().getClosestEntity(
+                mod.getPlayer().getPos(),
+                toPunk -> shouldPunk(mod, (PlayerEntity) toPunk),
+                PlayerEntity.class
+
+        );
+        Vec3d pos = mod.getPlayer().getPos();
+        float minCost = Float.POSITIVE_INFINITY;
+        Optional<BlockPos> closestCont = mod.getBlockTracker().getNearestTracking(
+                blockPos -> WorldHelper.isUnopenedChest(mod, blockPos) &&
+                        mod.getPlayer().getBlockPos().isWithinDistance(blockPos, 50)&&
+                        WorldHelper.canReach(mod,blockPos), Blocks.CHEST);
+
+        Optional<ItemEntity> closestDrop = mod.getEntityTracker().getClosestItemDrop(pos,toItemTargets(lootableItems(mod).toArray(new Item[0])));
+
+        float costContainer = Float.POSITIVE_INFINITY;
+        float costTarget = Float.POSITIVE_INFINITY;
+        float costDrop = Float.POSITIVE_INFINITY;
+        if (closestCont.isPresent()) {
+            costContainer = getPathCost(mod, pos, closestCont.get());
+        }
+        if (target.isPresent()) {
+            costTarget = getPathCost(mod, pos, target.get().getPos());
+        }
+        if(closestDrop.isPresent()) {
+            costDrop = getPathCost(mod, pos, closestDrop.get().getPos());
         }
 
-        setDebugState("Поиск сущностей...");
-        _currentVisibleTarget = null;
-        if (_scanTask.failedSearch()) {
-            Debug.logMessage("Перегрузка поиска, восстановление...");
-            _scanTask.resetSearch(mod);
+        if (costContainer < minCost) {
+            minCost = costContainer;
+        }
+        if (costTarget < minCost) {
+            minCost = costTarget;
+        }
+        if (costDrop < minCost) {
+            minCost = costDrop;
+        }
+        if(InputHelper.isKeyPressed(71)) {
+            Debug.logMessage("Эвристики  конт " + costContainer + " тарг" + costTarget
+                    + " дроп" + costDrop + " щас" + getCurrentCalculatedHeuristic(mod)
+                    + "\n активен _structureMaterialsTask" + _structureMaterialsTask.isActive() +
+                    "_buildBlocksCollectTimer elapsed" + _buildBlocksCollectTimer.elapsed());
         }
 
-        return _scanTask;
-    }
 
-    private Optional<BlockPos> locateClosestUnopenedChest(AltoClef mod) {
-        //if (WorldHelper.getCurrentDimension() != Dimension.OVERWORLD) {
-        //    return Optional.empty();
+
+        //if(closestDrop.isPresent()) {
+        //    _pickupTask =
+        //    return new PickupDroppedItemTask(new ItemTarget(check), true);
         //}
-        return mod.getBlockTracker()
-                .getNearestTracking(blockPos -> mod.getPlayer().getBlockPos().isWithinDistance(blockPos, 15),
-                        Blocks.CHEST);
-        //mod.getBlockTracker().getNearestTracking(blockPos -> WorldHelper.isUnopenedChest(mod, blockPos) && mod.getPlayer().getBlockPos().isWithinDistance(blockPos, 15), Blocks.CHEST);
+        // Handle combat
+        if (target.isPresent()) {
+            PlayerEntity player = (PlayerEntity) target.get();
+            alert = mod.getPlayer().distanceTo(player) <= 15;
+            if (alert) {
+                return new KillPlayerTask(player.getName().getString());
+            }
+            // Use ender pearl or bow at range
+            if (LookHelper.cleanLineOfSight(player.getPos(), 100)) {
+                if (mod.getItemStorage().getItemCount(Items.ENDER_PEARL) > 2) {
+                    return new ThrowEnderPearlSimpleProjectileTask(player.getBlockPos().add(0, -1, 0));
+                }
+            }
+            if (canUseRangedWeapon(mod) && ShootArrowSimpleProjectileTask.canUseBow(mod,player)) {
+                return new ShootArrowSimpleProjectileTask(player);
+            }
+
+        }
+
+        //!_buildBlocksCollectTimer.elapsed() ||
+        if ( minCost == Float.POSITIVE_INFINITY || minCost>150 || (getCurrentCalculatedHeuristic(mod)>100 && !_structureMaterialsTask.isActive())) {
+            // Get building blocks
+            int buildCount = mod.getItemStorage().getItemCount(ItemHelper.blocksToItems(buildableBlocks));
+            if (buildCount < 32 && (buildCount == 0 || _structureMaterialsTask != null)) {
+                setDebugState("Добыча ресурсов...");
+
+                //_structureMaterialsTask = new MineAndCollectTask(toItemTargets(ItemHelper.blocksToItems(buildableBlocks)), buildableBlocks, MiningRequirement.HAND);
+                //_structureMaterialsTask = new CataloguedResourceTask(new ItemTarget(new Item[]{Items.DIRT, Items.COBBLESTONE, Items.STONE}));
+
+                return _structureMaterialsTask;
+            }
+
+        }
+        _buildBlocksCollectTimer.reset();
+        if(minCost != Float.POSITIVE_INFINITY) {
+            if (minCost == costTarget) {
+                return new KillPlayerTask(target.get().getName().getString());
+            } else if (minCost == costDrop) {
+                return new PickupDroppedItemTask(toItemTargets(lootableItems(mod).toArray(new Item[0])), true);
+            } else if (minCost == costContainer) {
+                setDebugState("Поиск ресурсов -> контейнеры: дорога");
+                _lastLootPos = closestCont.get();
+                //if(!shouldForce(mod, _lootTask)) {
+                _lootTask = new LootContainerTask(closestCont.get(), lootableItems(mod));
+                //}
+                //Random random = new Random();
+                //if (_lootTask != null && _lootTask.isActive()) {} else {
+                //    if (random.nextDouble() < 0.5) {
+                //        _lootTask = new LootContainerTask(closestCont.get(), lootableItems(mod));
+                //    } else {
+                //        _lootTask = new MineAndCollectTask(new ItemTarget(Items.CHEST), new Block[]{Blocks.CHEST}, MiningRequirement.HAND);
+                //    }
+                //}
+                return _lootTask;
+            }
+        }
+        // Exploration
+        //return _scanTask;
+        return null;
+    }
+    private double getCurrentCalculatedHeuristic(AltoClef mod) {
+        double result = Double.NEGATIVE_INFINITY;
+        if (mod.getClientBaritone().getPathingBehavior().isPathing()) {
+            Optional<Double> ticksRemainingOp = mod.getClientBaritone().getPathingBehavior().ticksRemainingInSegment();
+            result = ticksRemainingOp.orElse(Double.POSITIVE_INFINITY);
+        }
+        return result;
+    }
+    public float getPathCostVeryHard(AltoClef mod, Vec3d startPos, Vec3d goalPos) {
+        // First try quick heuristic calculation
+        double quickEstimate = BaritoneHelper.calculateGenericHeuristic(startPos, goalPos);
+
+        // If positions are very close, just return the quick estimate
+        if (quickEstimate < 5) {
+            return (float)quickEstimate;
+        }
+
+        synchronized (BaritoneHelper.MINECRAFT_LOCK) {
+            // Get current active goal/path state so we can restore it
+            Goal currentGoal = mod.getClientBaritone().getCustomGoalProcess().getGoal();
+
+            try {
+                mod.getClientBaritone().getCustomGoalProcess().setGoal(new GoalBlock(new BlockPos(new Vec3i((int) goalPos.x, (int) goalPos.y, (int) goalPos.z))));
+                mod.getClientBaritone().getCustomGoalProcess().path();
+                // Get cost from current path if one exists
+
+                if (mod.getClientBaritone().getPathingBehavior().estimatedTicksToGoal().isPresent()) {
+                    float cost = mod.getClientBaritone().getPathingBehavior().estimatedTicksToGoal().get().floatValue();
+                    //PathExecutor currentPath = mod.getClientBaritone().getPathingBehavior().getCurrent();
+                    mod.getClientBaritone().getCustomGoalProcess().setGoal(currentGoal);
+                    return cost;
+                }
+                //return (float) BaritoneHelper.calculateGenericHeuristic(goalPos, startPos);
+                mod.getClientBaritone().getCustomGoalProcess().setGoal(currentGoal);
+                return Float.POSITIVE_INFINITY;
+
+            } catch (Exception e) {
+                Debug.logWarning("Path cost calculation failed: " + e.getMessage());
+                return (float)quickEstimate;
+            }
+        }
+    }
+    public static ItemTarget[] toItemTargets(Item ...items) {
+        return Arrays.stream(items).map(item -> new ItemTarget(item, 1)).toArray(ItemTarget[]::new);
+    }
+    public static ItemTarget[] toItemTargets(Item item, int count) {
+        return new ItemTarget[] {new ItemTarget(item, count)};
+    }
+    public float getPathCost(AltoClef mod, Vec3d startPos, Vec3d goalPos) {
+        // First try quick heuristic calculation
+        return (float) BaritoneHelper.calculateGenericHeuristic(startPos, goalPos);
+    }
+    public float getPathCost(AltoClef mod, Vec3d startPos, BlockPos goalPos){
+        return getPathCost(mod, WorldHelper.toVec3d(goalPos), startPos);
+    }
+    private boolean canUseRangedWeapon(AltoClef mod) {
+        return  mod.getItemStorage().hasItem(Items.BOW) &&
+                (mod.getItemStorage().hasItem(Items.ARROW) || mod.getItemStorage().hasItem(Items.SPECTRAL_ARROW));
+    }
+    private Task autoArmor(AltoClef mod){
+        int armorEquipNeed = IsArmorNeededToEquip(mod,ItemHelper.HelmetsTopPriority);
+        if (armorEquipNeed != -1){
+            _armorTask = new EquipArmorTask(true, Arrays.stream(ItemHelper.HelmetsTopPriority).toList().get(armorEquipNeed));
+            return _armorTask;
+        }
+        //ЧЕСТПЛЕЙТ
+        armorEquipNeed = IsArmorNeededToEquip(mod,ItemHelper.ChestplatesTopPriority);
+        if (armorEquipNeed != -1){
+            _armorTask = new EquipArmorTask(true, Arrays.stream(ItemHelper.ChestplatesTopPriority).toList().get(armorEquipNeed));
+            return _armorTask;
+        }
+        //ПЕНТС
+        armorEquipNeed = IsArmorNeededToEquip(mod,ItemHelper.LeggingsTopPriority);
+        if (armorEquipNeed != -1){
+            _armorTask = new EquipArmorTask(true, Arrays.stream(ItemHelper.LeggingsTopPriority).toList().get(armorEquipNeed));
+            return _armorTask;
+        }
+        //БУТС
+        armorEquipNeed = IsArmorNeededToEquip(mod,ItemHelper.BootsTopPriority);
+        if (armorEquipNeed != -1){
+            _armorTask = new EquipArmorTask(true, Arrays.stream(ItemHelper.BootsTopPriority).toList().get(armorEquipNeed));
+            return _armorTask;
+        }
+        return null;
+
+    }
+    private Optional<BlockPos> findNearestLootable(AltoClef mod) {
+        return mod.getBlockTracker().getNearestTracking(
+                blockPos -> WorldHelper.isUnopenedChest(mod, blockPos) &&
+                        mod.getPlayer().getBlockPos().isWithinDistance(blockPos, 10) &&
+                        WorldHelper.canReach(mod, blockPos),
+                Blocks.CHEST
+        );
     }
 
     @Override
@@ -421,8 +491,7 @@ public class SkyWarsTask extends Task {
     }
 
     private boolean ShouldBow(AltoClef mod, Entity target) {
-        if (LookHelper.shootReady(mod, target) && mod.getItemStorage().hasItem(Items.BOW) && (
-                mod.getItemStorage().hasItem(Items.ARROW) || mod.getItemStorage().hasItem(Items.SPECTRAL_ARROW))) {
+        if (LookHelper.shootReady(mod, target) && mod.getItemStorage().hasItem(Items.BOW) && (mod.getItemStorage().hasItem(Items.ARROW) || mod.getItemStorage().hasItem(Items.SPECTRAL_ARROW))) {
             return true;
         } else {
             return false;
@@ -467,82 +536,47 @@ public class SkyWarsTask extends Task {
         int Level = 7;
         for (Item i : PriorityCheckArr) {
             if (StorageHelper.isArmorEquipped(mod, i) || mod.getItemStorage().hasItem(i)) {
-                if (Level > iii) {
+                if (Level > iii)
                     Level = iii;
-                }
             }
             iii++;
         }
         return Level;
     }
 
-    private int IsArmorNeededToEquip(AltoClef mod, Item[] ArmorsTopPriority) {
-
-        int iii = 0;
-        int Level = -1;
-        int hasLevel = 7;
-        //if()
-
-        for (Item armorItem : ArmorsTopPriority) {
-            if (StorageHelper.isArmorEquipped(mod, armorItem)) {
-                Level = iii;
+    private int IsArmorNeededToEquip(AltoClef mod, Item[] armorPriority) {
+        // Get currently equipped armor level
+        int equippedLevel = -1;
+        for (int i = 0; i < armorPriority.length; i++) {
+            if (StorageHelper.isArmorEquipped(mod, armorPriority[i])) {
+                equippedLevel = i;
+                break;
             }
-            if (mod.getItemStorage().hasItem(armorItem)) {
-                if (hasLevel > iii) {
-                    hasLevel = iii;
-                }
+        }
+
+        // Find best available armor
+        int bestAvailable = -1;
+        for (int i = 0; i < armorPriority.length; i++) {
+            if (mod.getItemStorage().hasItem(armorPriority[i])) {
+                bestAvailable = i;
+                break;
             }
-
-            iii++;
-        }
-        if (Level == -1) {
-            Level = 7;
-        }
-        if (hasLevel < Level) {
-            return hasLevel;
-        } else {
-            return -1;
         }
 
+        // Return better armor level if available
+        return (bestAvailable != -1 && (equippedLevel == -1 || bestAvailable < equippedLevel))
+                ? bestAvailable
+                : -1;
     }
 
-    private boolean isReadyToPunk(AltoClef mod) {
-        if (mod.getPlayer().getHealth() <= 5) {
-            return false; // We need to heal.
-        }
-        return StorageHelper.isArmorEquippedAll(mod, ItemHelper.DIAMOND_ARMORS) && mod.getItemStorage()
-                .hasItem(Items.DIAMOND_SWORD);
-    }
+
 
     private boolean shouldPunk(AltoClef mod, PlayerEntity player) {
-        if (player == null || player.isDead() || !player.isAlive()) {
-            return false;
-        }
-        if (player.isCreative() || player.isSpectator()) {
-            return false;
-        }
-        //if (!WorldHelper.canReach(mod,player.getBlockPos())) return false;
-        //mod.getEntityTracker().getCloseEntities().
-        return !mod.getButler().isUserAuthorized(player.getName().getString());// && _canTerminate.test(player);
-    }
-
-
-    private void tryDoFunnyMessageTo(AltoClef mod, PlayerEntity player) {
-        if (_funnyMessageTimer.elapsed()) {
-            if (LookHelper.seesPlayer(player, mod.getPlayer(), 80)) {
-                String name = player.getName().getString();
-                if (_currentVisibleTarget == null || !_currentVisibleTarget.equals(name)) {
-                    _currentVisibleTarget = name;
-                    _funnyMessageTimer.reset();
-                    String funnyMessage = getRandomFunnyMessage();
-                    mod.getMessageSender().enqueueWhisper(name, funnyMessage, MessagePriority.ASAP);
-                }
-            }
-        }
-    }
-
-    private String getRandomFunnyMessage() {
-        return "Советую спрятаться, кид";
+        return player != null &&
+                player.isAlive() &&
+                !player.isCreative() &&
+                !player.isSpectator() &&
+                !mod.getButler().isUserAuthorized(player.getName().getString());
     }
 
     private static boolean shouldForce(AltoClef mod, Task task) {
@@ -575,21 +609,18 @@ public class SkyWarsTask extends Task {
                 double lowestScore = Double.POSITIVE_INFINITY;
                 ChunkPos bestChunk = null;
                 for (ChunkPos toSearch : chunks) {
-                    double cx = (toSearch.getStartX() + toSearch.getEndX() + 1) / 2.0, cz =
-                            (toSearch.getStartZ() + toSearch.getEndZ() + 1) / 2.0;
+                    double cx = (toSearch.getStartX() + toSearch.getEndX() + 1) / 2.0, cz = (toSearch.getStartZ() + toSearch.getEndZ() + 1) / 2.0;
                     double px = mod.getPlayer().getX(), pz = mod.getPlayer().getZ();
                     double distanceSq = (cx - px) * (cx - px) + (cz - pz) * (cz - pz);
                     double pdx = _closestPlayerLastPos.getX() - cx, pdz = _closestPlayerLastPos.getZ() - cz;
                     double distanceToLastPlayerPos = pdx * pdx + pdz * pdz;
-                    Vec3d direction = _closestPlayerLastPos.subtract(_closestPlayerLastObservePos).multiply(1, 0, 1)
-                            .normalize();
+                    Vec3d direction = _closestPlayerLastPos.subtract(_closestPlayerLastObservePos).multiply(1, 0, 1).normalize();
                     double dirx = direction.x, dirz = direction.z;
                     double correctDistance = pdx * dirx + pdz * dirz;
                     double tempX = dirx * correctDistance,
                             tempZ = dirz * correctDistance;
                     double perpendicularDistance = ((pdx - tempX) * (pdx - tempX)) + ((pdz - tempZ) * (pdz - tempZ));
-                    double score = distanceSq + distanceToLastPlayerPos * 0.6 - correctDistance * 2
-                            + perpendicularDistance * 0.5;
+                    double score = distanceSq + distanceToLastPlayerPos * 0.6 - correctDistance * 2 + perpendicularDistance * 0.5;
                     if (score < lowestScore) {
                         lowestScore = score;
                         bestChunk = toSearch;

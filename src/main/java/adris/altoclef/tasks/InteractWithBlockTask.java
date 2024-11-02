@@ -417,7 +417,7 @@ public class InteractWithBlockTask extends Task {
                 }
                 //mod.getClientBaritone().getInputOverrideHandler().setInputForceState(_interactInput, true);
             } else {
-                LookHelper.SmoothLook(mod,reachable.get()); //TRS ВАЖНО!!!!! СМЕНИЛ МОДУЛЬ ЛУК ЭТ-а
+                LookHelper.smoothLook(mod,reachable.get()); //TRS ВАЖНО!!!!! СМЕНИЛ МОДУЛЬ ЛУК ЭТ-а
 //                LookHelper.lookAt(mod, reachable.get());
             }
             return ClickResponse.WAIT_FOR_CLICK;

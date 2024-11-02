@@ -304,7 +304,7 @@ public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
             mod.getClientBaritone().getBuilderProcess().onLostControl();
             if (!LookHelper.isLookingAt(mod, reach.get())) {
 //                LookHelper.lookAt(mod, reach.get());
-                LookHelper.SmoothLook(mod, reach.get());
+                LookHelper.smoothLook(mod, reach.get());
             }
             BlockState state = mod.getWorld().getBlockState(_pos);
             Optional<Slot> bestToolSlot = StorageHelper.getBestToolSlot(mod, state);

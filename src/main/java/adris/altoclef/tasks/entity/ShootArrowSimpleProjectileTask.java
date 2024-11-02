@@ -5,6 +5,7 @@ import adris.altoclef.Debug;
 import adris.altoclef.tasks.speedrun.BeatMinecraft2Task;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.LookHelper;
+import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
@@ -13,6 +14,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 
@@ -25,7 +27,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
     private boolean shooting = false;
     private boolean shot = false;
 
-    private final TimerGame shotTimer = new TimerGame(1);
+    private final TimerGame _shotTimer = new TimerGame(1);
 
     public ShootArrowSimpleProjectileTask(Entity target) {
         this.target = target;
@@ -41,13 +43,26 @@ public class ShootArrowSimpleProjectileTask extends Task {
         float velocity = (mod.getPlayer().getItemUseTime() - mod.getPlayer().getItemUseTimeLeft()) / 20f;
         velocity = (velocity * velocity + velocity * 2) / 3;
         if (velocity > 1) velocity = 1;
+        //boolean highAng = false;
+        //boolean highAng = shouldUseHighAngle(mod, target);
+        boolean highAng = !LookHelper.cleanLineOfSight(target.getEyePos(),100);
+        //shouldUseHighAngle
+        //if(!LookHelper.cleanLineOfSight(target.getEyePos(),100)) highAng = true;
+        double velMult;
+        if(highAng)
+            velMult = 100;
+        else velMult = 11.4;
 
-        // Find the position of the center
-        Vec3d targetCenter = target.getBoundingBox().getCenter();
+        double velX = (target.getPos().getX() - target.prevX)*velMult;
+        double velZ = (target.getPos().getZ() - target.prevZ)*velMult;
+        //double velZ = target.getVelocity().getZ()*5;
+        // Positions
+        double posX = target.getPos().getX() + (target.getPos().getX() - target.prevX) +velX;
+        double posY = target.getPos().getY() + (target.getPos().getY() - target.prevY);
+        double posZ = target.getPos().getZ() + (target.getPos().getZ() - target.prevZ) + velZ;
+        //Debug.logMessage("VelX = "+(target.getPos().getX() - target.prevX)+" prevX = "+target.prevX);
 
-        double posX = targetCenter.getX();
-        double posY = targetCenter.getY();
-        double posZ = targetCenter.getZ();
+
 
         // Adjusting for hitbox heights
         posY -= 1.9f - target.getHeight();
@@ -59,10 +74,15 @@ public class ShootArrowSimpleProjectileTask extends Task {
         // Calculate the pitch
         double hDistance = Math.sqrt(relativeX * relativeX + relativeZ * relativeZ);
         double hDistanceSq = hDistance * hDistance;
-        final float g = 0.006f;
+        float g = 0.006f;
         float velocitySq = velocity * velocity;
-        float pitch = (float) -Math.toDegrees(Math.atan((velocitySq - Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))) / (g * hDistance)));
+        float pitch = mod.getPlayer().getPitch();
 
+        if (highAng){ //режим артиллерии
+            velocitySq = velocitySq*0.7f; //скорость снаряда сильно падает когда он вверху, учитываем это
+            pitch = (float) -Math.toDegrees(Math.atan2((velocitySq + Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))),(g * hDistance)));}
+        else{
+            pitch = (float) -Math.toDegrees(Math.atan((velocitySq - Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))) / (g * hDistance)));}
         // Set player rotation
         if (Float.isNaN(pitch)) {
             return new Rotation(target.getYaw(), target.getPitch());
@@ -86,19 +106,27 @@ public class ShootArrowSimpleProjectileTask extends Task {
             Debug.logMessage("Missing items, stopping.");
             return null;
         }
-
-        Rotation lookTarget = calculateThrowLook(mod, target);
-        LookHelper.lookAt(mod, lookTarget);
+        if(!shooting){
+            LookHelper.smoothLookAt(mod, target);
+        }else {
+            Rotation lookTarget = calculateThrowLook(mod, target);
+            LookHelper.smoothLook(mod, lookTarget);
+        }
 
         // check if we are holding a bow
         boolean charged = mod.getPlayer().getItemUseTime() > 20 && mod.getPlayer().getActiveItem().getItem() == Items.BOW;
 
         mod.getSlotHandler().forceEquipItem(Items.BOW);
 
-        if (LookHelper.isLookingAt(mod, lookTarget) && !shooting) {
+        //if (LookHelper.isLookingAt(mod, lookTarget) && !shooting) {
+        //    mod.getInputControls().hold(Input.CLICK_RIGHT);
+        //    shooting = true;
+        //    shotTimer.reset();
+        //}
+        if(!shooting || _shotTimer.elapsed()) { //(LookHelper.isLookingAt(mod, lookTarget) && !shooting) {
             mod.getInputControls().hold(Input.CLICK_RIGHT);
             shooting = true;
-            shotTimer.reset();
+            _shotTimer.reset();
         }
         if (shooting && charged) {
             List<ArrowEntity> arrows = mod.getEntityTracker().getTrackedEntities(ArrowEntity.class);
@@ -125,6 +153,55 @@ public class ShootArrowSimpleProjectileTask extends Task {
         return null;
     }
 
+    public static boolean canUseBow(AltoClef mod, Entity target) {
+        Vec3d playerPos = mod.getPlayer().getEyePos();
+        Vec3d targetPos = target.getEyePos();
+        double distance = playerPos.distanceTo(targetPos);
+
+        // Check if target is too far
+        if (distance > 100) return false;
+
+        // Check low angle trajectory first (direct line)
+        if (LookHelper.cleanLineOfSight(target.getEyePos(), distance)) {
+            return true;
+        }
+
+
+        for (int i = 0; i <= 10; i++) {
+            double x = playerPos.x + (targetPos.x - playerPos.x);
+            double z = playerPos.z + (targetPos.z - playerPos.z);
+            // Simulate parabolic arc
+            int y_p = (int) playerPos.y + i;
+            int y_t = (int) targetPos.y + i;
+            if (!WorldHelper.isAir(mod, new BlockPos((int) playerPos.x, y_p, (int) playerPos.z))
+                    || !WorldHelper.isAir(mod, new BlockPos((int) targetPos.x, y_t, (int) targetPos.z))
+            ) {
+                return false;
+            }
+        }
+
+        // Check high angle trajectory if low angle is blocked
+        Vec3d direction = targetPos.subtract(playerPos).normalize();
+        double heightAtApex = Math.min(playerPos.y + 20, 319); // Max Y level is 319 in Minecraft
+
+        int checkPoints = 10;
+        // Check parabolic arc for high angle
+        for (int i = 1; i <= checkPoints; i++) {
+            double progress = (double) i / checkPoints;
+            double x = playerPos.x + (targetPos.x - playerPos.x) * progress;
+            double z = playerPos.z + (targetPos.z - playerPos.z) * progress;
+            // Simulate parabolic arc
+            double y = playerPos.y + (heightAtApex - playerPos.y) * Math.sin(Math.PI * progress);
+
+            BlockPos checkPos = new BlockPos((int)x, (int)y, (int)z);
+            if (!WorldHelper.isAir(mod, checkPos)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     @Override
     protected void onStop(AltoClef mod, Task interruptTask) {
         mod.getInputControls().release(Input.CLICK_RIGHT);
@@ -137,7 +214,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
 
     @Override
     protected boolean isEqual(Task other) {
-        return false;
+        return other instanceof ShootArrowSimpleProjectileTask;
     }
 
     @Override

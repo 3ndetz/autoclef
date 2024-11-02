@@ -26,6 +26,10 @@ repositories {
     }
 }
 
+loom {
+    accessWidenerPath = file("src/main/resources/altoclef.accesswidener")
+}
+
 dependencies {
     //to change the versions see the gradle.properties file
     minecraft("com.mojang:minecraft:${project.minecraft_version}")
@@ -47,6 +51,10 @@ dependencies {
     // Nether pathfinder
     implementation 'dev.babbaj:nether-pathfinder:1.5'
 
+    //JavaGateway (bridge между java и python
+    implementation 'net.sf.py4j:py4j:0.10.9.7'
+    modImplementation "net.sf.py4j:py4j:0.10.9.7"
+    include "net.sf.py4j:py4j:0.10.9.7"
     // PSA: Some older mods, compiled on Loom 0.2.1, might have outdated Maven POMs.
     // You may need to force-disable transitiveness on them.
     shadow('com.fasterxml.jackson.core:jackson-core:2.17.2')
@@ -64,6 +72,7 @@ dependencies {
     }
     //modImplementation 'baritone-api-fabric:baritone-api-fabric:1.6.3'
     //implementation files('baritone-plus/build/libs/baritone-unoptimized-fabric-1.6.3.jar')
+	//implementation files('libs/py4j0.10.9.7.jar')
 }
 shadowJar {
     configurations = [project.configurations.shadow]
@@ -94,8 +103,8 @@ processResources {
 // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
+    options.incremental = true
 }
-
 // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
 // if it is present.
 // If you remove this task, sources will not be generated.

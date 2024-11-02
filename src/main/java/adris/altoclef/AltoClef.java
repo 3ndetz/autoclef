@@ -20,6 +20,8 @@ import adris.altoclef.ui.CommandStatusOverlay;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.ui.MessageSender;
 import adris.altoclef.util.helpers.InputHelper;
+import adris.altoclef.util.helpers.ItemHelper;
+import adris.altoclef.util.helpers.LookHelper;
 import baritone.Baritone;
 import baritone.altoclef.AltoClefSettings;
 import baritone.api.BaritoneAPI;
@@ -32,9 +34,17 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageRecord;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.ActionResult;
 import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.server.MinecraftServer;
+import py4j.PythonClient;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -102,6 +112,7 @@ public class AltoClef implements ModInitializer {
         // However, some things (like resources) may still be uninitialized.
         // As such, nothing will be loaded here but basic initialization.
         EventBus.subscribe(TitleScreenEntryEvent.class, evt -> onInitializeLoad());
+
     }
 
     public void onInitializeLoad() {
@@ -230,6 +241,7 @@ public class AltoClef implements ModInitializer {
     /// GETTERS AND SETTERS
 
     private void onClientRenderOverlay(MatrixStack matrixStack) {
+        LookHelper.updateWindMouseRotation(this);
         _commandStatusOverlay.render(this, matrixStack);
     }
 

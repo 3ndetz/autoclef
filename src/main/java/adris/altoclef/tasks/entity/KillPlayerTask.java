@@ -60,6 +60,6 @@ public class KillPlayerTask extends AbstractKillEntityTask {
 
     @Override
     protected String toDebugString() {
-        return "Punking " + _playerName;
+        return "УНИЧТОЖИТЬ: " + _playerName;
     }
 }

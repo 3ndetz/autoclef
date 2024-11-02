@@ -103,7 +103,12 @@ public class MineAndCollectTask extends ResourceTask {
 
         return _subtask;
     }
-
+    public boolean isMining(){
+        if (_subtask != null) {
+            return _subtask.isMining();
+        }
+        return false;
+    }
     @Override
     protected void onResourceStop(AltoClef mod, Task interruptTask) {
         mod.getBlockTracker().stopTracking(_blocksToMine);

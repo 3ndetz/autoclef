@@ -5,6 +5,7 @@ import adris.altoclef.Debug;
 import adris.altoclef.util.helpers.BaritoneHelper;
 import adris.altoclef.util.helpers.ProjectileHelper;
 import baritone.api.pathing.goals.Goal;
+import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ public class GoalDodgeProjectiles implements Goal {
     private static boolean isInvalidProjectile(CachedProjectile projectile) {
         //noinspection RedundantIfStatement
         if (projectile == null) return true;
+        //List<ArrowEntity> arrow = mod.getEntityTracker().getTrackedEntities(ArrowEntity.class)
         //if (projectile.getVelocity().lengthSquared() < 0.1) return false;
         return false;
     }

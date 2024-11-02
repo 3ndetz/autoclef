@@ -87,9 +87,11 @@ public class EntityHelper {
             if (damageAmount <= 0.0) {
                 damageAmount = 0.0;
             } else {
-                k = EnchantmentHelper.getProtectionAmount(Objects.requireNonNull(player.getServer()).getWorld(player.getWorld().getRegistryKey()), player, source);
-                if (k > 0) {
-                    damageAmount = DamageUtil.getInflictedDamage((float) damageAmount, k);
+                if (player.getServer() != null) {
+                    k = EnchantmentHelper.getProtectionAmount(Objects.requireNonNull(player.getServer()).getWorld(player.getWorld().getRegistryKey()), player, source);
+                    if (k > 0) {
+                        damageAmount = DamageUtil.getInflictedDamage((float) damageAmount, k);
+                    }
                 }
             }
         }

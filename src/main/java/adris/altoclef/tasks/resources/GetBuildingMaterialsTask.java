@@ -9,11 +9,18 @@ import net.minecraft.item.Item;
 
 public class GetBuildingMaterialsTask extends Task {
     private final int _count;
+    private MiningRequirement _req = MiningRequirement.HAND;
+    public ItemTarget[] _toCollectTargets;
 
     public GetBuildingMaterialsTask(int count) {
         _count = count;
-    }
+        _req = MiningRequirement.WOOD;
 
+    }
+    public GetBuildingMaterialsTask(Item ...toCollect) {
+        _count = 32;
+        _toCollectTargets = new ItemTarget[]{new ItemTarget(toCollect, _count)};
+    }
     @Override
     protected void onStart(AltoClef mod) {
 
@@ -21,8 +28,11 @@ public class GetBuildingMaterialsTask extends Task {
 
     @Override
     protected Task onTick(AltoClef mod) {
-        Item[] throwaways = mod.getModSettings().getThrowawayItems(mod, true);
-        return new MineAndCollectTask(new ItemTarget[]{new ItemTarget(throwaways, _count)}, MiningRequirement.WOOD);
+        if(_toCollectTargets == null) {
+            Item[] throwaways = mod.getModSettings().getThrowawayItems(mod, true);
+            _toCollectTargets = new ItemTarget[]{new ItemTarget(throwaways, _count)};
+        }
+        return new MineAndCollectTask(_toCollectTargets, _req);
     }
 
     @Override

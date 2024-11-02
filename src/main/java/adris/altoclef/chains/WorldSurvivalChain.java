@@ -1,6 +1,8 @@
 package adris.altoclef.chains;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
+import adris.altoclef.butler.Butler;
 import adris.altoclef.tasks.DoToClosestBlockTask;
 import adris.altoclef.tasks.InteractWithBlockTask;
 import adris.altoclef.tasks.construction.PutOutFireTask;
@@ -22,6 +24,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.Optional;
 
@@ -30,6 +33,10 @@ public class WorldSurvivalChain extends SingleTaskChain {
     private final TimerGame _wasInLavaTimer = new TimerGame(1);
     private boolean _wasAvoidingDrowning;
     private TimerGame _portalStuckTimer = new TimerGame(5);
+
+    private final TimerGame _moveStuckTimer = new TimerGame(15);
+    private Vec3d _lastPos;
+    private int _numTryingUnstuck;
 
     private BlockPos _extinguishWaterPosition;
 
@@ -108,6 +115,54 @@ public class WorldSurvivalChain extends SingleTaskChain {
             setTask(new SafeRandomShimmyTask());
             return 60;
         }
+        if (_lastPos == null){
+            _lastPos = mod.getPlayer().getPos();
+            _moveStuckTimer.reset();
+        }
+
+        if(_numTryingUnstuck>5){
+            Debug.logMessage("СЛИШКОМ МНОГО ПОПЫТОК! ОБОЗГАЧАЕМ КАК БАГ! StuckFixActivated!!!!!");
+            _numTryingUnstuck = 0;
+            _moveStuckTimer.reset();
+            DeathMenuChain.StuckFixActivate();
+        }
+        if(_moveStuckTimer.elapsed()){
+            //_numTryingUnstuck++; //DEBUG
+            //Debug.logMessage("чекаем. "+_moveStuckTimer.getDuration());
+            Vec3d pos = mod.getPlayer().getPos();
+            if(_lastPos.isInRange(pos,2.0D)){
+                //Debug.logMessage("StuckFixActivated!!! ");
+                //DeathMenuChain.StuckFixActivate(); // DEBUUUUUG DEBUG УБРАТЬ DEBUG УБРАТЬ ПОТОМ УБРАТЬ
+                //Debug.logMessage("ЧООО ОО О ОО О О ");
+                //Debug.logMessage("Застряли (в стиралке). Перезагрузка систем маршрутизации."+_moveStuckTimer.getDuration());
+                //mod.getChunkTracker().reset(mod);
+                //mod.getBlockTracker()
+                //mod.getClientBaritone().getPathingControlManager().cancelEverything();
+                //mod.getClientBaritone().getCustomGoalProcess().onLostControl();
+                //mod.getClientBaritone().getExploreProcess().onLostControl();
+                //mod.getClientBaritone().getGetToBlockProcess().onLostControl();
+                //mod.getClientBaritone().getPathingBehavior().onPlayerDeath();
+
+                //mod.getClientBaritone().getBuilderProcess().onLostControl();
+                //setTask(new TimeoutWanderTask());
+                if(_moveStuckTimer.getDuration()<15) {
+                    setTask(new SafeRandomShimmyTask());
+                    return 60;
+                } else{
+                    Debug.logMessage("[scam] опять заскамили =( try="+_numTryingUnstuck);
+                    if(Butler.IsStuckFixAllow()) {
+                        _numTryingUnstuck++;
+                    }else{
+                        Debug.logWarning("butler stuck fix allow = false");
+                    }
+                }
+            }
+            _lastPos = pos;
+            _moveStuckTimer.reset();
+        }
+
+
+
 
         return Float.NEGATIVE_INFINITY;
     }

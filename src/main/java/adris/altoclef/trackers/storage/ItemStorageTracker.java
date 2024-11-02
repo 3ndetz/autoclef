@@ -289,6 +289,10 @@ public class ItemStorageTracker extends Tracker {
     public Optional<BlockPos> getLastBlockPosInteraction() {
         return Optional.ofNullable(_containers.getLastBlockPosInteraction());
     }
+    public void invalidateCachedCotainers() {
+        _inventory.reset();
+        _containers.reset();
+    }
 
     @Override
     protected void updateState() {

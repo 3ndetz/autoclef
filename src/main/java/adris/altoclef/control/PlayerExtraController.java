@@ -71,7 +71,8 @@ public class PlayerExtraController {
 
         if (LookHelper.cleanLineOfSight(entity.getEyePos(), 4.5)) {//(inRange(entity)) {
             if (DoRotates) {
-                LookHelper.SmoothLookAt(_mod, 0.05f, true, entity);
+                LookHelper.smoothLookAt(_mod, entity);
+                //LookHelper.SmoothLookAt(_mod, 0.05f, true, entity);
             }
             if (true) {
                 _plyPitch = _mod.getPlayer().getPitch();

@@ -10,10 +10,12 @@ import adris.altoclef.tasks.movement.RunAwayFromCreepersTask;
 import adris.altoclef.tasks.movement.RunAwayFromHostilesTask;
 import adris.altoclef.tasks.speedrun.DragonBreathTracker;
 import adris.altoclef.tasksystem.TaskRunner;
-import adris.altoclef.util.baritone.CachedProjectile;
+import adris.altoclef.control.KillAura;
 import adris.altoclef.util.helpers.*;
+import adris.altoclef.util.baritone.CachedProjectile;
 import adris.altoclef.util.slots.PlayerSlot;
 import adris.altoclef.util.slots.Slot;
+import adris.altoclef.util.time.TimerGame;
 import baritone.Baritone;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
@@ -47,7 +49,7 @@ import static java.lang.Math.abs;
 public class MobDefenseChain extends SingleTaskChain {
     private static final double DANGER_KEEP_DISTANCE = 30;
     private static final double CREEPER_KEEP_DISTANCE = 10;
-    private static final double ARROW_KEEP_DISTANCE_HORIZONTAL = 6;//4;
+    private static final double ARROW_KEEP_DISTANCE_HORIZONTAL = 2;//4;
     private static final double ARROW_KEEP_DISTANCE_VERTICAL = 10;//15;
     private static final double SAFE_KEEP_DISTANCE = 8;
     private static boolean _shielding = false;
@@ -57,6 +59,7 @@ public class MobDefenseChain extends SingleTaskChain {
     private boolean _doingFunkyStuff = false;
     private boolean _wasPuttingOutFire = false;
     private CustomBaritoneGoalTask _runAwayTask;
+    private Rotation _suggestedProjectileRotation;
 
     private float _cachedLastPriority;
 
@@ -230,16 +233,36 @@ public class MobDefenseChain extends SingleTaskChain {
             }
         }
         // Dodge projectiles
-        if (mod.getPlayer().getHealth() <= 10 || _runAwayTask != null || mod.getEntityTracker().entityFound(PotionEntity.class) ||
+        //if (!mod.getFoodChain().isTryingToEat() && mod.getModSettings().isDodgeProjectiles() && isProjectileClose(mod)) {
+        //    _doingFunkyStuff = true;
+        //    //Debug.logMessage("DODGING");
+        //    _runAwayTask = null;
+        //    setTask(new DodgeProjectilesTask(ARROW_KEEP_DISTANCE_HORIZONTAL, ARROW_KEEP_DISTANCE_VERTICAL));
+        //    return 65;
+        //}
+        // Dodge projectiles
+        if (mod.getPlayer().getHealth() <= 20 || _runAwayTask != null || mod.getEntityTracker().entityFound(PotionEntity.class) ||
                 (!mod.getItemStorage().hasItem(Items.SHIELD) && !mod.getItemStorage().hasItemInOffhand(Items.SHIELD))) {
             if (!mod.getFoodChain().needsToEat() && mod.getModSettings().isDodgeProjectiles() && isProjectileClose(mod)) {
                 _doingFunkyStuff = true;
                 //Debug.logMessage("DODGING");
-                _runAwayTask = new DodgeProjectilesTask(ARROW_KEEP_DISTANCE_HORIZONTAL, ARROW_KEEP_DISTANCE_VERTICAL);
-                setTask(_runAwayTask);
+
+                if(WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos())){
+                    _runAwayTask = new DodgeProjectilesTask(ARROW_KEEP_DISTANCE_HORIZONTAL, ARROW_KEEP_DISTANCE_VERTICAL);
+                    //mod.getInputControls().tryPress(Input.JUMP);
+                    setTask(_runAwayTask);
+                }else if (_suggestedProjectileRotation != null) {
+                    // GOOD n FAST but not for sw, bw, where bridges
+                    LookHelper.lookAt(mod, _suggestedProjectileRotation);
+                    mod.getInputControls().tryPress(Input.SPRINT);
+                    mod.getInputControls().tryPress(Input.MOVE_FORWARD);
+                    mod.getInputControls().tryPress(Input.JUMP);
+                    //setTask(_runAwayTask);
+                }
                 return 65;
             }
         }
+
         // Dodge all mobs cause we boutta die son
         if (isInDanger(mod) && !escapeDragonBreath(mod) && !mod.getFoodChain().isShouldStop()) {
             if (_targetEntity == null) {
@@ -452,66 +475,87 @@ public class MobDefenseChain extends SingleTaskChain {
     private boolean isProjectileClose(AltoClef mod) {
         List<CachedProjectile> projectiles = mod.getEntityTracker().getProjectiles();
         try {
-            if (!projectiles.isEmpty()) {
-                for (CachedProjectile projectile : projectiles) {
-                    if (projectile.position.squaredDistanceTo(mod.getPlayer().getPos()) < 150) {
-                        boolean isGhastBall = projectile.projectileType == FireballEntity.class;
-                        if (isGhastBall) {
-                            Optional<Entity> ghastBall = mod.getEntityTracker().getClosestEntity(FireballEntity.class);
-                            Optional<Entity> ghast = mod.getEntityTracker().getClosestEntity(GhastEntity.class);
-                            if (ghastBall.isPresent() && ghast.isPresent() && _runAwayTask == null
-                                    && mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
-                                mod.getClientBaritone().getPathingBehavior().requestPause();
-                                LookHelper.lookAt(mod, ghast.get().getEyePos());
+            synchronized (BaritoneHelper.MINECRAFT_LOCK) {
+                if (!projectiles.isEmpty()) {
+                    for (CachedProjectile projectile : projectiles) {
+                        if (projectile.position.squaredDistanceTo(mod.getPlayer().getPos()) < 150) {
+                            boolean isGhastBall = projectile.projectileType == FireballEntity.class;
+                            if (isGhastBall) {
+                                Optional<Entity> ghastBall = mod.getEntityTracker().getClosestEntity(FireballEntity.class);
+                                Optional<Entity> ghast = mod.getEntityTracker().getClosestEntity(GhastEntity.class);
+                                if (ghastBall.isPresent() && ghast.isPresent() && _runAwayTask == null
+                                        && mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
+                                    mod.getClientBaritone().getPathingBehavior().requestPause();
+                                    LookHelper.lookAt(mod, ghast.get().getEyePos());
+                                }
+                                return false;
+                                // Ignore ghast balls
                             }
-                            return false;
-                            // Ignore ghast balls
-                        }
-                        if (projectile.projectileType == DragonFireballEntity.class) {
-                            // Ignore dragon fireballs
-                            return false;
-                        }
-                        if (projectile.projectileType == ArrowEntity.class || projectile.projectileType == SpectralArrowEntity.class || projectile.projectileType == SmallFireballEntity.class) {
-                            // check if the velocity of the projectile is going away from us
-                            // oh no fancy math
-                            Vec3d velocity = projectile.velocity;
-                            Vec3d delta = mod.getPlayer().getPos().subtract(projectile.position);
-                            double epsilon = 0.25;
-                            if (abs(velocity.dotProduct(delta)) <= epsilon) {
-                                // Arrow is going away from us, ignore it.
-                                continue;
+                            if (projectile.projectileType == DragonFireballEntity.class) {
+                                // Ignore dragon fireballs
+                                return false;
                             }
-                        }
 
-                        Vec3d expectedHit = ProjectileHelper.calculateArrowClosestApproach(projectile, mod.getPlayer());
+                            if (projectile == null) continue;
+                            Vec3d plyPos = mod.getPlayer().getPos();
+                            if (projectile.needsToRecache()) {
+                                projectile.setCacheHit(ProjectileHelper.calculateArrowClosestApproach(projectile, plyPos));
+                            }
 
-                        Vec3d delta = mod.getPlayer().getPos().subtract(expectedHit);
+                            if (projectile.projectileType == ArrowEntity.class || projectile.projectileType == SpectralArrowEntity.class || projectile.projectileType == SmallFireballEntity.class) {
+                                // check if the velocity of the projectile is going away from us
+                                // oh no fancy math
+                                Vec3d velocity = projectile.velocity;
+                                Vec3d delta = mod.getPlayer().getPos().subtract(projectile.position);
+                                double epsilon = 0.25;
+                                if (abs(velocity.dotProduct(delta)) <= epsilon) {
+                                    // Arrow is going away from us, ignore it.
+                                    continue;
+                                }
+                            }
 
-                        //Debug.logMessage("EXPECTED HIT OFFSET: " + delta + " ( " + projectile.gravity + ")");
+                            Vec3d expectedHit = ProjectileHelper.calculateArrowClosestApproach(projectile, mod.getPlayer());
 
-                        double horizontalDistanceSq = delta.x * delta.x + delta.z * delta.z;
-                        double verticalDistance = abs(delta.y);
-                        if (horizontalDistanceSq < ARROW_KEEP_DISTANCE_HORIZONTAL * ARROW_KEEP_DISTANCE_HORIZONTAL && verticalDistance < ARROW_KEEP_DISTANCE_VERTICAL) {
-                            if (_runAwayTask == null && mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
-                                mod.getClientBaritone().getPathingBehavior().requestPause();
-                                if (projectile.projectileType instanceof ProjectileEntity projectileEntity) {
-                                    Entity owner = projectileEntity.getOwner();
-                                    if (owner != null) {
-                                        LookHelper.lookAt(mod, owner.getEyePos());
+                            Vec3d delta = mod.getPlayer().getPos().subtract(expectedHit);
+
+                            //Debug.logMessage("EXPECTED HIT OFFSET: " + delta + " ( " + projectile.gravity + ")");
+
+                            double horizontalDistanceSq = delta.x * delta.x + delta.z * delta.z;
+                            double verticalDistance = abs(delta.y);
+                            double lookProbablity = LookHelper.getLookingProbability(projectile.position, plyPos, projectile.velocity.normalize());
+                            boolean horizontal_approved = horizontalDistanceSq < 1000; //ARROW_KEEP_DISTANCE_HORIZONTAL*ARROW_KEEP_DISTANCE_HORIZONTAL;
+                            if (lookProbablity > 0.7 && horizontal_approved && verticalDistance < ARROW_KEEP_DISTANCE_VERTICAL) {
+                                //if (horizontalDistanceSq < ARROW_KEEP_DISTANCE_HORIZONTAL * ARROW_KEEP_DISTANCE_HORIZONTAL && verticalDistance < ARROW_KEEP_DISTANCE_VERTICAL) {
+                                Rotation targetRotation = LookHelper.getLookRotation(mod, expectedHit);
+                                float invertedYaw = (targetRotation.getYaw() + 180) % 360;
+                                if (invertedYaw < 0) invertedYaw += 360;
+                                _suggestedProjectileRotation = new Rotation(invertedYaw, 0f);
+
+                                if (_runAwayTask == null && mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
+                                    mod.getClientBaritone().getPathingBehavior().requestPause();
+                                    if (projectile.projectileType instanceof ProjectileEntity projectileEntity) {
+
+                                        Entity owner = projectileEntity.getOwner();
+                                        if (owner != null) {
+                                            //LookHelper.lookAt(mod, owner.getEyePos());
+
+                                            return true;
+                                        }
+                                        //LookHelper.lookAt(mod, projectile.position);
                                         return true;
                                     }
-                                    LookHelper.lookAt(mod, projectile.position);
+
+                                    //LookHelper.lookAt(mod, projectile.position);
                                     return true;
                                 }
-                                LookHelper.lookAt(mod, projectile.position);
                                 return true;
                             }
-                            return true;
                         }
                     }
                 }
             }
-        } catch (ConcurrentModificationException ignored) {
+        } catch (ConcurrentModificationException e) {
+            Debug.logWarning("Weird exception caught and ignored while checking for nearby projectiles.");
         }
         return false;
     }

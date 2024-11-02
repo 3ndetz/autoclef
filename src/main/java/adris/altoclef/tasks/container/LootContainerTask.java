@@ -26,6 +26,7 @@ public class LootContainerTask extends Task {
     public final BlockPos chest;
     public final List<Item> targets = new ArrayList<>();
     private final Predicate<ItemStack> _check;
+    public boolean _isInChest = false;
     private boolean _weDoneHere = false;
     private final TimerGame _lootTimer = new TimerGame(1);
 
@@ -56,8 +57,10 @@ public class LootContainerTask extends Task {
     protected Task onTick(AltoClef mod) {
         if (!ContainerType.screenHandlerMatches(ContainerType.CHEST)) {
             setDebugState("Активация контейнера"); //TRS "Interact with container"
+            _isInChest = false;
             return new InteractWithBlockTask(chest);
         }
+        _isInChest = true;
         ItemStack cursor = StorageHelper.getItemStackInCursorSlot();
         if (!cursor.isEmpty()) {
             Optional<Slot> toFit = mod.getItemStorage().getSlotThatCanFitInPlayerInventory(cursor, false);
@@ -74,7 +77,9 @@ public class LootContainerTask extends Task {
         }
         Optional<Slot> optimal = getAMatchingSlot(mod);
         if (optimal.isEmpty()) {
-            _weDoneHere = true;
+            if(lootTimerElapsed())
+                _weDoneHere = true;
+            //_isInChest = false;
             return null;
         }
         setDebugState("Взять: " + targets);//"Looting items: "
@@ -101,6 +106,9 @@ public class LootContainerTask extends Task {
         }
         mod.getBehaviour().pop();
     }
+    public boolean isInChest(){
+        return _isInChest || !lootTimerElapsed();
+    }
 
     @Override
     protected boolean isEqual(Task other) {
@@ -120,11 +128,15 @@ public class LootContainerTask extends Task {
         }
         return Optional.empty();
     }
-
+    public boolean lootTimerElapsed(){
+        return _lootTimer.getDuration() > 0.8;
+    }
     @Override
     public boolean isFinished(AltoClef mod) {
-        return _lootTimer.getDuration() > 0.8 && (_weDoneHere || (ContainerType.screenHandlerMatchesAny() &&
-                getAMatchingSlot(mod).isEmpty()));
+        // СУНДУК НЕ УСПЕВАЕТ ПРОГРУЗИТЬСЯ - ОН ВИДИТ ПУСТЫЕ СЛОТЫ И ГОВОРИТ - FINISHED! ПОЭТОМУ И ЛОМАЕТСЯ!
+        return //_lootTimer.getDuration() > 0.8 &&
+                (_weDoneHere || (ContainerType.screenHandlerMatchesAny() &&
+                getAMatchingSlot(mod).isEmpty() && !isInChest()));
     }
 
     @Override

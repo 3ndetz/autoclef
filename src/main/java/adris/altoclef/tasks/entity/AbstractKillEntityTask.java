@@ -22,7 +22,7 @@ import java.util.List;
  * Attacks an entity, but the target entity must be specified.
  */
 public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
-    private static final double OTHER_FORCE_FIELD_RANGE = 2;
+    private static final double OTHER_FORCE_FIELD_RANGE = 8;
 
     // Not the "striking" distance, but the "ok we're close enough, lower our guard for other mobs and focus on this one" range.
     private static final double CONSIDER_COMBAT_RANGE = 10;
@@ -78,10 +78,29 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
 
     @Override
     protected Task onEntityInteract(AltoClef mod, Entity entity) {
+        // Equip weapon
+        if (!equipWeapon(mod)) {
+            float hitProg = mod.getPlayer().getAttackCooldownProgress(0);
+            LookHelper.smoothLookAt(mod, entity.getEyePos());
+            if (hitProg >= 0.99) {
+                if (mod.getPlayer().isOnGround() || mod.getPlayer().getVelocity().getY() < 0 || mod.getPlayer().isTouchingWater()) {
+                    //LookHelper.smoothLookAt(mod, entity.getEyePos());
+                    mod.getControllerExtras().attack(entity);
+                }
+            }
+        }
+        if(!WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos())){
+            boolean RotatedJump = entity.squaredDistanceTo(mod.getPlayer()) < 3.2 * 3.2;
+            KillAuraHelper.GoJump(mod,RotatedJump);
+        }
+        return null;
+    }
+
+    protected Task onEntityInteractLolOld(AltoClef mod, Entity entity) {
         boolean LOS_Close2 = LookHelper.cleanLineOfSight(entity.getEyePos(), 5.0);
 
         if (LOS_Close2) {
-            LookHelper.SmoothLookAt(mod, 0.05f, true, entity);
+            LookHelper.smoothLookAt(mod, entity);
 
             if (WorldHelper.isHellHole(mod, entity.getBlockPos())) {
                 //Debug.logMessage("Цель над пропастью!");

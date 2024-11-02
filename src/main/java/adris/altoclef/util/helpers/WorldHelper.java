@@ -1,6 +1,7 @@
 package adris.altoclef.util.helpers;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.mixins.ClientConnectionAccessor;
 import adris.altoclef.util.Dimension;
 import baritone.api.BaritoneAPI;
@@ -205,32 +206,6 @@ public interface WorldHelper {
         }
     }
 
-    static boolean isHellHole(AltoClef mod, BlockPos pos) {
-        if (mod.getPlayer().isOnGround()) {
-            return false;
-        } else {
-            int x = pos.getX();
-            int yThis = pos.getY();
-            int z = pos.getZ();
-            int i = 0;
-            for (int y = yThis; y >= WORLD_FLOOR_Y; --y) {
-
-                BlockPos check = new BlockPos(x, y, z);
-                i++;
-
-                //Debug.logMessage(i+" "+isAir(mod,check));
-                if (i > 40) {
-                    return true;
-                }
-                if (!isAir(mod, check)) {
-                    return false;
-                }
-
-            }
-            return true;
-        }
-    }
-
     static int getGroundHeight(AltoClef mod, int x, int z) {
         for (int y = WORLD_CEILING_Y; y >= WORLD_FLOOR_Y; --y) {
             BlockPos check = new BlockPos(x, y, z);
@@ -260,6 +235,51 @@ public interface WorldHelper {
         return mod.getItemStorage().getContainerAtPosition(pos).isEmpty();
     }
 
+    static boolean isDangerZone(AltoClef mod, BlockPos pos) {
+        int x = pos.getX();
+        int y = pos.getY();
+        int z = pos.getZ();
+
+        // Count safe blocks in 5x5 area
+        int safeBlockCount = 0;
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                BlockPos checkPos = new BlockPos(x + dx, y - 1, z + dz);
+
+                // Check for lava
+                if (isBlock(mod, checkPos, Blocks.LAVA)) {
+                    return true;
+                }
+                if(isHellHole(mod, checkPos)){
+                    return true;
+                }
+
+                // Count non-air blocks for void detection
+                if (!isAir(mod, checkPos)) {
+                    safeBlockCount++;
+                }
+            }
+        }
+        return safeBlockCount <= 4;
+    }
+
+    static boolean isHellHole(AltoClef mod, BlockPos pos){
+            int x = pos.getX();
+            int yThis = pos.getY();
+            int z = pos.getZ();
+            int i = 0;
+            for (int y = yThis; y >= WORLD_FLOOR_Y; --y) {
+
+                BlockPos check = new BlockPos(x, y, z);
+                i++;
+
+                //Debug.logMessage(i+" "+isAir(mod,check));
+                if (i > 40) return true;
+                if (!isAir(mod, check)) return false;
+
+            }
+            return true;
+    }
     static int getGroundHeight(AltoClef mod, int x, int z, Block... groundBlocks) {
         Set<Block> possibleBlocks = new HashSet<>(Arrays.asList(groundBlocks));
         for (int y = WORLD_CEILING_Y; y >= WORLD_FLOOR_Y; --y) {
@@ -341,13 +361,6 @@ public interface WorldHelper {
                     return false;
                 }
             }
-        }
-
-        int middleX = (mod.getPlayer().getBlockPos().getX() + pos.getX()) / 2;
-        int middleY = Math.max(mod.getPlayer().getBlockPos().getY(), pos.getY());
-        int middleZ = (mod.getPlayer().getBlockPos().getZ() + pos.getZ()) / 2;
-        if (isHellHole(mod, new BlockPos(middleX, middleY, middleZ))) {
-            return false;
         }
         return !mod.getBlockTracker().unreachable(pos);
     }

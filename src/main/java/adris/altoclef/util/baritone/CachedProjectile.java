@@ -8,6 +8,7 @@ import java.lang.reflect.Type;
 public class CachedProjectile {
     private final TimerGame _lastCache = new TimerGame(2);
     public Vec3d velocity;
+    public Vec3d rotation;
     public Vec3d position;
     public double gravity;
     public Type projectileType;
