@@ -1,16 +1,21 @@
 package adris.altoclef.chains;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.TaskCatalogue;
 import adris.altoclef.tasks.movement.MLGBucketTask;
+import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
 import adris.altoclef.tasksystem.ITaskOverridesGrounded;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.util.helpers.LookHelper;
+import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -24,8 +29,13 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
     private final TimerGame _tryCollectWaterTimer = new TimerGame(4);
     private final TimerGame _pickupRepeatTimer = new TimerGame(0.25);
     private MLGBucketTask _lastMLG = null;
+    private ThrowEnderPearlSimpleProjectileTask _lastEP = null;
+
     private boolean _wasPickingUp = false;
     private boolean _doingChorusFruit = false;
+    private BlockPos _lastGroundBlockPos;
+    private final TimerGame _voidFallTimer = new TimerGame(0.25);
+
 
     public MLGBucketFallChain(TaskRunner runner) {
         super(runner);
@@ -39,6 +49,39 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
     @Override
     public float getPriority(AltoClef mod) {
         if (!AltoClef.inGame()) return Float.NEGATIVE_INFINITY;
+        if(mod.getPlayer().isOnGround()){
+            _lastGroundBlockPos = mod.getPlayer().getBlockPos();
+            //FallIter=0;
+            _voidFallTimer.reset();
+        }
+        else if (isInHellHole(mod)){
+
+            if(mod.getItemStorage().hasItem(Items.ENDER_PEARL)) {
+                if (_voidFallTimer.elapsed()) { // old (FallIter > 7) {
+                    Optional<Entity> closestPlayer = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), PearlAllowablePlayer ->
+                            this.pearlAllowable(mod, (PlayerEntity) PearlAllowablePlayer), PlayerEntity.class);//(mod.getPlayer().getPos(), PlayerEntity.class);
+                    if (closestPlayer.isPresent()) {
+
+                        _voidFallTimer.reset();
+                        Debug.logMessage("СПИДРАН ПО МАЙНКРАФТУ! ЭНДЕРПЕРЛ КЛАТЧ НА БЛ. ИГРОКА!");
+                        setTask(new ThrowEnderPearlSimpleProjectileTask(closestPlayer.get().getBlockPos()));
+                        _lastEP = (ThrowEnderPearlSimpleProjectileTask) _mainTask;
+                        return 100;
+                    }else{
+                        //FallIter = 0;
+                        _voidFallTimer.reset();
+                        Debug.logMessage("СПИДРАН ПО МАЙНКРАФТУ! ЭНДЕРПЕРЛ КЛАТЧ НА ПОСЛЕДНИЙ БЛОК! Скорость:"+(mod.getPlayer().getVelocity().getY()));
+                        setTask(new ThrowEnderPearlSimpleProjectileTask(_lastGroundBlockPos.add(0,
+                                (int) (-0.9 - mod.getPlayer().getVelocity().getY()),0)));
+                        _lastEP = (ThrowEnderPearlSimpleProjectileTask) _mainTask;
+                        return 100;
+                    }
+                }
+            }
+
+            //if(closestBlock.isPresent())
+            //    Debug.logMessage("Ближайший блок травы "+closestBlock.get());
+        }
         if (isFallingOhNo(mod)) {
             _tryCollectWaterTimer.reset();
             setTask(new MLGBucketTask());
@@ -138,5 +181,15 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
         }
         double ySpeed = mod.getPlayer().getVelocity().y;
         return ySpeed < -0.7;
+    }
+
+    private boolean pearlAllowable(AltoClef mod, PlayerEntity player){
+        if (LookHelper.cleanLineOfSight(player.getPos(),100)& !WorldHelper.isHellHole(mod,player.getBlockPos()))
+            return  true;
+        else return false;
+    }
+
+    public boolean isInHellHole(AltoClef mod){
+        return WorldHelper.isHellHole(mod,mod.getPlayer().getBlockPos());
     }
 }

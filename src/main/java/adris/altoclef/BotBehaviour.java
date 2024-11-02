@@ -367,6 +367,7 @@ public class BotBehaviour {
          * Make the current state match our copy
          */
         private void applyState(Settings s, AltoClefSettings sa) {
+            s.smoothLook.value = true;
             s.followOffsetDistance.value = followOffsetDistance;
             s.mineScanDroppedItems.value = mineScanDroppedItems;
             s.allowDiagonalAscend.value = allowDiagonalAscend;

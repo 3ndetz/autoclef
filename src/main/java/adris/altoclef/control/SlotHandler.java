@@ -24,7 +24,7 @@ public class SlotHandler {
 
     private final AltoClef _mod;
 
-    private final TimerGame _slotActionTimer = new TimerGame(0);
+    private final TimerGame _slotActionTimer = new TimerGame(0.5);
     private boolean _overrideTimerOnce = false;
 
     public SlotHandler(AltoClef mod) {
@@ -55,6 +55,7 @@ public class SlotHandler {
 
         if (slot.getWindowSlot() == -1) {
             clickSlot(PlayerSlot.UNDEFINED, 0, SlotActionType.PICKUP);
+            Debug.logWarning("Попытка переопределения курсора не успешна!"); //TRS "Tried to click the cursor slot. Shouldn't do this!"
             return;
         }
         // NOT THE CASE! We may have something in the cursor slot to place.
@@ -79,7 +80,7 @@ public class SlotHandler {
         try {
             _mod.getController().clickSlot(syncId, windowSlot, mouseButton, type, player);
         } catch (Exception e) {
-            Debug.logWarning("Slot Click Error (ignored)");
+            Debug.logWarning("Ошибка клика слота (игнорим)"); //TRS "Slot Click Error (ignored)"
             e.printStackTrace();
         }
     }
@@ -236,10 +237,14 @@ public class SlotHandler {
     public void refreshInventory() {
         if (MinecraftClient.getInstance().player == null)
             return;
+        if(MinecraftClient.getInstance().player.getInventory().isEmpty())
+            return;
         for (int i = 0; i < MinecraftClient.getInstance().player.getInventory().main.size(); ++i) {
             Slot slot = Slot.getFromCurrentScreenInventory(i);
-            clickSlotForce(slot, 0, SlotActionType.PICKUP);
-            clickSlotForce(slot, 0, SlotActionType.PICKUP);
+            if(!MinecraftClient.getInstance().player.getInventory().main.get(i).isEmpty() && MinecraftClient.getInstance().player.getInventory().main.get(i).isStackable()) {
+                clickSlotForce(slot, 0, SlotActionType.PICKUP);
+                clickSlotForce(slot, 0, SlotActionType.PICKUP);
+            }
         }
     }
 }

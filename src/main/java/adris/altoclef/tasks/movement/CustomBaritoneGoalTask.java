@@ -109,7 +109,7 @@ public abstract class CustomBaritoneGoalTask extends Task implements ITaskRequir
         }
         if (WorldHelper.isInNetherPortal(mod)) {
             if (!mod.getClientBaritone().getPathingBehavior().isPathing()) {
-                setDebugState("Getting out from nether portal");
+                setDebugState("Свалить с адского портала"); //TRS ("Getting out from nether portal");
                 mod.getInputControls().hold(Input.SNEAK);
                 mod.getInputControls().hold(Input.MOVE_FORWARD);
                 return null;
@@ -124,7 +124,7 @@ public abstract class CustomBaritoneGoalTask extends Task implements ITaskRequir
             mod.getInputControls().release(Input.MOVE_FORWARD);
         }
         if (_unstuckTask != null && _unstuckTask.isActive() && !_unstuckTask.isFinished(mod) && stuckInBlock(mod) != null) {
-            setDebugState("Getting unstuck from block.");
+            setDebugState("Попытка вылезти из этой ***."); //"Getting unstuck from block."
             stuckCheck.reset();
             // Stop other tasks, we are JUST shimmying
             mod.getClientBaritone().getCustomGoalProcess().onLostControl();
@@ -149,12 +149,12 @@ public abstract class CustomBaritoneGoalTask extends Task implements ITaskRequir
                 _checker.reset();
             } else {
                 if (_wanderTask.isActive() && !_wanderTask.isFinished(mod)) {
-                    setDebugState("Wandering...");
+                    setDebugState("Исследование...");
                     _checker.reset();
                     return _wanderTask;
                 }
                 if (!_checker.check(mod)) {
-                    Debug.logMessage("Failed to make progress on goal, wandering.");
+                    Debug.logMessage("Не получилось достичь цели привычными способами, запрошено проведение исследования.");//"Failed to make progress on goal, wandering.
                     onWander(mod);
                     return _wanderTask;
                 }
@@ -164,7 +164,7 @@ public abstract class CustomBaritoneGoalTask extends Task implements ITaskRequir
                 && mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
             mod.getClientBaritone().getCustomGoalProcess().setGoalAndPath(_cachedGoal);
         }
-        setDebugState("Completing goal.");
+        setDebugState("Выполнение цели."); //Completing goal.
         return null;
     }
 

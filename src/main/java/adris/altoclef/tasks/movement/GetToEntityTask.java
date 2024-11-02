@@ -143,7 +143,7 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
         }
         if (_wanderTask.isActive() && !_wanderTask.isFinished(mod)) {
             _progress.reset();
-            setDebugState("Failed to get to target, wandering for a bit.");
+            setDebugState("Маршрут до цели съел карапуз. Гуглим новый...");//TRS "Failed to get to target, wandering for a bit."
             return _wanderTask;
         }
 
@@ -159,7 +159,7 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
             return _wanderTask;
         }
 
-        setDebugState("Going to entity");
+        setDebugState("Движение к цели-сущности");//"Going to entity"
         return null;
     }
 
@@ -178,6 +178,6 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
 
     @Override
     protected String toDebugString() {
-        return "Approach entity " + _entity.getType().getTranslationKey();
+        return "Дистанция обнаружения сущности " + _entity.getType().getTranslationKey(); //"Approach entity "
     }
 }

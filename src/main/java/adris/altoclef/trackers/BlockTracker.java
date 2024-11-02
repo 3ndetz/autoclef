@@ -298,26 +298,28 @@ public class BlockTracker extends Tracker {
     }
 
     private void update() {
-        // Perform a baritone scan
-        _timer.reset();
-        _timer.setInterval(_config.scanInterval);
-        CalculationContext ctx = new CalculationContext(_mod.getClientBaritone(), _config.scanAsynchronously);
-        if (_config.scanAsynchronously) {
-            if (_scanning && _asyncForceResetScanFlag.elapsed()) {
-                Debug.logMessage("SCANNING TOOK TOO LONG! Will assume it ended mid way. Hopefully this won't break anything...");
-                _scanning = false;
-            }
-            if (!_scanning) {
-                Baritone.getExecutor().execute(() -> {
-                    _scanning = true;
-                    _asyncForceResetScanFlag.reset();
-                    rescanWorld(ctx, true);
+        if(AltoClef.inGame() && _mod.getClientBaritone().getPlayerContext() != null) {
+            // Perform a baritone scan
+            _timer.reset();
+            _timer.setInterval(_config.scanInterval);
+            CalculationContext ctx = new CalculationContext(_mod.getClientBaritone(), _config.scanAsynchronously);
+            if (_config.scanAsynchronously) {
+                if (_scanning && _asyncForceResetScanFlag.elapsed()) {
+                    Debug.logMessage("SCANNING TOOK TOO LONG! Will assume it ended mid way. Hopefully this won't break anything...");
                     _scanning = false;
-                });
+                }
+                if (!_scanning) {
+                    Baritone.getExecutor().execute(() -> {
+                        _scanning = true;
+                        _asyncForceResetScanFlag.reset();
+                        rescanWorld(ctx, true);
+                        _scanning = false;
+                    });
+                }
+            } else {
+                // Synchronous scanning.
+                rescanWorld(ctx, false);
             }
-        } else {
-            // Synchronous scanning.
-            rescanWorld(ctx, false);
         }
     }
 

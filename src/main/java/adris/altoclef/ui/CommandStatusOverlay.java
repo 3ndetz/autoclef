@@ -37,9 +37,11 @@ public class CommandStatusOverlay {
         }
     }
 
-    private void drawTaskChain(TextRenderer renderer, float x, float y, int color, boolean shadow, Matrix4f matrix, VertexConsumerProvider vertexConsumers, TextRenderer.TextLayerType layerType, int backgroundColor, int light, int maxLines, List<Task> tasks, AltoClef mod) {
+    private void drawTaskChain(TextRenderer renderer, float dx, float dy, int color, boolean shadow, Matrix4f matrix, VertexConsumerProvider vertexConsumers, TextRenderer.TextLayerType layerType, int backgroundColor, int light, int maxLines, List<Task> tasks, AltoClef mod) {
+        String info = "| "+mod.getInfoSender().getInfo();
+        dy += 15;
         if (tasks.size() == 0) {
-            renderer.draw(" (no task running) ", x, y, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+            renderer.draw(" *энергосбережение* " + info, dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
             if (_lastTime + 10000 < Instant.now().toEpochMilli() && mod.getModSettings().shouldShowTimer()) {//if it doesn't run any task in 10 secs
                 _timeRunning = Instant.now().toEpochMilli();//reset the timer
             }
@@ -48,29 +50,33 @@ public class CommandStatusOverlay {
             if (mod.getModSettings().shouldShowTimer()) { //If it's enabled
                 _lastTime = Instant.now().toEpochMilli(); //keep the last time for the timer reset
                 String _realTime = DATE_TIME_FORMATTER.format(Instant.now().minusMillis(_timeRunning)); //Format the running time to string
-                renderer.draw("<" + _realTime + ">", x, y, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
-                x += 8;//Do the same thing to list the tasks
-                y += fontHeight + 2;
+                renderer.draw("<" + _realTime + ">", dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+                dx += 8;//Do the same thing to list the tasks
+                dy += fontHeight + 2;
+            } else {
+                renderer.draw(" [Система функционирует] " + info, dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+                dx += 8;//Do the same thing to list the tasks
+                dy += fontHeight + 2;
             }
             if (tasks.size() > maxLines) {
                 for (int i = 0; i < tasks.size(); ++i) {
                     // Skip over the next tasks
                     if (i == 0 || i > tasks.size() - maxLines) {
-                        renderer.draw(tasks.get(i).toString(), x, y, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+                        renderer.draw(tasks.get(i).toString(), dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
                     } else if (i == 1) {
-                        renderer.draw(" ... ", x, y, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+                        renderer.draw(" ... ", dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
                     } else {
                         continue;
                     }
-                    x += 8;
-                    y += fontHeight + 2;
+                    dx += 8;
+                    dy += fontHeight + 2;
                 }
             } else {
                 if (!tasks.isEmpty()) {
                     for (Task task : tasks) {
-                        renderer.draw(task.toString(), x, y, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
-                        x += 8;
-                        y += fontHeight + 2;
+                        renderer.draw(task.toString(), dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+                        dx += 8;
+                        dy += fontHeight + 2;
                     }
                 }
             }

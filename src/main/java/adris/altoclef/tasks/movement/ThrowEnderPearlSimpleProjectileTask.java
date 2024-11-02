@@ -53,9 +53,9 @@ public class ThrowEnderPearlSimpleProjectileTask extends Task {
     @Override
     protected Task onTick(AltoClef mod) {
         // TODO: Unlikely/minor nitpick, but there could be other people throwing ender pearls, which would delay the bot.
-        if (mod.getEntityTracker().entityFound(EnderPearlEntity.class)) {
-            _thrownTimer.reset();
-        }
+//        if (mod.getEntityTracker().entityFound(EnderPearlEntity.class)) {
+//            _thrownTimer.reset();
+//        }
         if (_thrownTimer.elapsed()) {
             if (mod.getSlotHandler().forceEquipItem(Items.ENDER_PEARL)) {
                 Rotation lookTarget = calculateThrowLook(mod, _target);
@@ -90,6 +90,6 @@ public class ThrowEnderPearlSimpleProjectileTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Simple Ender Pearling to " + _target;
+        return "Эндерперл: валим на " + _target;
     }
 }

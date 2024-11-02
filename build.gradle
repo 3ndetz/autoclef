@@ -40,6 +40,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
 
+    //JavaGateway (bridge между java и python
+    implementation 'net.sf.py4j:py4j:0.10.9.7'
+    modImplementation "net.sf.py4j:py4j:0.10.9.7"
+    include "net.sf.py4j:py4j:0.10.9.7"
     // Nether pathfinder
     implementation 'dev.babbaj:nether-pathfinder:1.5'
 

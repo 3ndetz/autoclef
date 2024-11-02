@@ -115,7 +115,7 @@ public class FoodChain extends SingleTaskChain {
          */
         // We're in danger, don't eat now!!
         if (!mod.getMLGBucketChain().doneMLG() || mod.getMLGBucketChain().isFallingOhNo(mod) ||
-                mod.getPlayer().isBlocking() || shouldStop) {
+                mod.getPlayer().isBlocking() || shouldStop || KillAuraHelper.IsInBattle()) {
             stopEat(mod);
             return Float.NEGATIVE_INFINITY;
         }

@@ -7,7 +7,9 @@ import adris.altoclef.tasksystem.Task;
 import adris.altoclef.trackers.storage.ContainerType;
 import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.StorageHelper;
+import adris.altoclef.util.helpers.TimersHelper;
 import adris.altoclef.util.slots.Slot;
+import adris.altoclef.util.time.TimerGame;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.SlotActionType;
@@ -20,10 +22,12 @@ import java.util.function.Predicate;
 
 
 public class LootContainerTask extends Task {
+
     public final BlockPos chest;
     public final List<Item> targets = new ArrayList<>();
     private final Predicate<ItemStack> _check;
     private boolean _weDoneHere = false;
+    private final TimerGame _lootTimer = new TimerGame(1);
 
     public LootContainerTask(BlockPos chestPos, List<Item> items) {
         chest = chestPos;
@@ -40,6 +44,7 @@ public class LootContainerTask extends Task {
     @Override
     protected void onStart(AltoClef mod) {
         mod.getBehaviour().push();
+        _lootTimer.reset();
         for (Item item : targets) {
             if (!mod.getBehaviour().isProtected(item)) {
                 mod.getBehaviour().addProtectedItems(item);
@@ -50,18 +55,20 @@ public class LootContainerTask extends Task {
     @Override
     protected Task onTick(AltoClef mod) {
         if (!ContainerType.screenHandlerMatches(ContainerType.CHEST)) {
-            setDebugState("Interact with container");
+            setDebugState("Активация контейнера"); //TRS "Interact with container"
             return new InteractWithBlockTask(chest);
         }
         ItemStack cursor = StorageHelper.getItemStackInCursorSlot();
         if (!cursor.isEmpty()) {
             Optional<Slot> toFit = mod.getItemStorage().getSlotThatCanFitInPlayerInventory(cursor, false);
             if (toFit.isPresent()) {
-                setDebugState("Putting cursor in inventory");
+                setDebugState("Перемещение курсора в инвентарь"); //"Putting cursor in inventory"
+                _lootTimer.reset();
+                TimersHelper.ChestInteractTimerReset();
                 mod.getSlotHandler().clickSlot(toFit.get(), 0, SlotActionType.PICKUP);
                 return null;
             } else {
-                setDebugState("Ensuring space");
+                setDebugState("Сканирование на свободные слоты");//"Ensuring space"
                 return new EnsureFreeInventorySlotTask();
             }
         }
@@ -70,7 +77,8 @@ public class LootContainerTask extends Task {
             _weDoneHere = true;
             return null;
         }
-        setDebugState("Looting items: " + targets);
+        setDebugState("Взять: " + targets);//"Looting items: "
+        _lootTimer.reset();
         mod.getSlotHandler().clickSlot(optimal.get(), 0, SlotActionType.PICKUP);
         return null;
     }
@@ -102,8 +110,12 @@ public class LootContainerTask extends Task {
     private Optional<Slot> getAMatchingSlot(AltoClef mod) {
         for (Item item : targets) {
             List<Slot> slots = mod.getItemStorage().getSlotsWithItemContainer(item);
-            if (!slots.isEmpty()) for (Slot slot : slots) {
-                if (_check.test(StorageHelper.getItemStackInSlot(slot))) return Optional.of(slot);
+            if (!slots.isEmpty()) {
+                for (Slot slot : slots) {
+                    if (_check.test(StorageHelper.getItemStackInSlot(slot))) {
+                        return Optional.of(slot);
+                    }
+                }
             }
         }
         return Optional.empty();
@@ -111,8 +123,8 @@ public class LootContainerTask extends Task {
 
     @Override
     public boolean isFinished(AltoClef mod) {
-        return _weDoneHere || (ContainerType.screenHandlerMatchesAny() &&
-                getAMatchingSlot(mod).isEmpty());
+        return _lootTimer.getDuration() > 0.8 && (_weDoneHere || (ContainerType.screenHandlerMatchesAny() &&
+                getAMatchingSlot(mod).isEmpty()));
     }
 
     @Override

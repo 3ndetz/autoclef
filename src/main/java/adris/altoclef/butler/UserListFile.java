@@ -27,4 +27,8 @@ public class UserListFile implements IListConfigFile {
     public void addLine(String line) {
         _users.add(line);
     }
+
+    public void removeLine(String line) {
+        _users.remove(line);
+    }
 }

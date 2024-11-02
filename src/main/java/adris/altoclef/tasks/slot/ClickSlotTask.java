@@ -61,7 +61,7 @@ public class ClickSlotTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Clicking " + _slot.toString();
+        return "Клик " + _slot.toString();
     }
 
     @Override

@@ -13,11 +13,14 @@ public class ButlerConfig {
     /**
      * If true, will use blacklist for rejecting users from using your player as a butler
      */
-    public boolean useButlerBlacklist = true;
+    public boolean useButlerBlacklist = false;
     /**
      * If true, will use whitelist to only accept users from said whitelist.
      */
-    public boolean useButlerWhitelist = false;
+    public boolean useButlerWhitelist = true;
+    public boolean autoStuckFix = true;
+    public boolean debugChatParseResult = false;
+    public boolean autoJoin = true;
     /**
      * Servers have different messaging plugins that change the way messages are displayed.
      * Rather than attempt to implement all of them and introduce a big security risk,
@@ -61,6 +64,64 @@ public class ButlerConfig {
      * Disable this if you want to be able to send normal messages and not butler commands.
      */
     public boolean requirePrefixMsg = false;
+
+    public String[][] chatFormats = new String[][]{
+            {"universal","<{from}> {message}","survival"},
+            {"mc.musteryworld.net","{starterPrefix} [{clan}] | [{rank}] {from} > {message}","survival"},
+            {"mc.musteryworld.net","{starterPrefix} | [{rank}] {from} > {message}","survival"},
+            {"mc.musteryworld.net","[⚑] {from}: {message}","bedwars"},
+            {"mc.musteryworld.net","{from}: {message}","skywars"},
+            {"mc.musteryworld.net","{rank}: {message}","skywars"},
+
+            {"mc.musteryworld.net","[Всем] {from}: {message}","bedwars"},
+            {"mc.musteryworld.net","SPEC: {from} > {message}","murdermystery"},
+            {"mc.musteryworld.net","{from} > {message}","murdermystery"},
+
+            {"mc.vimemc.net","{starterPrefix} [{global}] [{clan}] | ᖧ{rank}ᖨ {from}  > {message}","survival"},
+            {"mc.vimemc.net","{starterPrefix} [{global}] | ᖧ{rank}ᖨ {from}  > {message}","survival"},
+            {"mc.vimemc.net","{starterPrefix} [{global}] [{clan}] | ᖧ{rank}ᖨ {from} {suffix} > {message}","survival"},
+            {"mc.vimemc.net","{starterPrefix} [{global}] | ᖧ{rank}ᖨ {from} {suffix} > {message}","survival"},
+            {"mc.vimemc.net","[{rank}] [{team}] {from} > {message}","skywars"},
+            {"mc.vimemc.net","[{rank}] ᖧ{donate}ᖨ {from} {suffix} > {message}","thepit"},
+            {"mc.vimemc.net","[{rank}] ᖧ{donate}ᖨ {from}  > {message}","thepit"},
+            {"mc.vimemc.net","[{rank}] {from}  > {message}","thepit"},
+            // SKYWARS
+            {"mc.vimemc.net","[{rank}] [{team}] {from} ⇨ {message}","skywars"},
+            {"mc.vimemc.net","[{rank}] ᖧ{donate}ᖨ {from} {suffix} > {message}","thepit"},
+            {"mc.vimemc.net","[{rank}] ᖧ{donate}ᖨ {from}  > {message}","thepit"},
+            {"mc.vimemc.net","[{rank}] {from}  > {message}","thepit"},
+            //MURDER MYSTERY nick ⇨ msg
+            {"mc.vimemc.net","ᖧ{donate}ᖨ {from} {suffix} ⇨ {message}","murdermystery"},
+            {"mc.vimemc.net","ᖧ{donate}ᖨ {from} ⇨ {message}","murdermystery"},
+            {"mc.vimemc.net","{from} ⇨ {message}","murdermystery"},
+
+            //gamestarting //[18 уб.] NetTyan ► ээм
+            {"mc.vimemc.net","[{rank}] {from} > {message}","skywars"},
+
+            //lobby //nick  > msg
+            {"mc.vimemc.net","{from}  > {message}","skywars"},
+
+            //funny mc
+            {"funnymc.ru","{starterPrefix} {global} ({clan}) [{rank}] {from} ➯ {message}","survival"},
+            {"funnymc.ru","{starterPrefix} {global} ({clan}) {rank} {from} ➯ {message}","survival"},
+            {"funnymc.ru","{starterPrefix} {global} [{rank}] {from} ➯ {message}","survival"},
+            {"funnymc.ru","{starterPrefix} {global} {rank} {from} ➯ {message}","survival"},
+
+
+            {"funnymc.ru","{global} ({clan}) [{rank}] {from} ➯ {message}","survival"},
+            {"funnymc.ru","{global} ({clan}) {rank} {from} ➯ {message}","survival"},
+            {"funnymc.ru","{global} [{rank}] {from} ➯ {message}","survival"},
+            {"funnymc.ru","{global} {rank} {from} ➯ {message}","survival"},
+
+            {"mlegacy.net","[{rank}] {from}  » {message}","skywars"},
+            {"mlegacy.net","({rank}) {from} > {message}","skywars"},
+            {"funnymc.ru","[{rank}] {from}  » {message}","skywars"},
+            {"funnymc.ru","({rank}) {from} > {message}","skywars"},
+
+            {"funnymc.ru","{from} » {message}","mudermystery"},
+
+            {"mc.4obabke.ru","{from} whispers to you: {message}","skywars"}
+    };
 
     public static ButlerConfig getInstance() {
         return _instance;

@@ -84,9 +84,9 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
             Entity entity = checkEntity.get();
 
             double playerReach = mod.getModSettings().getEntityReachRange();
-
+            double bigReach = 5;
             // TODO: This is basically useless.
-            EntityHitResult result = LookHelper.raycast(mod.getPlayer(), entity, playerReach);
+            EntityHitResult result = LookHelper.raycast(mod.getPlayer(), entity, bigReach);
 
             double sqDist = entity.squaredDistanceTo(mod.getPlayer());
 
@@ -102,7 +102,7 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
             boolean tooClose = sqDist < maintainDistance * maintainDistance;
 
             // Step away if we're too close
-            if (tooClose) {
+            if (tooClose && result != null && result.getType() == HitResult.Type.ENTITY && !result.getEntity().isPlayer()) {
                 //setDebugState("Maintaining distance");
                 if (!mod.getClientBaritone().getCustomGoalProcess().isActive()) {
                     mod.getClientBaritone().getCustomGoalProcess().setGoalAndPath(new GoalRunAway(maintainDistance, entity.getBlockPos()));
@@ -118,10 +118,10 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
                 _progress.reset();
                 return onEntityInteract(mod, entity);
             } else if (!tooClose) {
-                setDebugState("Approaching target");
+                setDebugState("Подтверждено обнаружение"); //TRS Approaching target
                 if (!_progress.check(mod)) {
                     _progress.reset();
-                    Debug.logMessage("Failed to get to target, blacklisting.");
+                    Debug.logMessage("Маршрут до цели не подтвержден. Поиск другого в Яндекс.Картах...");
                     mod.getEntityTracker().requestEntityUnreachable(entity);
                 }
                 // Move to target

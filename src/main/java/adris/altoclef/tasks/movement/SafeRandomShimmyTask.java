@@ -32,7 +32,7 @@ public class SafeRandomShimmyTask extends Task {
     protected Task onTick(AltoClef mod) {
 
         if (_lookTimer.elapsed()) {
-            Debug.logMessage("Random Orientation");
+            Debug.logMessage("Случайная ориентация"); //"Random Orientation"
             _lookTimer.reset();
             LookHelper.randomOrientation(mod);
         }
@@ -57,6 +57,6 @@ public class SafeRandomShimmyTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Shimmying";
+        return "Мурчание";
     }
 }

@@ -32,6 +32,6 @@ public class GetToChunkTask extends CustomBaritoneGoalTask {
 
     @Override
     protected String toDebugString() {
-        return "Get to chunk: " + _pos.toString();
+        return "Сканируется чанк: " + _pos.toString(); //TRS "Get to chunk: "
     }
 }

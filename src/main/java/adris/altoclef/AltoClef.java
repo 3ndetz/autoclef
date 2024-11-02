@@ -24,6 +24,7 @@ import baritone.Baritone;
 import baritone.altoclef.AltoClefSettings;
 import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
+import java.util.stream.Collectors;
 import net.fabricmc.api.ModInitializer;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -40,6 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.Consumer;
+import py4j.GatewayServer;
 
 /**
  * Central access point for AltoClef
@@ -59,11 +61,13 @@ public class AltoClef implements ModInitializer {
     private UserTaskChain _userTaskChain;
     private FoodChain _foodChain;
     private MobDefenseChain _mobDefenseChain;
+    private DeathMenuChain _deathMenuChain;
     private MLGBucketFallChain _mlgBucketChain;
     // Trackers
     private ItemStorageTracker _storageTracker;
     private ContainerSubTracker _containerSubTracker;
     private EntityTracker _entityTracker;
+    private DamageTracker _damageTracker;
     private BlockTracker _blockTracker;
     private SimpleChunkTracker _chunkTracker;
     private MiscBlockTracker _miscBlockTracker;
@@ -77,6 +81,8 @@ public class AltoClef implements ModInitializer {
     private SlotHandler _slotHandler;
     // Butler
     private Butler _butler;
+    private static GatewayServer _gatewayServer;
+    private static Py4jEntryPoint _py4jEntryPoint;
 
     // Are we in game (playing in a server/world)
     public static boolean inGame() {
@@ -114,7 +120,8 @@ public class AltoClef implements ModInitializer {
         // Task chains
         _userTaskChain = new UserTaskChain(_taskRunner);
         _mobDefenseChain = new MobDefenseChain(_taskRunner);
-        new DeathMenuChain(_taskRunner);
+        _deathMenuChain = new DeathMenuChain(_taskRunner);
+
         new PlayerInteractionFixChain(_taskRunner);
         _mlgBucketChain = new MLGBucketFallChain(_taskRunner);
         new WorldSurvivalChain(_taskRunner);
@@ -123,6 +130,7 @@ public class AltoClef implements ModInitializer {
         // Trackers
         _storageTracker = new ItemStorageTracker(this, _trackerManager, container -> _containerSubTracker = container);
         _entityTracker = new EntityTracker(_trackerManager);
+        _damageTracker = new DamageTracker(_trackerManager);
         _blockTracker = new BlockTracker(this, _trackerManager);
         _chunkTracker = new SimpleChunkTracker(this);
         _miscBlockTracker = new MiscBlockTracker(this);
@@ -138,14 +146,21 @@ public class AltoClef implements ModInitializer {
         _butler = new Butler(this);
 
         initializeCommands();
-
+        _py4jEntryPoint = new Py4jEntryPoint(this);
+        _gatewayServer = new GatewayServer(_py4jEntryPoint);
+        _gatewayServer.start();
+        if (_gatewayServer != null ) {
+            System.out.println("Gateway Server started on port "+_gatewayServer.getPort()+". Listeting port: "+_gatewayServer.getListeningPort());
+        }
+        _py4jEntryPoint.InitPythonCallback();
         // Load settings
         adris.altoclef.Settings.load(newSettings -> {
             _settings = newSettings;
             // Baritone's `acceptableThrowawayItems` should match our own.
             List<Item> baritoneCanPlace = Arrays.stream(_settings.getThrowawayItems(this, true))
-                    .filter(item -> item != Items.SOUL_SAND && item != Items.MAGMA_BLOCK && item != Items.SAND && item
-                            != Items.GRAVEL).toList();
+                    .filter(item -> item != Items.SOUL_SAND && item != Items.MAGMA_BLOCK && item != Items.SAND && item != Items.GRAVEL)
+                    // Don't place soul sand or magma blocks, that messes us up.
+                    .toList();
             getClientBaritoneSettings().acceptableThrowawayItems.value.addAll(baritoneCanPlace);
             // If we should run an idle command...
             if ((!getUserTaskChain().isActive() || getUserTaskChain().isRunningIdleTask()) && getModSettings().shouldRunIdleCommandWhenNotActive()) {
@@ -201,6 +216,7 @@ public class AltoClef implements ModInitializer {
         _miscBlockTracker.tick();
 
         _trackerManager.tick();
+        _damageTracker.tick();
         _blockTracker.preTickTask();
         _taskRunner.tick();
         _blockTracker.postTickTask();
@@ -335,7 +351,8 @@ public class AltoClef implements ModInitializer {
         }
         return (Baritone) BaritoneAPI.getProvider().getBaritoneForPlayer(getPlayer());
     }
-
+    public Py4jEntryPoint getInfoSender() {return _py4jEntryPoint; }
+    public GatewayServer getGateway(){return _gatewayServer;}
     /**
      * Baritone settings access (could just be static honestly)
      */
@@ -440,6 +457,12 @@ public class AltoClef implements ModInitializer {
      */
     public FoodChain getFoodChain() {
         return _foodChain;
+    }
+    public DamageTracker getDamageTracker(){
+        return _damageTracker;
+    }
+    public DeathMenuChain getDeathMenuChain() {
+        return _deathMenuChain;
     }
 
     /**

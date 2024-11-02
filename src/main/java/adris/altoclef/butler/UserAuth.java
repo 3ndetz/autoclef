@@ -4,6 +4,7 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.util.helpers.ConfigHelper;
 
 public class UserAuth {
+
     private static final String BLACKLIST_PATH = "altoclef_butler_blacklist.txt";
     private static final String WHITELIST_PATH = "altoclef_butler_whitelist.txt";
     private final AltoClef _mod;
@@ -24,6 +25,22 @@ public class UserAuth {
 
         UserListFile.load(BLACKLIST_PATH, newList -> _blacklist = newList);
         UserListFile.load(WHITELIST_PATH, newList -> _whitelist = newList);
+    }
+
+    public boolean addUserToWhitelist(String username) {
+        if (_whitelist.containsUser(username)) {
+            return false;
+        }
+        _whitelist.addLine(username);
+        return true;
+    }
+
+    public boolean removeUserFromWhitelist(String username) {
+        if (!_whitelist.containsUser(username)) {
+            return false;
+        }
+        _whitelist.removeLine(username);
+        return true;
     }
 
     public boolean isUserAuthorized(String username) {
