@@ -790,16 +790,16 @@ public class BeatMinecraft2Task extends Task {
     }
 
     // Just a helpful utility to reduce reuse recycle.
-    private static boolean shouldForce(AltoClef mod, Task task) {
+    public static boolean shouldForce(AltoClef mod, Task task) {
         return task != null && task.isActive() && !task.isFinished(mod);
     }
-    private static ItemTarget[] toItemTargets(Item ...items) {
+    public static ItemTarget[] toItemTargets(Item ...items) {
         return Arrays.stream(items).map(item -> new ItemTarget(item, 1)).toArray(ItemTarget[]::new);
     }
-    private static ItemTarget[] toItemTargets(Item item, int count) {
+    public static ItemTarget[] toItemTargets(Item item, int count) {
         return new ItemTarget[] {new ItemTarget(item, count)};
     }
-    private static ItemTarget[] combine(ItemTarget[] ...targets) {
+    public static ItemTarget[] combine(ItemTarget[] ...targets) {
         List<ItemTarget> result = new ArrayList<>();
         for (ItemTarget[] ts : targets) {
             result.addAll(Arrays.asList(ts));

@@ -28,6 +28,7 @@ import java.util.Optional;
  * Helper functions to interpret and change our player's look direction
  */
 public interface LookHelper {
+    float DEFAULT_SMOOTH_LOOK_SPEED = 1.0f;
 
     static Optional<Rotation> getReach(BlockPos target, Direction side) {
         Optional<Rotation> reachable;
@@ -210,7 +211,8 @@ public interface LookHelper {
 
     static void randomOrientation(AltoClef mod) {
         Rotation r = new Rotation((float) Math.random() * 360f, -90 + (float) Math.random() * 180f);
-        lookAt(mod, r);
+        //lookAt(mod, r);
+        smoothLook(mod, r);
     }
 
     static boolean isLookingAt(AltoClef mod, Rotation rotation) {
@@ -247,301 +249,225 @@ public interface LookHelper {
         return getLookRotation(mod, WorldHelper.toVec3d(toLook));
     }
 
-
-    static void SmoothLookAtWindMouse(AltoClef mod, float rotCoeffF, boolean ForceLook, Entity entity){
-        if(LookHelper.cleanLineOfSight(entity.getEyePos(),4.5)  & !mod.getMobDefenseChain().isDoingAcrobatics())
-            new Thread(() -> {
-                for (int i = 1; i <= 10; i++) {
-                    //Debug.logMessage("STARTING... ");
-                    Rotation _plyRot = new Rotation(mod.getPlayer().getYaw(), mod.getPlayer().getPitch());
-                    Rotation _targetRotation = RotationUtils.calcRotationFromVec3d(mod.getClientBaritone().getPlayerContext().playerHead(), entity.getPos().add(0, 1.0, 0), mod.getClientBaritone().getPlayerContext().playerRotations());
-                    Rotation subtractRotation = _plyRot.subtract(_targetRotation);
-                    if(KillAuraHelper.TimerStart(90)) {
-                        MouseMoveHelper.PointListsReset();
-                        MouseMoveHelper.windMouse(
-                                (int) Math.floor(_plyRot.getYaw()),
-                                (int) Math.floor(_plyRot.getPitch()),
-                                (int) Math.floor(subtractRotation.getYaw()),
-                                (int) Math.floor(subtractRotation.getPitch()),
-                                20, 5, 15, 12);
-                        //9, 3, 15, 12);
-                    }
-                        int MoveYaw = 0;int MovePitch = 0;
-                        if(!MouseMoveHelper.PointsListX.isEmpty()){
-                            MoveYaw = MouseMoveHelper.PointsListX.get(0);//MouseMoveHelper.PointsListX.size() -1),
-                            MouseMoveHelper.PointsListX.remove(0);
-                        }
-                        if (!MouseMoveHelper.PointsListY.isEmpty()){
-                            MovePitch = MouseMoveHelper.PointsListY.get(0);//MouseMoveHelper.PointsListY.size()-1));
-                            MouseMoveHelper.PointsListX.remove(0);
-                        }
-
-                        //for(int x : MouseMoveHelper.PointsListX){
-                        //    //Debug.logMessage("x = "+x);
-                        //}
-                        //Debug.logMessage("y = "+MouseMoveHelper.PointsListY.get(MouseMoveHelper.PointsListY.size()-1)+
-                        //        "|x ="+MouseMoveHelper.PointsListX.get(MouseMoveHelper.PointsListX.size()-1));
-                        Rotation lowedSubtractRotation = new Rotation(
-                                MoveYaw*0.001f,
-                                MovePitch*0.001f);
-                        Rotation resultRotation = new Rotation(
-                                _plyRot.subtract(lowedSubtractRotation).getYaw(),
-                                _plyRot.subtract(lowedSubtractRotation).getPitch()
-
-                        );
-                        mod.getInputControls().forceLook(resultRotation.getYaw(), resultRotation.getPitch());
-                        //Debug.logMessage("STOP!");
-                        sleepSec(0.005);
-
-
-
-
-                }
-            }).start();
-    }
-    static void SmoothLook(AltoClef mod, Rotation DestRotation){
-        boolean ForceLook = true;
-        if(!mod.getMobDefenseChain().isDoingAcrobatics())
-            new Thread(() -> {
-                float _innacuracy = 0;
-                _innacuracy = 10.0f;
-                float _plyPitch,_plyYaw,YawOldSpeed;//,YawSpeed,PitchSpeed;
-                YawOldSpeed = 0f;
-                _plyPitch = mod.getPlayer().getPitch();
-                _plyYaw = mod.getPlayer().getYaw();
-                Rotation _plyRot = new Rotation(_plyYaw, _plyPitch);
-                KillAuraHelper.TimerStart(90);
-                //KillAuraHelper.TimerStop();
-                for (int i = 1; i <= 40; i++) {
-                    //Debug.logMessage("rnd1 "+KillAuraHelper.GetNextRandomY());
-                    //Debug.logMessage("rnd2 "+KillAuraHelper.GetNextRandomY());
-                    if(AltoClef.inGame()  & !mod.getMobDefenseChain().isDoingAcrobatics()){
-                        sleepSec(0.00125);
-                        Rotation _targetRotation = DestRotation;
-                        Rotation subtractRotation = _plyRot.subtract(_targetRotation);
-
-                        float LSRYaw = Math.signum(subtractRotation.getYaw())*0.01f;
-
-                        float PlusY;
-                        if (Math.abs(subtractRotation.getYaw())<=4){
-                            //LSRYaw *= 0;
-                            PlusY = 0;
-                        }else{
-                            float mult = 1.5f;
-                            PlusY = -((float)Math.pow(Math.abs(subtractRotation.getYaw()),1.0/3)*mult-1.7f*mult);
-                        }
-
-
-                        _targetRotation = DestRotation.add(new Rotation(0,PlusY/2));
-                        subtractRotation = _plyRot.subtract(_targetRotation);
-                        //SPEED CORRECTION
-                        float RandomCoeff = 5-(float)Math.random()*10;
-                        float RandomCoeff2 = 1.1f-(float)Math.random()/2.5f;
-                        float RandomCoeff3 = 1.1f-(float)Math.random()/2.5f;
-                        float LSRPitch = Math.signum(subtractRotation.getPitch())*0.03f;
-                        if (KillAuraHelper.YawSpeed>2 & (Math.abs(subtractRotation.getYaw())<=15)){
-                            KillAuraHelper.YawSpeed /= 4; //* Math.sqrt(11-Math.abs(subtractRotation.getYaw()))/2;
-                        }else{
-                            KillAuraHelper.YawSpeed = (float)Math.pow((float)KillAuraHelper.TimerGoing,1.2)/15*RandomCoeff2+RandomCoeff;
-                            //(float)Math.pow((float)KillAuraHelper.TimerGoing,1.0/2)*3+RandomCoeff; //TOP ROOT
-                        }
-                        if (KillAuraHelper.PitchSpeed>2 & (Math.abs(subtractRotation.getPitch())<=30)){
-                            KillAuraHelper.PitchSpeed /= 2;//* Math.sqrt(11-Math.abs(subtractRotation.getPitch()))/2;
-                        }else{
-                            KillAuraHelper.PitchSpeed = (float)Math.pow((float)KillAuraHelper.TimerGoing,1.0/2)/1.5f*2*RandomCoeff3+RandomCoeff/2;//
-                            // (float)Math.pow((float)KillAuraHelper.TimerGoing,1.0/2)/1.5f*3+RandomCoeff/2;//Math.abs(subtractRotation.getPitch()); //TOP ROOT
-                        }
-
-                        //YawOldSpeed+Math.signum(subtractRotation.getYaw());//1 + PlusY;
-
-
-                        if(Math.abs(subtractRotation.getPitch())<3){
-                            //LSRPitch = Math.signum(subtractRotation.getPitch())*0.01f;
-                            //LSRPitch *= 0.1;
-                            KillAuraHelper.PitchSpeed/=10;
-                            //LSRPitch = 0;//0.0001f*(float)Math.signum(-0.5+Math.random());
-                        }
-                        if(Math.abs(subtractRotation.getYaw())<3){
-                            KillAuraHelper.YawSpeed/=10;
-                            //LSRYaw = 0;//0.001f*(float)Math.signum(-0.5+Math.random());
-                        }
-                        if((Math.abs(subtractRotation.getYaw())<0.1)&(Math.abs(subtractRotation.getPitch())<0.1))
-                        {KillAuraHelper.TimerStop();KillAuraHelper.TimerStart(90);}
-                        //if(InputHelper.isKeyPressed(71)){
-//
-                        //    Debug.logMessage("TimerGoing ="+(float)KillAuraHelper.TimerGoing + ",TG Root = "+Math.pow((float)KillAuraHelper.TimerGoing,1.0/5));//"PlusY "+PlusY + " Y "+_targetRotation.getPitch());
-                        //}
-                        Rotation lowedSubtractRotation = new Rotation(
-                                LSRYaw*(float)Math.floor(KillAuraHelper.YawSpeed),
-                                LSRPitch*(float)Math.floor(KillAuraHelper.PitchSpeed));
-                        Rotation resultRotation = new Rotation(
-                                _plyRot.subtract(lowedSubtractRotation).getYaw(),
-                                _plyRot.subtract(lowedSubtractRotation).getPitch()
-
-                        );
-                        _plyRot = resultRotation;
-                        _plyPitch = resultRotation.getPitch();
-                        _plyYaw = resultRotation.getYaw();
-                        YawOldSpeed = KillAuraHelper.YawSpeed;
-                        if(ForceLook){
-                            mod.getInputControls().forceLook(resultRotation.getYaw(),resultRotation.getPitch());
-                        }else{
-                            mod.getPlayer().setYaw(resultRotation.getYaw());
-                            mod.getPlayer().setPitch(resultRotation.getPitch());
-                        }
-                    }}
-            }).start();
-    }
-    static void SmoothLookAt(AltoClef mod, float rotCoeffF, boolean ForceLook,Vec3d LookPos){
-        if(LookHelper.cleanLineOfSight(LookPos,4.5) && !mod.getMobDefenseChain().isDoingAcrobatics())
-            new Thread(() -> {
-                float _innacuracy = 0;
-                _innacuracy = 10.0f;
-                float _plyPitch,_plyYaw,YawOldSpeed;//,YawSpeed,PitchSpeed;
-                YawOldSpeed = 0f;
-                _plyPitch = mod.getPlayer().getPitch();
-                _plyYaw = mod.getPlayer().getYaw();
-                Rotation _plyRot = new Rotation(_plyYaw, _plyPitch);
-                KillAuraHelper.TimerStart(90);
-                //KillAuraHelper.TimerStop();
-                for (int i = 1; i <= 40; i++) {
-                    //Debug.logMessage("rnd1 "+KillAuraHelper.GetNextRandomY());
-                    //Debug.logMessage("rnd2 "+KillAuraHelper.GetNextRandomY());
-                    if(AltoClef.inGame() && LookHelper.cleanLineOfSight(LookPos,4.5)  & !mod.getMobDefenseChain().isDoingAcrobatics()){
-                        sleepSec(0.00125);
-                        Rotation _targetRotation = RotationUtils.calcRotationFromVec3d(mod.getClientBaritone().getPlayerContext().playerHead(), LookPos, mod.getClientBaritone().getPlayerContext().playerRotations());;
-                        Rotation subtractRotation = _plyRot.subtract(_targetRotation);
-
-                        float LSRYaw = Math.signum(subtractRotation.getYaw())*0.01f;
-
-                        float PlusY;
-                        if (Math.abs(subtractRotation.getYaw())<=4){
-                            //LSRYaw *= 0;
-                            PlusY = 0;
-                        }else{
-                            float mult = 1.5f;
-                            PlusY = -((float)Math.pow(Math.abs(subtractRotation.getYaw()),1.0/3)*mult-1.7f*mult);
-                        }
-
-
-                        _targetRotation = RotationUtils.calcRotationFromVec3d(mod.getClientBaritone().getPlayerContext().playerHead(), LookPos.add(0,PlusY,0), mod.getClientBaritone().getPlayerContext().playerRotations());;
-                        subtractRotation = _plyRot.subtract(_targetRotation);
-                        //SPEED CORRECTION
-                        float RandomCoeff = 5-(float)Math.random()*10;
-                        float RandomCoeff2 = 1.1f-(float)Math.random()/2.5f;
-                        float RandomCoeff3 = 1.1f-(float)Math.random()/2.5f;
-                        float LSRPitch = Math.signum(subtractRotation.getPitch())*0.01f;
-                        if (KillAuraHelper.YawSpeed>2 & (Math.abs(subtractRotation.getYaw())<=15)){
-                            KillAuraHelper.YawSpeed /= 4; //* Math.sqrt(11-Math.abs(subtractRotation.getYaw()))/2;
-                        }else{
-                            KillAuraHelper.YawSpeed = (float)Math.pow((float)KillAuraHelper.TimerGoing,1.2)/15*RandomCoeff2+RandomCoeff;
-                            //(float)Math.pow((float)KillAuraHelper.TimerGoing,1.0/2)*3+RandomCoeff; //TOP ROOT
-                        }
-                        if (KillAuraHelper.PitchSpeed>2 & (Math.abs(subtractRotation.getPitch())<=30)){
-                            KillAuraHelper.PitchSpeed /= 2;//* Math.sqrt(11-Math.abs(subtractRotation.getPitch()))/2;
-                        }else{
-                            KillAuraHelper.PitchSpeed = (float)Math.pow((float)KillAuraHelper.TimerGoing,1.0/2)/1.5f*2*RandomCoeff3+RandomCoeff/2;//
-                            // (float)Math.pow((float)KillAuraHelper.TimerGoing,1.0/2)/1.5f*3+RandomCoeff/2;//Math.abs(subtractRotation.getPitch()); //TOP ROOT
-                        }
-
-                        //YawOldSpeed+Math.signum(subtractRotation.getYaw());//1 + PlusY;
-
-
-                        if(Math.abs(subtractRotation.getPitch())<3){
-                            //LSRPitch = Math.signum(subtractRotation.getPitch())*0.01f;
-                            //LSRPitch *= 0.1;
-                            KillAuraHelper.PitchSpeed/=10;
-                            //LSRPitch = 0;//0.0001f*(float)Math.signum(-0.5+Math.random());
-                        }
-                        if(Math.abs(subtractRotation.getYaw())<3){
-                            KillAuraHelper.YawSpeed/=10;
-                            //LSRYaw = 0;//0.001f*(float)Math.signum(-0.5+Math.random());
-                        }
-                        if((Math.abs(subtractRotation.getYaw())<3)&(Math.abs(subtractRotation.getPitch())<3))
-                        {KillAuraHelper.TimerStop();KillAuraHelper.TimerStart(90);}
-                        //if(InputHelper.isKeyPressed(71)){
-//
-                        //    Debug.logMessage("TimerGoing ="+(float)KillAuraHelper.TimerGoing + ",TG Root = "+Math.pow((float)KillAuraHelper.TimerGoing,1.0/5));//"PlusY "+PlusY + " Y "+_targetRotation.getPitch());
-                        //}
-                        Rotation lowedSubtractRotation = new Rotation(
-                                LSRYaw*(float)Math.floor(KillAuraHelper.YawSpeed),
-                                LSRPitch*(float)Math.floor(KillAuraHelper.PitchSpeed));
-                        Rotation resultRotation = new Rotation(
-                                _plyRot.subtract(lowedSubtractRotation).getYaw(),
-                                _plyRot.subtract(lowedSubtractRotation).getPitch()
-
-                        );
-                        _plyRot = resultRotation;
-                        _plyPitch = resultRotation.getPitch();
-                        _plyYaw = resultRotation.getYaw();
-                        YawOldSpeed = KillAuraHelper.YawSpeed;
-                        if(ForceLook){
-                            mod.getInputControls().forceLook(resultRotation.getYaw(),resultRotation.getPitch());
-                        }else{
-                            mod.getPlayer().setYaw(resultRotation.getYaw());
-                            mod.getPlayer().setPitch(resultRotation.getPitch());
-                        }
-                    }}
-            }).start();
-    }
-    static  void SmoothLookAt(AltoClef mod, float rotCoeffF,boolean ForceLook,Entity entity){
-        SmoothLookAt(mod,rotCoeffF,ForceLook,entity.getEyePos());
-    }
-    static  void SmoothLookAt(AltoClef mod, Vec3d position){
-        SmoothLookAt(mod,0.05f,true, position);
-    }
-    static void SmoothLookDirectionaly(AltoClef mod,float rotCoeffF,boolean ForceLook){
-
-        new Thread(() -> {
-            Vec3d velVec = MinecraftClient.getInstance().player.getVelocity();
-            double vel = velVec.lengthSquared();
-            if (vel>0.01){
-            float _innacuracy = 0;
-            _innacuracy = 10.0f;
-            float _plyPitch,_plyYaw;
-
-            for (int i = 1; i <= 20; i++) {
-
-                velVec = MinecraftClient.getInstance().player.getVelocity();
-                vel = velVec.lengthSquared();
-                Rotation _targetRotation = LookHelper.getLookRotation(mod, mod.getPlayer().getEyePos()
-                        .add(0,7,0).add(velVec.multiply(100)));
-                _plyPitch = mod.getPlayer().getPitch();
-                _plyYaw = mod.getPlayer().getYaw();
-                Rotation _plyRot = new Rotation(_plyYaw, _plyPitch);
-                sleepSec(0.01);
-
-                Rotation subtractRotation = _plyRot.subtract(_targetRotation);
-                float rotCoeff = rotCoeffF;
-                if (Math.abs(subtractRotation.getYaw())<_innacuracy*1.5 & Math.abs(subtractRotation.getPitch())<_innacuracy*1.5){
-                    rotCoeff = rotCoeff*2.8f;
-                }else{
-                    rotCoeff = rotCoeff*3.2f;}
-                Rotation lowedSubtractRotation = new Rotation(subtractRotation.getYaw()*rotCoeff,subtractRotation.getPitch()*rotCoeff);
-                Rotation resultRotation = new Rotation(
-                        _plyRot.subtract(lowedSubtractRotation).getYaw(),
-                        _plyRot.subtract(lowedSubtractRotation).getPitch()
-
-                );
-                if(ForceLook){
-                    LookHelper.lookAt(mod,resultRotation);
-                }else{
-                mod.getPlayer().setYaw(resultRotation.getYaw());
-                mod.getPlayer().setPitch(resultRotation.getPitch());}
-                //LookHelper.lookAt(mod, resultRotation);
-            }}
-        }).start();
-
-
-
-    }
     public static double getLookingProbability(Vec3d eyeFrom, Vec3d eyeTo, Vec3d RotationFrom){
         Vec3d toEntity = eyeTo.subtract(eyeFrom);
         double dot = toEntity.normalize().dotProduct(RotationFrom);
         return dot; //0.8 60 град, 0.9 30 град 0.95 15 град (точный взгляд
     }
-    static void SmoothLookDirectionaly(AltoClef mod,float rotCoeffF){
-        SmoothLookDirectionaly(mod,rotCoeffF,false);
+    class WindMouseState {
+        public static boolean isRotating = false;
+        public static double windX = 0;
+        public static double windY = 0;
+        public static double veloX = 0;
+        public static double veloY = 0;
+        public static double currentX = 0;
+        public static double currentY = 0;
+        public static Rotation targetRotation = null;
+        public static Rotation startRotation = null;
+        public static float speed = DEFAULT_SMOOTH_LOOK_SPEED;
+        public static long lastUpdateTime = 0;
+        // Time in milliseconds before rotation stops if no new calls
+        public static final long ROTATION_TIMEOUT = 200;
+        // Distance threshold for deceleration
+        public static final double DECELERATION_THRESHOLD = 20.0;
+    }
+
+    /**
+     * Initiates a WindMouse rotation with improved smoothing
+     */
+    static void smoothLook(AltoClef mod, Rotation targetRot, float speed) {
+        //if (mod.getMobDefenseChain().isDoingAcrobatics()) return;
+
+        long currentTime = System.currentTimeMillis();
+        boolean isNewRotation = !WindMouseState.isRotating ||
+                currentTime - WindMouseState.lastUpdateTime > WindMouseState.ROTATION_TIMEOUT;
+
+        // Reset state if this is a new rotation or significant target change
+        if (isNewRotation || (WindMouseState.targetRotation != null &&
+                Math.abs(normalizeAngle(targetRot.getYaw() - WindMouseState.targetRotation.getYaw())) > 5 ||
+                Math.abs(targetRot.getPitch() - WindMouseState.targetRotation.getPitch()) > 5)) {
+
+            WindMouseState.isRotating = true;
+            WindMouseState.targetRotation = targetRot;
+            WindMouseState.startRotation = getLookRotation(mod.getPlayer());
+            WindMouseState.windX = 0;
+            WindMouseState.windY = 0;
+            WindMouseState.veloX = 0;
+            WindMouseState.veloY = 0;
+            WindMouseState.currentX = 0;
+            WindMouseState.currentY = 0;
+        }
+
+        WindMouseState.speed = speed;
+        WindMouseState.lastUpdateTime = currentTime;
+    }
+    static void smoothLook(AltoClef mod, Rotation targetRot){
+        smoothLook(mod, targetRot, DEFAULT_SMOOTH_LOOK_SPEED);
+    }
+
+    /**
+     * Updates the rotation with improved smoothing and natural deceleration
+     */
+    static boolean updateWindMouseRotation(AltoClef mod) {
+        if (!WindMouseState.isRotating) return true;
+
+        // Check rotation timeout
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - WindMouseState.lastUpdateTime > WindMouseState.ROTATION_TIMEOUT) {
+            WindMouseState.isRotating = false;
+            return true;
+        }
+
+        // Base constants
+        double baseWind = 2.5;
+        double baseGravity = 9.0;
+        double baseMaxStep = 15.0 * WindMouseState.speed;
+
+        // Calculate current deltas
+        double deltaYaw = normalizeAngle(WindMouseState.targetRotation.getYaw() -
+                (WindMouseState.startRotation.getYaw() + (float)WindMouseState.currentX));
+        double deltaPitch = WindMouseState.targetRotation.getPitch() -
+                (WindMouseState.startRotation.getPitch() + (float)WindMouseState.currentY);
+
+        // Calculate distance to target
+        double distanceToTarget = Math.sqrt(deltaYaw * deltaYaw + deltaPitch * deltaPitch);
+
+        // Check if we're close enough to target
+        if (distanceToTarget < 0.01) {
+            WindMouseState.isRotating = false;
+            return true;
+        }
+
+        // Dynamic adjustment based on distance to target
+        double distanceFactor = Math.min(1.0, distanceToTarget / WindMouseState.DECELERATION_THRESHOLD);
+
+        // Adjust parameters based on distance
+        double wind = baseWind * distanceFactor;
+        double gravity = baseGravity * distanceFactor;
+        double maxStep = baseMaxStep * (0.5 + 0.5 * distanceFactor); // Smoother deceleration
+
+        // Update wind with reduced randomness when close to target
+        WindMouseState.windX = WindMouseState.windX / Math.sqrt(3) +
+                (Math.random() - 0.5) * wind * 2 * distanceFactor;
+        WindMouseState.windY = WindMouseState.windY / Math.sqrt(3) +
+                (Math.random() - 0.5) * wind * 2 * distanceFactor;
+
+        // Apply gravity with smooth deceleration
+        double gravityMultiplier = Math.pow(distanceFactor, 1.5); // Exponential deceleration
+        WindMouseState.veloX += (Math.random() * 6 + 3) * (deltaYaw / 100.0) * gravity * gravityMultiplier;
+        WindMouseState.veloY += (Math.random() * 6 + 3) * (deltaPitch / 100.0) * gravity * gravityMultiplier;
+
+        // Apply wind with reduced effect near target
+        WindMouseState.veloX += WindMouseState.windX * distanceFactor;
+        WindMouseState.veloY += WindMouseState.windY * distanceFactor;
+
+        // Add slight momentum dampening when close to target
+        if (distanceFactor < 0.5) {
+            WindMouseState.veloX *= 0.95;
+            WindMouseState.veloY *= 0.95;
+        }
+
+        // Normalize velocity with smooth speed scaling
+        double velocity = Math.sqrt(WindMouseState.veloX * WindMouseState.veloX +
+                WindMouseState.veloY * WindMouseState.veloY);
+        if (velocity > maxStep) {
+            double scale = maxStep / velocity;
+            WindMouseState.veloX *= scale;
+            WindMouseState.veloY *= scale;
+        }
+
+        // Update position with additional smoothing for small movements
+        WindMouseState.currentX += WindMouseState.veloX * (0.8 + 0.2 * distanceFactor);
+        WindMouseState.currentY += WindMouseState.veloY * (0.8 + 0.2 * distanceFactor);
+
+        // Apply new rotation
+        float newYaw = WindMouseState.startRotation.getYaw() + (float)WindMouseState.currentX;
+        float newPitch = clamp(WindMouseState.startRotation.getPitch() + (float)WindMouseState.currentY,
+                -90.0f, 90.0f);
+
+        //mod.getInputControls().forceLook(newYaw, newPitch);
+        lookAt(mod, new Rotation(newYaw, newPitch));
+        return false;
+    }
+
+
+    static void smoothLookSTANDART(AltoClef mod, Rotation targetRotation, float speed) {
+        if (mod.getMobDefenseChain().isDoingAcrobatics()) return;
+
+        // Get current rotation
+        Rotation currentRotation = getLookRotation(mod.getPlayer());
+
+        // Calculate angle differences
+        float yawDiff = normalizeAngle(targetRotation.getYaw() - currentRotation.getYaw());
+        float pitchDiff = targetRotation.getPitch() - currentRotation.getPitch();
+
+        // Apply smooth interpolation
+        float interpolationFactor = Math.min(1.0f, speed);
+
+        // Add some human-like randomness to the movement
+        float randomness = 0.05f;
+        float randomFactor = 1.0f + (float)(Math.random() * randomness - randomness/2);
+
+        // Calculate new rotation with interpolation and smoothing
+        float newYaw = currentRotation.getYaw() + yawDiff * interpolationFactor * randomFactor;
+        float newPitch = clamp(
+                currentRotation.getPitch() + pitchDiff * interpolationFactor * randomFactor,
+                -90.0f,
+                90.0f
+        );
+
+        // Apply the rotation
+        Rotation newRotation = new Rotation(newYaw, newPitch);
+        mod.getInputControls().forceLook(newRotation.getYaw(), newRotation.getPitch());
+    }
+
+    /**
+     * Smooth look at a position in 3D space
+     */
+    static void smoothLookAt(AltoClef mod, Vec3d position, float speed) {
+        if (!cleanLineOfSight(position, 4.5)) return;
+
+        Rotation targetRotation = getLookRotation(mod, position);
+        smoothLook(mod, targetRotation, speed);
+    }
+
+    /**
+     * Smooth look at an entity
+     */
+    static void smoothLookAt(AltoClef mod, Entity entity, float speed) {
+        smoothLookAt(mod, entity.getEyePos(), speed);
+    }
+    static void smoothLookAt(AltoClef mod, Entity entity) {
+        smoothLookAt(mod, entity.getEyePos(), DEFAULT_SMOOTH_LOOK_SPEED);
+    }
+
+        /**
+         * Look in the direction of movement
+         */
+    static void smoothLookDirectional(AltoClef mod, float speed) {
+        Vec3d velocity = mod.getPlayer().getVelocity();
+        if (velocity.lengthSquared() <= 0.01) return;
+
+        Vec3d targetPos = mod.getPlayer().getEyePos()
+                .add(0, 7, 0)
+                .add(velocity.multiply(100));
+
+        smoothLookAt(mod, targetPos, speed);
+    }
+
+    // Utility methods
+    private static float normalizeAngle(float angle) {
+        angle = angle % 360.0f;
+        if (angle >= 180.0f) {
+            angle -= 360.0f;
+        } else if (angle < -180.0f) {
+            angle += 360.0f;
+        }
+        return angle;
+    }
+
+    private static float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
     }
 
 

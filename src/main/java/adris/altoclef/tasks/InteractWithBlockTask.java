@@ -240,7 +240,7 @@ public class InteractWithBlockTask extends Task {
 
         Optional<Rotation> reachable = getCurrentReach();
         if (reachable.isPresent()) {
-            LookHelper.SmoothLook(mod,reachable.get()); //TRS ВАЖНО!!!!! СМЕНИЛ МОДУЛЬ ЛУК ЭТ-а
+            LookHelper.smoothLook(mod,reachable.get()); //TRS ВАЖНО!!!!! СМЕНИЛ МОДУЛЬ ЛУК ЭТ-а
             //LookHelper.lookAt(mod, reachable.get());
             if (mod.getClientBaritone().getPlayerContext().isLookingAt(_target)) {
                 if (_toUse != null) {

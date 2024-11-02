@@ -367,6 +367,15 @@ public class Playground {
                 mod.getButler().AddNearestPlayerToFriends(mod,5);
                 mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), 900,false));
                 break;
+            case "t":
+                mod.runUserTask(new SafeRandomShimmyTask());
+                break;
+            case "tt":
+                //mod.getClientBaritone().getPathingBehavior().;
+                break;
+            case "sw":
+                mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), 500,false));
+                break;
             case "murder":
                 int role_int = 0;
                 try {role_int = Integer.parseInt(arg.split(" ")[1]);}
@@ -375,6 +384,9 @@ public class Playground {
                 break;
             case "kpvp":
                 mod.runUserTask(new KitPVPTask(mod.getPlayer().getBlockPos(),900,false));
+                break;
+            case "thepit":
+                mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), true, false));
                 break;
             case "replace":
                 // Creates a mini valley of crafting tables.

@@ -65,8 +65,8 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
         boolean LOS_Close2 = LookHelper.cleanLineOfSight(entity.getEyePos(),5.0);
 
         if (LOS_Close2){
-            LookHelper.SmoothLookAt(mod,0.05f,true,entity);
-
+            //LookHelper.SmoothLookAt(mod,0.05f,true,entity);
+            LookHelper.smoothLookAt(mod,entity);
             if (WorldHelper.isHellHole(mod,entity.getBlockPos())){
                 //Debug.logMessage("Цель над пропастью!");
             }else{

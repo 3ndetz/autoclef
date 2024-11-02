@@ -2,6 +2,7 @@ package adris.altoclef;
 
 import adris.altoclef.eventbus.events.*;
 import adris.altoclef.util.helpers.ArrowTrajectoryRenderer;
+import adris.altoclef.util.helpers.LookHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.entity.event.v1.ServerEntityCombatEvents;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
@@ -313,7 +314,7 @@ public class AltoClef implements ModInitializer {
 
     public ArrowTrajectoryRenderer _arrowTrajectoryRenderer = new ArrowTrajectoryRenderer();
     private void onClientRenderOverlay(MatrixStack matrixStack) {
-
+        LookHelper.updateWindMouseRotation(this);
         _commandStatusOverlay.render(this, matrixStack);
         _arrowTrajectoryRenderer.renderTrajectory(matrixStack, 0, getPlayer());
     }

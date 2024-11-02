@@ -29,11 +29,7 @@ public class LootContainerTask extends Task {
     private final Predicate<ItemStack> _check;
     public final BlockPos chest;
     public final List<Item> targets = new ArrayList<>();
-    private final TimerGame _lootTimer = new TimerGame(1);
-    public boolean CantGoLooting(){
-        //_lootTimer.setInterval(1);
-        return _lootTimer.elapsed();
-    }
+    public boolean _isInChest = false;
     public LootContainerTask(BlockPos chestPos, List<Item> items) {
         chest = chestPos;
         targets.addAll(items);
@@ -51,7 +47,6 @@ public class LootContainerTask extends Task {
         mod.getBehaviour().push();
         //Debug.logMessage("sss"+CantGoLooting());
         //CanGoLooting();
-        _lootTimer.reset();
         for (Item item : targets) {
             if (!mod.getBehaviour().isProtected(item)) {
                 mod.getBehaviour().addProtectedItems(item);
@@ -64,9 +59,11 @@ public class LootContainerTask extends Task {
 
 
         if(!ContainerType.screenHandlerMatches(ContainerType.CHEST)) {
+            _isInChest = false;
             setDebugState("Активация контейнера"); //TRS "Interact with container"
             return new InteractWithBlockTask(chest);
         }
+        _isInChest = true;
         //if(!CantGoLooting()){
         //    setDebugState("Ждемс..."+_lootTimer.getDuration());
         //    //Debug.logMessage("ПРИВЕТ)))");
@@ -78,7 +75,6 @@ public class LootContainerTask extends Task {
             Optional<Slot> toFit = mod.getItemStorage().getSlotThatCanFitInPlayerInventory(cursor, false).or(() -> StorageHelper.getGarbageSlot(mod));
             if (toFit.isPresent()) {
                 setDebugState("Перемещение курсора в инвентарь"); //"Putting cursor in inventory"
-                _lootTimer.reset();
                 TimersHelper.ChestInteractTimerReset();
                 return new ClickSlotTask(toFit.get());
             } else {
@@ -92,12 +88,12 @@ public class LootContainerTask extends Task {
         if (optimal.isEmpty()) {
                 //_lootTimer.reset();
                 //Debug.logMessage("We done here "+_doneHereIter);
+                _isInChest = false;
                 _weDoneHere = true;
                 return null;
 
         }
         setDebugState("Взять: " + targets);//"Looting items: "
-        _lootTimer.reset();
         return new ClickSlotTask(optimal.get());
     }
 
@@ -117,7 +113,9 @@ public class LootContainerTask extends Task {
     protected boolean isEqual(Task other) {
         return other instanceof LootContainerTask && targets == ((LootContainerTask) other).targets;
     }
-
+    public boolean IsInChest(){
+        return _isInChest;
+    }
     private Optional<Slot> getAMatchingSlot(AltoClef mod) {
         for (Item item : targets) {
             List<Slot> slots = mod.getItemStorage().getSlotsWithItemContainer(item);
@@ -131,9 +129,7 @@ public class LootContainerTask extends Task {
     @Override
     public boolean isFinished(AltoClef mod) {
         //Debug.logMessage("We done here "+_lootTimer.getDuration());
-        boolean zzstop = false;//!CantGoLooting();
-        if(_lootTimer.getDuration()>0.8) zzstop = true;
-        return zzstop&&(_weDoneHere || (ContainerType.screenHandlerMatchesAny() &&
+        return (_weDoneHere || (ContainerType.screenHandlerMatchesAny() &&
                 getAMatchingSlot(mod).isEmpty()));
     }
 

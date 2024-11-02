@@ -86,7 +86,9 @@ public class PlayerExtraController {
             //Debug.logMessage("seesPlayer " + LookHelper.seesPlayer(entity,_mod.getPlayer(),10));
             _innacuracy = 6.0f; //10
             if(DoRotates){
-            LookHelper.SmoothLookAt(_mod,0.05f,true,entity);}
+                //LookHelper.smoothLookAt(_mod,entity,1f);
+            }
+                //LookHelper.SmoothLookAt(_mod,0.05f,true,entity);}
             if(true) {
                 //entity.isInv
                 _plyPitch = _mod.getPlayer().getPitch();
