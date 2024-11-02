@@ -26,7 +26,7 @@ jobs:
       run: ./gradlew build
       
     - name: Archive Artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Artifacts
         path: ./build/libs
@@ -41,7 +41,7 @@ jobs:
       working-directory: ./build/libs
   
     - name: Upload Hashes
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Hashes
         path: ./build/libs/hashes.sha256
