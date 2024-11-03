@@ -31,7 +31,7 @@ public class KillAura {
     // Smart aura data
     private final List<Entity> _targets = new ArrayList<>();
     private final TimerGame _hitDelay = new TimerGame(0.2);
-    boolean _shielding = false;
+    public boolean _shielding = false;
     private double _forceFieldRange = Double.POSITIVE_INFINITY;
     private Entity _forceHit = null;
 
@@ -175,8 +175,11 @@ public class KillAura {
     private void attack(AltoClef mod, Entity entity, boolean equipSword) {
         if (entity == null) return;
         if (!(entity instanceof FireballEntity)) {
+            //LookHelper.smoothLookAt(mod, entity.getEyePos());
+
             //LookHelper.lookAt(mod, entity.getEyePos());
         }
+        //if (_shielding) return;
         if (Double.isInfinite(_forceFieldRange) || entity.squaredDistanceTo(mod.getPlayer()) < _forceFieldRange * _forceFieldRange ||
                 entity.squaredDistanceTo(mod.getPlayer()) < 40) {
             if (entity instanceof FireballEntity) {

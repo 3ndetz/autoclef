@@ -106,7 +106,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
             Debug.logMessage("Missing items, stopping.");
             return null;
         }
-        if(!shooting){
+        if(mod.getPlayer().getItemUseTime() <= 1){
             LookHelper.smoothLookAt(mod, target);
         }else {
             Rotation lookTarget = calculateThrowLook(mod, target);

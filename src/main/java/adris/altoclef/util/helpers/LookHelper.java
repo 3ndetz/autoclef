@@ -29,9 +29,9 @@ import java.util.Optional;
 /**
  * Helper functions to interpret and change our player's look direction
  */
-public class LookHelper {
-    static float DEFAULT_SMOOTH_LOOK_SPEED = 0.4f;
-    static float DEFAULT_DECELERATION_THRESHOLD = 80.0f;
+public interface LookHelper {
+    static float DEFAULT_SMOOTH_LOOK_SPEED = 1.5f;
+    static float DEFAULT_DECELERATION_THRESHOLD = 25.0f;
     /**
      * Calculate the reachable rotation for a given target and side.
      *
@@ -908,9 +908,6 @@ public class LookHelper {
     /**
      * Smooth look at an entity
      */
-    public static void smoothLookAt(AltoClef mod, Entity entity, float speed) {
-        smoothLookAt(mod, entity.getEyePos(), speed);
-    }
     public static void smoothLookAt(AltoClef mod, Entity entity) {
         smoothLookAt(mod, entity.getEyePos(), DEFAULT_SMOOTH_LOOK_SPEED);
     }

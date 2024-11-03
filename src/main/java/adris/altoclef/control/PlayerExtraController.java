@@ -92,6 +92,9 @@ public class PlayerExtraController {
                 if (IsPitchBoundBox & IsYawNormal &
                         entity.squaredDistanceTo(_mod.getPlayer()) < 3.2 * 3.2 & !_mod.getFoodChain().isTryingToEat()) {
                     try {
+                        //if(!){
+                            _mod.getInputControls().release(Input.CLICK_RIGHT);
+                        //}
                         _mod.getInputControls().tryPress(Input.CLICK_LEFT);
 
                     } catch (Exception e) {

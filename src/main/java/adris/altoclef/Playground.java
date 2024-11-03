@@ -398,7 +398,15 @@ public class Playground {
                 mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), true, false));
                 break;
             case "bow":
-                mod.runUserTask(new ShootArrowSimpleProjectileTask(mod.getEntityTracker().getClosestEntity(PlayerEntity.class).get()));
+                List<PlayerEntity> players = mod.getEntityTracker().getTrackedEntities(PlayerEntity.class);
+
+                if (players.size() == 0) {
+                    Debug.logWarning("No ghasts found.");
+                    break;
+                }
+
+                PlayerEntity target_ply = players.get(0);
+                mod.runUserTask(new ShootArrowSimpleProjectileTask(target_ply));
                 break;
             case "replace":
                 // Creates a mini valley of crafting tables.

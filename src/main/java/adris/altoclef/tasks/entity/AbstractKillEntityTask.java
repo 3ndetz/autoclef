@@ -130,8 +130,8 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
 
                     if (LOS_Close) {
                         try {
-                            attacked = mod.getControllerExtras().attack(entity,
-                                    false); //!!!! java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 2
+
+                            //attacked = mod.getControllerExtras().attack(entity,false); //!!!! java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 2
                         } catch (Exception e) {
                             Debug.logWarning("!!! ERROR WHEN ATTACKING !!! [OFTEN CRASH AFTER THAT!!!!!!!!!]");
                             e.printStackTrace();

@@ -281,13 +281,14 @@ public class SkyWarsTask extends Task {
                         WorldHelper.canReach(mod,blockPos), Blocks.CHEST);
 
         Optional<ItemEntity> closestDrop = mod.getEntityTracker().getClosestItemDrop(pos,toItemTargets(lootableItems(mod).toArray(new Item[0])));
-
+        boolean non_reachable = getCurrentCalculatedHeuristic(mod) == Double.POSITIVE_INFINITY;
         float costContainer = Float.POSITIVE_INFINITY;
         float costTarget = Float.POSITIVE_INFINITY;
         float costDrop = Float.POSITIVE_INFINITY;
         if (closestCont.isPresent()) {
             costContainer = getPathCost(mod, pos, closestCont.get());
         }
+
         if (target.isPresent()) {
             costTarget = getPathCost(mod, pos, target.get().getPos());
         }
@@ -320,7 +321,7 @@ public class SkyWarsTask extends Task {
         // Handle combat
         if (target.isPresent()) {
             PlayerEntity player = (PlayerEntity) target.get();
-            alert = mod.getPlayer().distanceTo(player) <= 15;
+            alert = mod.getPlayer().distanceTo(player) <= 10;
             if (alert) {
                 return new KillPlayerTask(player.getName().getString());
             }
@@ -337,7 +338,7 @@ public class SkyWarsTask extends Task {
         }
 
         //!_buildBlocksCollectTimer.elapsed() ||
-        if ( minCost == Float.POSITIVE_INFINITY || minCost>150 || (getCurrentCalculatedHeuristic(mod)>100 && !_structureMaterialsTask.isActive())) {
+        if ( minCost == Float.POSITIVE_INFINITY || minCost>150 || (non_reachable && !_structureMaterialsTask.isActive())) {
             // Get building blocks
             int buildCount = mod.getItemStorage().getItemCount(ItemHelper.blocksToItems(buildableBlocks));
             if (buildCount < 32 && (buildCount == 0 || _structureMaterialsTask != null)) {
