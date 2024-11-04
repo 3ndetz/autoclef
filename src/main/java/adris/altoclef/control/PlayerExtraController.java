@@ -1,6 +1,7 @@
 package adris.altoclef.control;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.BlockBreakingCancelEvent;
 import adris.altoclef.eventbus.events.BlockBreakingEvent;
@@ -11,6 +12,8 @@ import baritone.api.utils.RotationUtils;
 import baritone.api.utils.input.Input;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.Hand;
+import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
@@ -60,37 +63,11 @@ public class PlayerExtraController {
     public boolean attack(Entity entity, boolean DoRotates) {
         _succesfulHit = false;
         //entity.is
-        if (IsPvpRotating == false) {
-            new Thread(() -> {
+        // TODO FLICK
+        LookHelper.smoothLook(_mod, entity);
 
-                IsPvpRotating = true;
-                sleepSec(1);
-                IsPvpRotating = false;
-            }).start();
-        }
-
-        if (LookHelper.cleanLineOfSight(entity.getEyePos(), 4.5)) {//(inRange(entity)) {
-            if (DoRotates) {
-                LookHelper.smoothLookAt(_mod, entity);
-                //LookHelper.SmoothLookAt(_mod, 0.05f, true, entity);
-            }
-            if (true) {
-                _plyPitch = _mod.getPlayer().getPitch();
-                _plyYaw = _mod.getPlayer().getYaw();
-                Rotation _targetRotation = RotationUtils.calcRotationFromVec3d(
-                        _mod.getClientBaritone().getPlayerContext().playerHead(), entity.getPos().add(0, 1.0, 0),
-                        _mod.getClientBaritone().getPlayerContext().playerRotations());
-                Rotation subtractRotation = new Rotation(_plyYaw, _plyPitch).subtract(_targetRotation);
-                boolean IsYawNormal =
-                        Math.abs(subtractRotation.getYaw()) < 7.5 / (entity.squaredDistanceTo(_mod.getPlayer()) / 4);
-                boolean IsPitchBoundBox = false;
-                float zzMax = LookHelper.getLookRotation(_mod,
-                        new Vec3d(entity.getX(), entity.getBoundingBox().maxY, entity.getZ())).getPitch();
-                float zzMin = LookHelper.getLookRotation(_mod,
-                        new Vec3d(entity.getX(), entity.getBoundingBox().minY, entity.getZ())).getPitch();
-                IsPitchBoundBox = _plyPitch > zzMax & _plyPitch < zzMin;
-                if (IsPitchBoundBox & IsYawNormal &
-                        entity.squaredDistanceTo(_mod.getPlayer()) < 3.2 * 3.2 & !_mod.getFoodChain().isTryingToEat()) {
+        //double PunkRange = 3.1;
+                if (LookHelper.isLookingAtEntity(_mod, entity)) {//LookHelper.cleanLineOfSight(_mod.getPlayer(), LookHelper.getClosestPointOnEntityHitbox(_mod, entity),PunkRange)) {
                     try {
                         //if(!){
                             _mod.getInputControls().release(Input.CLICK_RIGHT);
@@ -104,10 +81,6 @@ public class PlayerExtraController {
                     _succesfulHit = true;
                 }
 
-            }
-        } else {
-            KillAuraHelper.TimerStop();
-        }
         return _succesfulHit;
     }
 

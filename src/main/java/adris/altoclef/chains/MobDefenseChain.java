@@ -196,7 +196,8 @@ public class MobDefenseChain extends SingleTaskChain {
                     && !mod.getPlayer().getItemCooldownManager().isCoolingDown(offhandItem)
                     && mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
                 _doingFunkyStuff = true;
-                LookHelper.lookAt(mod, blowingUp.getEyePos());
+                //LookHelper.lookAt(mod, blowingUp.getEyePos());
+                LookHelper.smoothLook(mod, blowingUp);
                 ItemStack shieldSlot = StorageHelper.getItemStackInSlot(PlayerSlot.OFFHAND_SLOT);
                 if (shieldSlot.getItem() != Items.SHIELD) {
                     mod.getSlotHandler().forceEquipItemToOffhand(Items.SHIELD);

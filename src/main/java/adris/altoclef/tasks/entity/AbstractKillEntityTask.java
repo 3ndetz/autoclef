@@ -12,6 +12,7 @@ import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.slots.PlayerSlot;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;
@@ -79,20 +80,22 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
     @Override
     protected Task onEntityInteract(AltoClef mod, Entity entity) {
         // Equip weapon
+        if(!WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos()) && entity.isPlayer()){
+            boolean RotatedJump = entity.squaredDistanceTo(mod.getPlayer()) < 3.2 * 3.2;
+            KillAuraHelper.GoJump(mod,RotatedJump);
+        }
         if (!equipWeapon(mod)) {
             float hitProg = mod.getPlayer().getAttackCooldownProgress(0);
-            LookHelper.smoothLookAt(mod, entity.getEyePos());
+            LookHelper.smoothLook(mod, entity);
             if (hitProg >= 0.99) {
-                if (mod.getPlayer().isOnGround() || mod.getPlayer().getVelocity().getY() < 0 || mod.getPlayer().isTouchingWater()) {
+                if (//mod.getPlayer().isOnGround() ||
+                 mod.getPlayer().getVelocity().getY() < 0 || mod.getPlayer().isTouchingWater()) {
                     //LookHelper.smoothLookAt(mod, entity.getEyePos());
                     mod.getControllerExtras().attack(entity);
                 }
             }
         }
-        if(!WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos())){
-            boolean RotatedJump = entity.squaredDistanceTo(mod.getPlayer()) < 3.2 * 3.2;
-            KillAuraHelper.GoJump(mod,RotatedJump);
-        }
+
         return null;
     }
 

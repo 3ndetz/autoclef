@@ -87,7 +87,7 @@ public class KillAura {
                     && (mod.getItemStorage().hasItem(Items.SHIELD) || mod.getItemStorage().hasItemInOffhand(Items.SHIELD))
                     && !mod.getPlayer().getItemCooldownManager().isCoolingDown(offhandItem)
                     && mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
-                LookHelper.smoothLookAt(mod, entities.get());
+                //LookHelper.smoothLookAt(mod, entities.get());
                 ItemStack shieldSlot = StorageHelper.getItemStackInSlot(PlayerSlot.OFFHAND_SLOT);
                 if (shieldSlot.getItem() != Items.SHIELD) {
                     mod.getSlotHandler().forceEquipItemToOffhand(Items.SHIELD);
@@ -194,7 +194,8 @@ public class KillAura {
                 canAttack = mod.getSlotHandler().forceDeequipHitTool();
             }
             if (canAttack) {
-                if (mod.getPlayer().isOnGround() || mod.getPlayer().getVelocity().getY() < 0 || mod.getPlayer().isTouchingWater()) {
+                if (//mod.getPlayer().isOnGround() ||
+                         mod.getPlayer().getVelocity().getY() < 0 || mod.getPlayer().isTouchingWater()) {
                     mod.getControllerExtras().attack(entity);
                 }
             }

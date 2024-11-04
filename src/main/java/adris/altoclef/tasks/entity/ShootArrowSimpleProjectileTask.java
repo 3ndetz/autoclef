@@ -107,7 +107,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
             return null;
         }
         if(mod.getPlayer().getItemUseTime() <= 1){
-            LookHelper.smoothLookAt(mod, target);
+            //LookHelper.smoothLookAt(mod, target);
         }else {
             Rotation lookTarget = calculateThrowLook(mod, target);
             LookHelper.smoothLook(mod, lookTarget);

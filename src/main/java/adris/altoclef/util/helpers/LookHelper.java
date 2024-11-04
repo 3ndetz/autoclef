@@ -1,6 +1,7 @@
 package adris.altoclef.util.helpers;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.util.slots.Slot;
 import baritone.api.BaritoneAPI;
 import baritone.api.utils.IPlayerContext;
@@ -29,8 +30,8 @@ import java.util.Optional;
 /**
  * Helper functions to interpret and change our player's look direction
  */
-public interface LookHelper {
-    static float DEFAULT_SMOOTH_LOOK_SPEED = 1.5f;
+public abstract class LookHelper {
+    static float DEFAULT_SMOOTH_LOOK_SPEED = 0.9f;
     static float DEFAULT_DECELERATION_THRESHOLD = 25.0f;
     /**
      * Calculate the reachable rotation for a given target and side.
@@ -481,6 +482,55 @@ public interface LookHelper {
         return false;
     }
 
+
+    /*
+     * Gets the closest point on an entity's hitbox to the player's eye position
+     * @param entity Target entity
+     * @param playerPos Player's eye position
+     * @return The closest point on the entity's hitbox
+     */
+    public static Vec3d getClosestPointOnEntityHitbox(Vec3d playerPos, Box boundingBox) {
+        // Get entity's bounding box
+
+
+        // Clamp player position to the nearest point on/in the box
+        double closestX = clamp(playerPos.x, boundingBox.minX, boundingBox.maxX);
+        double closestY = clamp(playerPos.y, boundingBox.minY, boundingBox.maxY);
+        double closestZ = clamp(playerPos.z, boundingBox.minZ, boundingBox.maxZ);
+
+        return new Vec3d(closestX, closestY, closestZ);
+    }
+
+    public static Vec3d getClosestPointOnEntityHitbox(AltoClef mod, Entity entity) {
+        // Get entity's bounding box
+        Box boundingBox = entity.getBoundingBox();
+        return getClosestPointOnEntityHitbox(mod.getPlayer().getEyePos(), boundingBox);
+    }
+
+
+    /**
+     * Gets optimal aim position for targeting an entity
+     * @param mod AltoClef mod instance
+     * @param entity Target entity
+     * @return Best position to aim at
+     */
+    static Vec3d getOptimalAimPoint(AltoClef mod, Entity entity) {
+        Vec3d playerEyePos = mod.getPlayer().getEyePos();
+
+        // Get closest point on hitbox
+        Vec3d closestPoint = getClosestPointOnEntityHitbox(mod, entity);
+
+        // For very close entities, aim slightly higher to compensate for attack mechanics
+        double distanceSquared = playerEyePos.squaredDistanceTo(closestPoint);
+        if (distanceSquared < 4.0) { // Within 2 blocks
+            // Adjust aim height based on distance (closer = higher aim)
+            double heightAdjust = 0.3 * (1.0 - distanceSquared / 4.0);
+            closestPoint = closestPoint.add(0, heightAdjust, 0);
+        }
+
+        return closestPoint;
+    }
+
     /**
      * Sets a random orientation for the given mod.
      *
@@ -553,6 +603,10 @@ public interface LookHelper {
         mod.getPlayer().setYaw(rotation.getYaw());
         mod.getPlayer().setPitch(rotation.getPitch());
     }
+    public static void lookAtForced(AltoClef mod, Rotation rotation) {
+        mod.getInputControls().forceLook(rotation.getYaw(), rotation.getPitch());
+    }
+
 
     /**
      * Adjusts the player's look direction to the specified target position.
@@ -721,13 +775,65 @@ public interface LookHelper {
     }
 
 
+    /**
+     * Checks if the player is currently looking at a specific entity's hitbox
+     * @param mod AltoClef mod instance
+     * @param entity Target entity to check
+     * @param maxDistance Maximum distance to check (default: 6.0)
+     * @param precision Angular precision in degrees (default: 2.0)
+     * @return true if player's look vector intersects with entity's hitbox
+     */
+    public static boolean isLookingAtEntity(AltoClef mod, Entity entity, double maxDistance, double precision) {
+        if (entity == null || !entity.isAlive()) return false;
+
+        // Get player eye position and look vector
+        Vec3d eyePos = mod.getPlayer().getEyePos();
+        Vec3d lookVec = mod.getPlayer().getRotationVec(1.0F);
+
+        // Get entity hitbox
+        Box entityBox = entity.getBoundingBox();
+
+        // Ray length vector
+        Vec3d ray = lookVec.multiply(maxDistance);
+        Vec3d targetPos = eyePos.add(ray);
+
+        // Check if ray intersects with entity hitbox
+        Optional<Vec3d> hitOptional = entityBox.raycast(eyePos, targetPos);
+
+        if (!hitOptional.isPresent()) {
+            return false;
+        }
+
+        // Get hit point
+        Vec3d hitPoint = hitOptional.get();
+
+        // Calculate angles to hit point
+        Rotation hitRotation = getLookRotation(mod, hitPoint);
+        Rotation currentRotation = getLookRotation(mod.getPlayer());
+
+        // Check if current look direction is close enough to hit point
+        float yawDiff = Math.abs(normalizeAngle(hitRotation.getYaw() - currentRotation.getYaw()));
+        float pitchDiff = Math.abs(hitRotation.getPitch() - currentRotation.getPitch());
+
+        // Convert precision to radians for more accurate comparison
+        return yawDiff <= precision && pitchDiff <= precision;
+    }
+
+    /**
+     * Overloaded method with default values
+     */
+    public static boolean isLookingAtEntity(AltoClef mod, Entity entity) {
+        //Debug.logMessage("LOL LOOKING?"+isLookingAtEntity(mod, entity, 6.0, 2.0));
+        return isLookingAtEntity(mod, entity, 6.0, 2.0);
+    }
+
 
     public static double getLookingProbability(Vec3d eyeFrom, Vec3d eyeTo, Vec3d RotationFrom){
         Vec3d toEntity = eyeTo.subtract(eyeFrom);
         double dot = toEntity.normalize().dotProduct(RotationFrom);
         return dot; //0.8 60 град, 0.9 30 град 0.95 15 град (точный взгляд
     }
-    class WindMouseState {
+    static class WindMouseState {
         public static boolean isRotating = false;
         public static double windX = 0;
         public static double windY = 0;
@@ -737,6 +843,7 @@ public interface LookHelper {
         public static double currentY = 0;
         public static Rotation targetRotation = null;
         public static Rotation startRotation = null;
+        public static Entity targetEntity = null;
         public static float speed = DEFAULT_SMOOTH_LOOK_SPEED;
         public static long lastUpdateTime = 0;
         // Time in milliseconds before rotation stops if no new calls
@@ -748,20 +855,25 @@ public interface LookHelper {
     /**
      * Initiates a WindMouse rotation with improved smoothing
      */
-    public static void smoothLook(AltoClef mod, Rotation targetRot, float speed) {
-        //if (mod.getMobDefenseChain().isDoingAcrobatics()) return;
-
+    public static boolean isCloseRotations(Rotation startRot, Rotation newRot){
+        float closenessTolerance = 15;
+        return (Math.abs(normalizeAngle(startRot.getYaw() - newRot.getYaw())) > closenessTolerance ||
+                Math.abs(startRot.getPitch() - newRot.getPitch()) > closenessTolerance);
+    }
+    private static void smoothLookInternal(AltoClef mod, Rotation targetRot, Entity targetEntity, float speed) {
         long currentTime = System.currentTimeMillis();
         boolean isNewRotation = !WindMouseState.isRotating ||
                 currentTime - WindMouseState.lastUpdateTime > WindMouseState.ROTATION_TIMEOUT;
 
-        // Reset state if this is a new rotation or significant target change
-        if (isNewRotation || (WindMouseState.targetRotation != null &&
-                Math.abs(normalizeAngle(targetRot.getYaw() - WindMouseState.targetRotation.getYaw())) > 5 ||
-                Math.abs(targetRot.getPitch() - WindMouseState.targetRotation.getPitch()) > 5)) {
+        boolean shouldReset = isNewRotation;
+        if (targetEntity != null) {
+            shouldReset = shouldReset || WindMouseState.targetEntity == null
+                    || !(WindMouseState.targetEntity != null && WindMouseState.targetEntity.equals(targetEntity));
+        }
 
+        if (shouldReset || (WindMouseState.targetRotation != null && isCloseRotations(targetRot, WindMouseState.targetRotation))) {
             WindMouseState.isRotating = true;
-            WindMouseState.targetRotation = targetRot;
+            WindMouseState.targetEntity = targetEntity;
             WindMouseState.startRotation = getLookRotation(mod.getPlayer());
             WindMouseState.windX = 0;
             WindMouseState.windY = 0;
@@ -771,9 +883,27 @@ public interface LookHelper {
             WindMouseState.currentY = 0;
         }
 
+        WindMouseState.targetRotation = targetRot;
         WindMouseState.speed = speed;
         WindMouseState.lastUpdateTime = currentTime;
     }
+
+    /**
+     * Overload for entity targeting
+     */
+    public static void smoothLook(AltoClef mod, Entity entity) {
+        Rotation targetRot = getLookRotation(mod, getClosestPointOnEntityHitbox(mod, entity));
+        smoothLookInternal(mod, targetRot, entity, DEFAULT_SMOOTH_LOOK_SPEED);
+    }
+
+    /**
+     * Overload for rotation targeting
+     */
+    public static void smoothLook(AltoClef mod, Rotation targetRot, float speed) {
+        smoothLookInternal(mod, targetRot, null, speed);
+    }
+
+    //getOptimalAimPoint
     public static void smoothLook(AltoClef mod, Rotation targetRot){
         smoothLook(mod, targetRot, DEFAULT_SMOOTH_LOOK_SPEED);
     }
@@ -789,9 +919,16 @@ public interface LookHelper {
         long currentTime = System.currentTimeMillis();
         if (currentTime - WindMouseState.lastUpdateTime > WindMouseState.ROTATION_TIMEOUT) {
             WindMouseState.isRotating = false;
+            WindMouseState.targetEntity = null;
             return true;
         }
 
+        if (WindMouseState.targetEntity != null){
+            WindMouseState.targetRotation = LookHelper.getLookRotation(mod, getClosestPointOnEntityHitbox(mod, WindMouseState.targetEntity));
+        }
+        if(mod.getClientBaritone().getCustomGoalProcess().isActive()){
+            return false;
+        }
         // Base constants
         double baseWind = 2.5;
         double baseGravity = 9.0;
@@ -859,8 +996,8 @@ public interface LookHelper {
         float newPitch = clamp(WindMouseState.startRotation.getPitch() + (float)WindMouseState.currentY,
                 -90.0f, 90.0f);
 
-        //mod.getInputControls().forceLook(newYaw, newPitch);
-        lookAt(mod, new Rotation(newYaw, newPitch));
+        mod.getInputControls().forceLook(newYaw, newPitch);
+        //lookAt(mod, new Rotation(newYaw, newPitch));
         return false;
     }
 
@@ -899,7 +1036,7 @@ public interface LookHelper {
      * Smooth look at a position in 3D space
      */
     public static void smoothLookAt(AltoClef mod, Vec3d position, float speed) {
-        if (!cleanLineOfSight(position, 4.5)) return;
+        //if (!cleanLineOfSight(position, 4.5)) return;
 
         Rotation targetRotation = getLookRotation(mod, position);
         smoothLook(mod, targetRotation, speed);
@@ -941,7 +1078,9 @@ public interface LookHelper {
     private static float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
     }
-
+    private static double clamp(double value, double min, double max) {
+        return (double) Math.max(min, Math.min(max, value));
+    }
     private static void sleepSec(double seconds) {
         try {
             Thread.sleep((int) (1000 * seconds));

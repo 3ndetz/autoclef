@@ -90,6 +90,8 @@ public abstract class KillAuraHelper {
         if (JumpTimerStarted==-1) {
             JumpTimerStarted = System.currentTimeMillis();
         }else if (System.currentTimeMillis()>JumpTimerStarted+810){
+            //boolean doJump = false;
+            //boolean HighSpeed = false;
             boolean doJump = mod.getPlayer().isOnGround();
             boolean HighSpeed = mod.getPlayer().getVelocity().horizontalLengthSquared()>0.025 ;
         new Thread(() -> {

@@ -9,6 +9,7 @@ import adris.altoclef.tasks.container.LootContainerTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
 import adris.altoclef.tasks.misc.EquipArmorTask;
+import adris.altoclef.tasks.movement.GetToBlockTask;
 import adris.altoclef.tasks.movement.PickupDroppedItemTask;
 import adris.altoclef.tasks.movement.SearchChunksExploreTask;
 import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
@@ -247,10 +248,13 @@ public class SkyWarsTask extends Task {
 
         if (_thePitTask) {
             setDebugState("ThePit");
-            if (mod.getPlayer().getBlockPos().isWithinDistance(_startedPos, 10)) {
+            if (mod.getPlayer().getPos().getY() > 85){//(mod.getPlayer().getBlockPos().isWithinDistance(_startedPos, 10)) {
                 setDebugState("МЫ НА СПАВНЕ! НАДО ВЫБРАТЬСЯ");
+                mod.getInputControls().tryPress(Input.JUMP);
                 mod.getInputControls().tryPress(Input.MOVE_FORWARD);
-                return null;
+                //return new GetToBlockTask(new BlockPos(7, 96, 0));
+                return new GetToBlockTask(new BlockPos(-17, 95, 19));
+               // return null;
             }
         }
         if (mod.getFoodChain().isTryingToEat()) return null;
