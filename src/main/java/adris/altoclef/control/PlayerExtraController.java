@@ -64,8 +64,9 @@ public class PlayerExtraController {
         _succesfulHit = false;
         //entity.is
         // TODO FLICK
-        LookHelper.smoothLook(_mod, entity);
-
+        //if(DoRotates) {
+            LookHelper.smoothLook(_mod, entity);
+        //}
         //double PunkRange = 3.1;
                 if (LookHelper.isLookingAtEntity(_mod, entity)) {//LookHelper.cleanLineOfSight(_mod.getPlayer(), LookHelper.getClosestPointOnEntityHitbox(_mod, entity),PunkRange)) {
                     try {
@@ -85,7 +86,7 @@ public class PlayerExtraController {
     }
 
     public boolean attack(Entity entity) {
-        return this.attack(entity, true);
+        return this.attack(entity, false);
     }
 
     private static void sleepSec(double seconds) {

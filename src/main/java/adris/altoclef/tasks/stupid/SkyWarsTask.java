@@ -246,15 +246,27 @@ public class SkyWarsTask extends Task {
         if (mod.getFoodChain().isTryingToEat()) return null;
         boolean alert = false;
 
-        if (_thePitTask) {
+        if (_thePitTask) { // vime mc thepit
             setDebugState("ThePit");
             if (mod.getPlayer().getPos().getY() > 85){//(mod.getPlayer().getBlockPos().isWithinDistance(_startedPos, 10)) {
                 setDebugState("МЫ НА СПАВНЕ! НАДО ВЫБРАТЬСЯ");
                 mod.getInputControls().tryPress(Input.JUMP);
                 mod.getInputControls().tryPress(Input.MOVE_FORWARD);
-                //return new GetToBlockTask(new BlockPos(7, 96, 0));
-                return new GetToBlockTask(new BlockPos(-17, 95, 19));
-               // return null;
+                if(WorldHelper.isBlock(mod, new BlockPos(-17, 96, 19), Blocks.GLASS)) {
+                    return new GetToBlockTask(new BlockPos(7, 96, 0)); // center
+                }else {
+                    BlockPos goalBlockPos = new BlockPos(19, 96, 16);
+                    //BlockPos[] positions = new BlockPos[] {
+                    //        new BlockPos(-19, 96, 16), //port
+                    //        new BlockPos(19, 96, 16), // city
+                    //        new BlockPos(19, 96, -19), // pole
+                    //        new BlockPos(-19, 96, -19), //forest
+                    //};
+                    //Random random = new Random();
+                    //BlockPos goalBlockPos = positions[random.nextInt(positions.length)];
+                    return new GetToBlockTask(goalBlockPos);
+
+                }// return null;
             }
         }
         if (mod.getFoodChain().isTryingToEat()) return null;

@@ -845,9 +845,10 @@ public abstract class LookHelper {
         public static Rotation startRotation = null;
         public static Entity targetEntity = null;
         public static float speed = DEFAULT_SMOOTH_LOOK_SPEED;
-        public static long lastUpdateTime = 0;
+        public static long lastUpdateTime = System.currentTimeMillis();
+        public static long lastUpdateTimeInternal = System.currentTimeMillis();
         // Time in milliseconds before rotation stops if no new calls
-        public static final long ROTATION_TIMEOUT = 200;
+        public static final long ROTATION_TIMEOUT = 1000;
         // Distance threshold for deceleration
         public static final double DECELERATION_THRESHOLD = DEFAULT_DECELERATION_THRESHOLD;
     }
@@ -856,7 +857,7 @@ public abstract class LookHelper {
      * Initiates a WindMouse rotation with improved smoothing
      */
     public static boolean isCloseRotations(Rotation startRot, Rotation newRot){
-        float closenessTolerance = 15;
+        float closenessTolerance = 1000;
         return (Math.abs(normalizeAngle(startRot.getYaw() - newRot.getYaw())) > closenessTolerance ||
                 Math.abs(startRot.getPitch() - newRot.getPitch()) > closenessTolerance);
     }
@@ -871,18 +872,13 @@ public abstract class LookHelper {
                     || !(WindMouseState.targetEntity != null && WindMouseState.targetEntity.equals(targetEntity));
         }
 
-        if (shouldReset || (WindMouseState.targetRotation != null && isCloseRotations(targetRot, WindMouseState.targetRotation))) {
+        if (shouldReset || (WindMouseState.targetRotation != null && !isCloseRotations(targetRot, WindMouseState.targetRotation))) {
             WindMouseState.isRotating = true;
             WindMouseState.targetEntity = targetEntity;
             WindMouseState.startRotation = getLookRotation(mod.getPlayer());
-            WindMouseState.windX = 0;
-            WindMouseState.windY = 0;
-            WindMouseState.veloX = 0;
-            WindMouseState.veloY = 0;
-            WindMouseState.currentX = 0;
-            WindMouseState.currentY = 0;
         }
-
+        WindMouseState.targetEntity = targetEntity;
+        WindMouseState.isRotating = true;
         WindMouseState.targetRotation = targetRot;
         WindMouseState.speed = speed;
         WindMouseState.lastUpdateTime = currentTime;
@@ -908,37 +904,46 @@ public abstract class LookHelper {
         smoothLook(mod, targetRot, DEFAULT_SMOOTH_LOOK_SPEED);
     }
 
-
-    /**
-     * Updates the rotation with improved smoothing and natural deceleration
-     */
+    public static double hypot (Double x, Double y){
+        return Math.sqrt(x * x + y * y);
+    }
     public static boolean updateWindMouseRotation(AltoClef mod) {
+        long currentTime = System.currentTimeMillis();
+        // Calculate time delta in seconds since last update
+        double timeDelta = (currentTime - WindMouseState.lastUpdateTimeInternal) / 1000.0;
+        WindMouseState.lastUpdateTimeInternal = currentTime;
         if (!WindMouseState.isRotating) return true;
 
+
         // Check rotation timeout
-        long currentTime = System.currentTimeMillis();
         if (currentTime - WindMouseState.lastUpdateTime > WindMouseState.ROTATION_TIMEOUT) {
             WindMouseState.isRotating = false;
             WindMouseState.targetEntity = null;
+            WindMouseState.currentX = 0;
+            WindMouseState.currentY = 0;
+            WindMouseState.windX = 0;
+            WindMouseState.windY = 0;
+            WindMouseState.veloX = 0;
+            WindMouseState.veloY = 0;
             return true;
         }
 
         if (WindMouseState.targetEntity != null){
             WindMouseState.targetRotation = LookHelper.getLookRotation(mod, getClosestPointOnEntityHitbox(mod, WindMouseState.targetEntity));
         }
+        if (WindMouseState.targetRotation == null){ return false; }
+
         if(mod.getClientBaritone().getCustomGoalProcess().isActive()){
             return false;
         }
-        // Base constants
-        double baseWind = 2.5;
-        double baseGravity = 9.0;
-        double baseMaxStep = 10 * WindMouseState.speed;
 
-        // Calculate current deltas
-        double deltaYaw = normalizeAngle(WindMouseState.targetRotation.getYaw() -
-                (WindMouseState.startRotation.getYaw() + (float)WindMouseState.currentX));
-        double deltaPitch = WindMouseState.targetRotation.getPitch() -
-                (WindMouseState.startRotation.getPitch() + (float)WindMouseState.currentY);
+        // Get current rotation
+        //Vec2f rotationVec = mod.getPlayer().getRotationClient(); // Rotation currentRotation = new Rotation(rotationVec.x, rotationVec.y);
+        Rotation currentRotation = getLookRotation(mod.getPlayer());
+
+        // Calculate deltas
+        double deltaYaw = normalizeAngle(WindMouseState.targetRotation.getYaw() - currentRotation.getYaw());
+        double deltaPitch = WindMouseState.targetRotation.getPitch() - currentRotation.getPitch();
 
         // Calculate distance to target
         double distanceToTarget = Math.sqrt(deltaYaw * deltaYaw + deltaPitch * deltaPitch);
@@ -949,87 +954,85 @@ public abstract class LookHelper {
             return true;
         }
 
-        // Dynamic adjustment based on distance to target
-        double distanceFactor = Math.min(1.0, distanceToTarget / WindMouseState.DECELERATION_THRESHOLD);
+        // Base movement parameters (units per second)
+        //double baseSpeed = 10; //* WindMouseState.speed; // 180 degrees per second at speed 1.0
+        double baseWind = 1000; // Wind effect per second
+        double baseGravity = 8000; // Gravity effect per second
+        double baseMaxStep = 1000000; //* WindMouseState.speed;
 
-        // Adjust parameters based on distance
-        double wind = baseWind * distanceFactor;
-        double gravity = baseGravity * distanceFactor;
-        double maxStep = baseMaxStep * (0.5 + 0.5 * distanceFactor); // Smoother deceleration
 
-        // Update wind with reduced randomness when close to target
-        WindMouseState.windX = WindMouseState.windX / Math.sqrt(3) +
-                (Math.random() - 0.5) * wind * 2 * distanceFactor;
-        WindMouseState.windY = WindMouseState.windY / Math.sqrt(3) +
-                (Math.random() - 0.5) * wind * 2 * distanceFactor;
+        double decelThreshold = 15; //baseSpeed / (100000000 * (1/10)); //* DEFAULT_DECELERATION_THRESHOLD;
+        double distanceFactor = Math.min(1.0, distanceToTarget); // / decelThreshold);
 
-        // Apply gravity with smooth deceleration
-        double gravityMultiplier = Math.pow(distanceFactor, 1.5); // Exponential deceleration
-        WindMouseState.veloX += (Math.random() * 6 + 3) * (deltaYaw / 100.0) * gravity * gravityMultiplier;
-        WindMouseState.veloY += (Math.random() * 6 + 3) * (deltaPitch / 100.0) * gravity * gravityMultiplier;
+        // Scale parameters by time
+        //double actualSpeed = baseSpeed * timeDelta;
+        double actualWind = baseWind * timeDelta;
+        double actualGravity = baseGravity * timeDelta;
+        double actualMaxStep = baseMaxStep * timeDelta;
+        //double maxVelocity = 100000000;//baseMaxStep * (0.5 + 0.5 * distanceFactor);
 
-        // Apply wind with reduced effect near target
-        WindMouseState.veloX += WindMouseState.windX * distanceFactor;
-        WindMouseState.veloY += WindMouseState.windY * distanceFactor;
+        // Calculate distance-based deceleration
+        //if (distanceFactor < 0.5) {
+        //    maxVelocity = maxVelocity/10;
+        //}
 
-        // Add slight momentum dampening when close to target
-        if (distanceFactor < 0.5) {
-            WindMouseState.veloX *= 0.95;
-            WindMouseState.veloY *= 0.95;
+
+
+        // Update wind forces with time-scaled randomness
+        WindMouseState.windX = WindMouseState.windX / Math.sqrt(3) + ((Math.random() - 0.5) * actualWind * 2) / Math.sqrt(5);
+        WindMouseState.windY = WindMouseState.windY / Math.sqrt(3) + ((Math.random() - 0.5) * actualWind * 2) / Math.sqrt(5);
+
+        // Apply wind
+        WindMouseState.veloX += WindMouseState.windX; //* distanceFactor;
+        WindMouseState.veloY += WindMouseState.windY; //* distanceFactor;
+
+        WindMouseState.veloX += deltaYaw * actualGravity;// / distanceToTarget;
+        WindMouseState.veloY += deltaPitch * actualGravity;// / distanceToTarget;
+        double veloMag = hypot(WindMouseState.veloX, WindMouseState.veloY);
+        double adjustableMaxStep = actualMaxStep;
+        if(veloMag > adjustableMaxStep) {
+            double randomDist = actualMaxStep / 2.0 + (Math.random() * actualMaxStep) / 2;
+            WindMouseState.veloX = (WindMouseState.veloX / veloMag) * randomDist;
+            WindMouseState.veloY = (WindMouseState.veloY / veloMag) * randomDist;
         }
+        //if (distanceFactor < 4) {
+        //    WindMouseState.veloX *= Math.pow(0.5, timeDelta * 60); // Scale dampening with time
+        //    WindMouseState.veloY *= Math.pow(0.5, timeDelta * 60);
+        //}
 
-        // Normalize velocity with smooth speed scaling
-        double velocity = Math.sqrt(WindMouseState.veloX * WindMouseState.veloX +
-                WindMouseState.veloY * WindMouseState.veloY);
-        if (velocity > maxStep) {
-            double scale = maxStep / velocity;
-            WindMouseState.veloX *= scale;
-            WindMouseState.veloY *= scale;
+        // Apply momentum dampening when close to target
+        if (distanceFactor < 2) {
+            WindMouseState.veloX *= Math.pow(0.3, timeDelta * 60); // Scale dampening with time
+            WindMouseState.veloY *= Math.pow(0.3, timeDelta * 60);
         }
+        // Limit maximum velocity based on time delta
+        //double maxVelocity = actualSpeed;
 
-        // Update position with additional smoothing for small movements
-        WindMouseState.currentX += WindMouseState.veloX * (0.8 + 0.2 * distanceFactor);
-        WindMouseState.currentY += WindMouseState.veloY * (0.8 + 0.2 * distanceFactor);
 
-        // Apply new rotation
-        float newYaw = WindMouseState.startRotation.getYaw() + (float)WindMouseState.currentX;
-        float newPitch = clamp(WindMouseState.startRotation.getPitch() + (float)WindMouseState.currentY,
-                -90.0f, 90.0f);
+        //double velocity = Math.sqrt(WindMouseState.veloX * WindMouseState.veloX + WindMouseState.veloY * WindMouseState.veloY);
+        //if (velocity > maxVelocity) {
+        //    double scale = maxVelocity / velocity;
+        //    WindMouseState.veloX *= scale;
+        //    WindMouseState.veloY *= scale;
+        //}
+        //WindMouseState.veloX = clamp(WindMouseState.veloX, -maxVelocity, maxVelocity);
+        //WindMouseState.veloY = clamp(WindMouseState.veloY, -maxVelocity, maxVelocity);
+        // Update position with time-scaled movement
+        double moveX = WindMouseState.veloX * timeDelta;
+        double moveY =WindMouseState.veloY * timeDelta;
 
-        mod.getInputControls().forceLook(newYaw, newPitch);
-        //lookAt(mod, new Rotation(newYaw, newPitch));
+        // Calculate new rotation
+        //float newYaw = (float)WindMouseState.currentX + (float)moveX;
+        //float newPitch =  clamp((float)WindMouseState.currentY + (float)moveY, -90.0f, 90.0f);
+        //WindMouseState.currentX = (double) newYaw;
+        //WindMouseState.currentY = (double) newPitch;
+        // Apply the new rotation
+        lookAtForced(mod, new Rotation(normalizeAngle(currentRotation.getYaw()+(float)moveX), clamp((float)currentRotation.getPitch()+(float)moveY,-90f, 90f)));
+        //lookAtForced(mod, new Rotation(newYaw, newPitch));
+        //lookAtForced(mod, new Rotation(currentRotation.getYaw() + (float)deltaYaw,currentRotation.getPitch()+(float)deltaPitch));
+        //lookAtForced(mod, new Rotation(currentRotation.getYaw() + 0.00000000001f,currentRotation.getYaw() + 0.00000000001f));
+        //lookAtForced(mod, WindMouseState.targetRotation);
         return false;
-    }
-
-
-    public static void smoothLookSTANDART(AltoClef mod, Rotation targetRotation, float speed) {
-        if (mod.getMobDefenseChain().isDoingAcrobatics()) return;
-
-        // Get current rotation
-        Rotation currentRotation = getLookRotation(mod.getPlayer());
-
-        // Calculate angle differences
-        float yawDiff = normalizeAngle(targetRotation.getYaw() - currentRotation.getYaw());
-        float pitchDiff = targetRotation.getPitch() - currentRotation.getPitch();
-
-        // Apply smooth interpolation
-        float interpolationFactor = Math.min(1.0f, speed);
-
-        // Add some human-like randomness to the movement
-        float randomness = 0.05f;
-        float randomFactor = 1.0f + (float)(Math.random() * randomness - randomness/2);
-
-        // Calculate new rotation with interpolation and smoothing
-        float newYaw = currentRotation.getYaw() + yawDiff * interpolationFactor * randomFactor;
-        float newPitch = clamp(
-                currentRotation.getPitch() + pitchDiff * interpolationFactor * randomFactor,
-                -90.0f,
-                90.0f
-        );
-
-        // Apply the rotation
-        Rotation newRotation = new Rotation(newYaw, newPitch);
-        mod.getInputControls().forceLook(newRotation.getYaw(), newRotation.getPitch());
     }
 
     /**

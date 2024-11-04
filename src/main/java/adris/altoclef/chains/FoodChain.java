@@ -19,6 +19,7 @@ import net.minecraft.item.Items;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -38,6 +39,9 @@ public class FoodChain extends SingleTaskChain {
     private Optional<Item> _cachedPerfectFood = Optional.empty();
     private boolean shouldStop = false;
 
+    private static final String[] BUFF_ITEM_NAMES = {"SomeBuff", "Картошка", "Смесь силы"}; // Add your buff item names here
+    private static final Item[] COMBAT_FOODS = {Items.GOLDEN_APPLE, Items.ENCHANTED_GOLDEN_APPLE};
+    private boolean _forcedConsumption = false;
     public FoodChain(TaskRunner runner) {
         super(runner);
     }
@@ -141,6 +145,28 @@ public class FoodChain extends SingleTaskChain {
             stopEat(mod);
         }
 
+        // Check if we should consume combat items
+        if (KillAuraHelper.IsInBattle()) {
+            ItemStack combatFood = null;
+            for (ItemStack stack : mod.getItemStorage().getItemStacksPlayerInventory(true)) {
+                if (isCombatOrBuffFood(stack)) {
+                    combatFood = stack;
+                    break;
+                }
+            }
+
+            if (combatFood != null) {
+                _forcedConsumption = true;
+                startEat(mod, combatFood.getItem());
+                return 70f; // Higher priority than regular eating
+            }
+        }
+
+            // Reset forced consumption flag if we're not in combat
+        if (!KillAuraHelper.IsInBattle()) {
+            _forcedConsumption = false;
+        }
+
         Settings settings = mod.getModSettings();
 
         if (_needsFood || _cachedFoodScore < settings.getMinimumFoodAllowed()) {
@@ -177,9 +203,13 @@ public class FoodChain extends SingleTaskChain {
     }
 
     public boolean needsToEat() {
+        if (_forcedConsumption) {
+            return true;
+        }
         if (!hasFood() || shouldStop) {
             return false;
         }
+
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
         assert player != null;
         int foodLevel = player.getHungerManager().getFoodLevel();
@@ -212,6 +242,21 @@ public class FoodChain extends SingleTaskChain {
             Item best = _cachedPerfectFood.get();
             int fills = (best.getComponents().get(DataComponentTypes.FOOD) != null) ? Objects.requireNonNull(best.getComponents().get(DataComponentTypes.FOOD)).nutrition() : -1;
             return fills == need;
+        }
+
+        return false;
+    }
+
+    private boolean isCombatOrBuffFood(ItemStack stack) {
+        // Check if it's a golden apple variant
+        if (Arrays.stream(COMBAT_FOODS).toList().contains(stack.getItem())) return true;
+
+        // Check for items with specific names (buffs)
+        if (stack.contains(DataComponentTypes.CUSTOM_NAME)) {
+            String name = stack.getName().getString();
+            for (String buffName : BUFF_ITEM_NAMES) {
+                if (name.contains(buffName)) return true;
+            }
         }
 
         return false;

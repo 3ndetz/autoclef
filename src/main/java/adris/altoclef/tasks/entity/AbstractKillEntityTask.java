@@ -12,6 +12,7 @@ import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.slots.PlayerSlot;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -87,7 +88,13 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
         if (!equipWeapon(mod)) {
             float hitProg = mod.getPlayer().getAttackCooldownProgress(0);
             LookHelper.smoothLook(mod, entity);
-            if (hitProg >= 0.99) {
+            boolean canPunk = hitProg >= 0.99;
+            if (entity instanceof LivingEntity) {
+                LivingEntity livingEnt = (LivingEntity) entity;
+                canPunk = canPunk && livingEnt.hurtTime <= 0;
+            }
+
+            if (canPunk) {
                 if (//mod.getPlayer().isOnGround() ||
                  mod.getPlayer().getVelocity().getY() < 0 || mod.getPlayer().isTouchingWater()) {
                     //LookHelper.smoothLookAt(mod, entity.getEyePos());

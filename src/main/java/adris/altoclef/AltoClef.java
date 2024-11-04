@@ -241,8 +241,8 @@ public class AltoClef implements ModInitializer {
     /// GETTERS AND SETTERS
 
     private void onClientRenderOverlay(MatrixStack matrixStack) {
-        LookHelper.updateWindMouseRotation(this);
         _commandStatusOverlay.render(this, matrixStack);
+        LookHelper.updateWindMouseRotation(this);
     }
 
     private void initializeBaritoneSettings() {
