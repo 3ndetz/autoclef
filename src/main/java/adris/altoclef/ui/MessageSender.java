@@ -1,9 +1,16 @@
 package adris.altoclef.ui;
 
 import adris.altoclef.Debug;
+import adris.altoclef.eventbus.EventBus;
+import adris.altoclef.eventbus.events.SendChatEvent;
 import adris.altoclef.util.time.BaseTimer;
 import adris.altoclef.util.time.TimerReal;
+import java.time.Instant;
+import java.util.BitSet;
+import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.network.message.LastSeenMessageList;
+import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import net.minecraft.text.Text;
 
 import java.util.Comparator;
@@ -45,7 +52,10 @@ public class MessageSender {
     }
 
     public void enqueueWhisper(String username, String message, MessagePriority priority) {
-        _whisperQueue.add(new Whisper(username, message, priority, _messageCounter++));
+        var playerInfo = MinecraftClient.getInstance().player;
+        if (playerInfo != null && !username.equals(playerInfo.getName().getString())) {
+            _whisperQueue.add(new Whisper(username, message, priority, _messageCounter++));
+        }
     }
 
     public void enqueueChat(String message, MessagePriority priority) {
@@ -76,7 +86,8 @@ public class MessageSender {
             Debug.logError("Failed to send chat message as no client loaded.");
             return;
         }
-        MinecraftClient.getInstance().player.sendMessage(Text.of(message));
+
+        MinecraftClient.getInstance().player.networkHandler.sendPacket(new ChatMessageC2SPacket(message, Instant.now(), 10, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
     }
 
     private static abstract class BaseMessage {
