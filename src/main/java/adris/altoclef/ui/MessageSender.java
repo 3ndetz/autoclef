@@ -52,7 +52,10 @@ public class MessageSender {
     }
 
     public void enqueueWhisper(String username, String message, MessagePriority priority) {
-        _whisperQueue.add(new Whisper(username, message, priority, _messageCounter++));
+        var playerInfo = MinecraftClient.getInstance().player;
+        if (playerInfo != null && !username.equals(playerInfo.getName().getString())) {
+            _whisperQueue.add(new Whisper(username, message, priority, _messageCounter++));
+        }
     }
 
     public void enqueueChat(String message, MessagePriority priority) {
