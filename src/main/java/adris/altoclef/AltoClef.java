@@ -7,10 +7,7 @@ import adris.altoclef.control.InputControls;
 import adris.altoclef.control.PlayerExtraController;
 import adris.altoclef.control.SlotHandler;
 import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.events.ClientRenderEvent;
-import adris.altoclef.eventbus.events.ClientTickEvent;
-import adris.altoclef.eventbus.events.SendChatEvent;
-import adris.altoclef.eventbus.events.TitleScreenEntryEvent;
+import adris.altoclef.eventbus.events.*;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.trackers.*;
@@ -28,6 +25,8 @@ import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
 import java.util.stream.Collectors;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -40,7 +39,11 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.text.TextContent;
+import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.Language;
 import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.server.MinecraftServer;
@@ -114,7 +117,18 @@ public class AltoClef implements ModInitializer {
         EventBus.subscribe(TitleScreenEntryEvent.class, evt -> onInitializeLoad());
 
     }
-
+    String mcTextToString(Text message){
+        String msg = "";
+        StringBuilder result = new StringBuilder();
+        result.append(message.getString()); // Gets main content
+        if (!message.getSiblings().isEmpty()) {
+            result.append(" ").append(message.getSiblings().stream()
+                    .map(Text::getString)
+                    .collect(Collectors.joining(" ")));
+        }
+        msg = result.toString();
+        return msg;
+    }
     public void onInitializeLoad() {
         // This code should be run after Minecraft loads everything else in.
         // This is the actual start point, controlled by a mixin.
@@ -199,7 +213,38 @@ public class AltoClef implements ModInitializer {
         EventBus.subscribe(ClientTickEvent.class, evt -> onClientTick());
         // Render
         EventBus.subscribe(ClientRenderEvent.class, evt -> onClientRenderOverlay(evt.stack));
+        // only for sp =(
+        //ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
+        //    Debug.logMessage("onChatMessage DEBUG!!!! MSG CHAT CharReadMixin" + message);
+        //    //ChatMessageEvent evt = new ChatMessageEvent(message, sender, params);
+        //    //EventBus.publish(evt);
+        //}
+        //);
 
+        // WORKING YUU HOO
+        ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
+            String msg = mcTextToString(message);
+
+            //Debug.logMessage("ALLOW_CHAT DEBUG!!!! MSG CHAT CharReadMixin:\n==" + msg);
+            if (!msg.startsWith(this.getModSettings().getCommandPrefix())) {
+                ChatMessageEvent evt = new ChatMessageEvent(msg);  //new ChatMessageEvent(msg, signedMessage, sender, params);
+                EventBus.publish(evt);
+            }
+            return true;
+        });
+        // MAIN FOR SERVERS (definitely ALL MSGS including altoclef messages...)
+        ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
+
+                String msg = mcTextToString(message);
+                //Debug.logInternal("ALLOW_GAME DEBUG!!!! MSG CHAT CharReadMixin:\n==" + msg);
+            // ISSUE WITH SYMBOL CODES!!!
+                if (!msg.contains(this.getModSettings().getChatLogPrefix())) {
+                    ChatMessageEvent evt = new ChatMessageEvent(msg, overlay);
+                    EventBus.publish(evt);
+                }
+                return true;
+            }
+        );
         // Playground
         Playground.IDLE_TEST_INIT_FUNCTION(this);
 

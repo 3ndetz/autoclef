@@ -82,7 +82,7 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
     protected Task onEntityInteract(AltoClef mod, Entity entity) {
         // Equip weapon
         if(!WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos()) && entity.isPlayer()){
-            boolean RotatedJump = entity.squaredDistanceTo(mod.getPlayer()) < 3.2 * 3.2;
+            boolean RotatedJump = entity.squaredDistanceTo(mod.getPlayer()) < 4.4*4.4;
             KillAuraHelper.GoJump(mod,RotatedJump);
         }
         if (!equipWeapon(mod)) {

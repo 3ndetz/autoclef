@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.Perspective;
@@ -73,22 +73,37 @@ public class Butler {
 
         // Receive system events
         EventBus.subscribe(ChatMessageEvent.class, evt -> {
-            boolean debug = ButlerConfig.getInstance().whisperFormatDebug;
-            String message = evt.messageContent();
-            String sender = evt.senderName();
-            MessageType messageType = evt.messageType();
-            String receiver = mod.getPlayer().getName().getString();
-            if (sender != null && !Objects.equals(sender, receiver) && messageType.chat().style().isItalic()
-                    && messageType.chat().style().getColor() != null
-                    && Objects.equals(messageType.chat().style().getColor().getName(), "gray")) {
-                String wholeMessage = sender + " " + receiver + " " + message;
-                if (debug) {
-                    Debug.logMessage("RECEIVED WHISPER: \"" + wholeMessage + "\".");
+            if(mod.getPlayer() != null) {
+                boolean debug = ButlerConfig.getInstance().whisperFormatDebug;
+                String message = evt.messageRawContent();
+                if (message != null && !message.contains(mod.getModSettings().getChatLogPrefix())) {
+                    //Debug.logMessage("RECV MSG DEBUG!!!" + message);
+                    //String sender = evt.senderName();
+                    //MessageType messageType = evt.messageType();
+
+                    //            String receiver = MinecraftClient.getInstance().getSession().getUsername();
+                    String receiver = mod.getPlayer().getName().getString();
+                    String wholeMessage = "ingame " + receiver + " " + message;
+                    if (debug) {
+                        //Debug.logMessage("RECEIVED WHISPER: \"" + wholeMessage + "\".");
+                    }
+                    if (AltoClef.inGame()) {
+                        _mod.getInfoSender().onChatMessage(message);
+                    }
+                    _mod.getButler().receiveMessage(message, receiver);
+                    //if (sender != null && !Objects.equals(sender, receiver) && messageType.chat().style().isItalic()
+                    //        && messageType.chat().style().getColor() != null
+                    //        && Objects.equals(messageType.chat().style().getColor().getName(), "gray")) {
+                    //    String wholeMessage = sender + " " + receiver + " " + message;
+                    //    if (debug) {
+                    //        Debug.logMessage("RECEIVED WHISPER: \"" + wholeMessage + "\".");
+                    //    }
+                    //    if (AltoClef.inGame()) {
+                    //        _mod.getInfoSender().onChatMessage(message);
+                    //    }
+                    //    _mod.getButler().receiveMessage(wholeMessage, receiver);
+                    //}
                 }
-                if (AltoClef.inGame()) {
-                    _mod.getInfoSender().onChatMessage(message);
-                }
-                _mod.getButler().receiveMessage(wholeMessage, receiver);
             }
         });
     }
@@ -285,9 +300,9 @@ public class Butler {
             }
         };
 
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-        scheduler.schedule(rejoinOnDelayTask, delay_before, TimeUnit.MILLISECONDS);
-        scheduler.shutdown();
+        //ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        //scheduler.schedule(rejoinOnDelayTask, delay_before, TimeUnit.MILLISECONDS);
+        //scheduler.shutdown();
 
     }
 

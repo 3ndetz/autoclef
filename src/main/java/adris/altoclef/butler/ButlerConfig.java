@@ -46,7 +46,7 @@ public class ButlerConfig {
      * <p>
      * Enable this if you need help setting up the whisper format.
      */
-    public boolean whisperFormatDebug = true;
+    public boolean whisperFormatDebug = false;
     /**
      * Determines if failure messages should be sent to a non-authorized entity attempting to use butler
      * <p>

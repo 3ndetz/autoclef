@@ -89,27 +89,26 @@ public abstract class KillAuraHelper {
     {
         if (JumpTimerStarted==-1) {
             JumpTimerStarted = System.currentTimeMillis();
-        }else if (System.currentTimeMillis()>JumpTimerStarted+810){
+        }else if (System.currentTimeMillis()>JumpTimerStarted+900){
             //boolean doJump = false;
             //boolean HighSpeed = false;
             boolean doJump = mod.getPlayer().isOnGround();
-            boolean HighSpeed = mod.getPlayer().getVelocity().horizontalLengthSquared()>0.025 ;
+            boolean HighSpeed = mod.getPlayer().getVelocity().horizontalLengthSquared()>0.02 ;
         new Thread(() -> {
             mod.getInputControls().hold(Input.SPRINT);
-                mod.getInputControls().hold(Input.MOVE_FORWARD);
+            mod.getInputControls().hold(Input.MOVE_FORWARD);
             if( HighSpeed ){
                 //Debug.logMessage("GoJump onGround?"+mod.getPlayer().isOnGround() + "HS?"+HighSpeed+" Speed "+mod.getPlayer().getVelocity().horizontalLengthSquared());
                 mod.getInputControls().hold(Input.JUMP);}
-            sleepSec(0.3);
             if (rotated)
                 mod.getInputControls().hold(Input.MOVE_RIGHT);
-
-            if(doJump & !HighSpeed )
-                mod.getInputControls().hold(Input.JUMP);
+            sleepSec(0.3);
+            //if(doJump & !HighSpeed )
+            //    mod.getInputControls().hold(Input.JUMP);
             sleepSec(0.5);
             if (rotated)
                 mod.getInputControls().release(Input.MOVE_RIGHT);
-                mod.getInputControls().release(Input.MOVE_FORWARD);
+            mod.getInputControls().release(Input.MOVE_FORWARD);
             mod.getInputControls().release(Input.SPRINT);
             mod.getInputControls().release(Input.JUMP);
         }).start();

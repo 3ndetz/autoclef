@@ -68,7 +68,7 @@ public class PlayerExtraController {
             LookHelper.smoothLook(_mod, entity);
         //}
         //double PunkRange = 3.1;
-                if (LookHelper.isLookingAtEntity(_mod, entity)) {//LookHelper.cleanLineOfSight(_mod.getPlayer(), LookHelper.getClosestPointOnEntityHitbox(_mod, entity),PunkRange)) {
+                if (LookHelper.isLookingAtEntity(_mod, entity) && inRange(entity)) {//LookHelper.cleanLineOfSight(_mod.getPlayer(), LookHelper.getClosestPointOnEntityHitbox(_mod, entity),PunkRange)) {
                     try {
                         //if(!){
                             _mod.getInputControls().release(Input.CLICK_RIGHT);

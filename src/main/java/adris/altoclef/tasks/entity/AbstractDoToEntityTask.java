@@ -109,7 +109,8 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
                 }
             }
 
-            if (mod.getControllerExtras().inRange(entity) && result != null &&
+            if (//mod.getControllerExtras().inRange(entity) &&
+                    result != null &&
                     result.getType() == HitResult.Type.ENTITY && !mod.getFoodChain().needsToEat() &&
                     !mod.getMLGBucketChain().isFallingOhNo(mod) && mod.getMLGBucketChain().doneMLG() &&
                     !mod.getMLGBucketChain().isChorusFruiting() &&
