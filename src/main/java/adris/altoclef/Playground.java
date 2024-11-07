@@ -161,6 +161,7 @@ public class Playground {
                 ButlerConfig.getInstance().debugChatParseResult=false;
                 Debug.logMessage("unset!");
                 break;
+
             case "captcha_dataset":
                 //Debug.logMessage(ImageComparer.getCaptchaDatasetFiles().toString());
                 File choDir = new File(MinecraftClient.getInstance().runDirectory, "map_screenshots");
@@ -385,7 +386,8 @@ public class Playground {
             case "sw":
                 mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), 500,false));
                 break;
-            case "murder":
+            case "mm":
+                mod.getInfoSender().UpdateServerInfo("serverMode", "murdermystery");
                 int role_int = 0;
                 try {role_int = Integer.parseInt(arg.split(" ")[1]);}
                 catch (Exception e){Debug.logWarning("Не указано значение, значит невиновный");}

@@ -38,7 +38,9 @@ public class ButlerConfig {
      * create the following messages.
      */
     public String[] whisperFormats = new String[]{
-            "{from} {to} {message}"
+            "{from} whispers to you: {message}",
+            "{from} whispers: {message}",
+            "\\[{from} -> {to}\\] {message}"
     };
     /**
      * If set to true, will print information about whispers that are parsed and those
@@ -66,21 +68,50 @@ public class ButlerConfig {
     public boolean requirePrefixMsg = false;
 
     public String[][] chatFormats = new String[][]{
+            //Команда не найдена.
+            //[NetTyan -> я] 1
             {"universal","<{from}> {message}","survival"},
+            {"mc.musteryworld.net","[Зритель] {from}: {message}","murdermystery"},
+            {"mc.musteryworld.net","{from}: {message}","murdermystery"},
+
+            {"mc.musteryworld.net","{from}: {message}","skywars"},
+            //"? ? [пвапва] | [аыва] Khushin фвыыв ? 14234".
+            {"mc.musteryworld.net","[⚑] {from}: {message}","bedwars"},
             {"mc.musteryworld.net","{starterPrefix} [{clan}] | [{rank}] {from} > {message}","survival"},
             {"mc.musteryworld.net","{starterPrefix} | [{rank}] {from} > {message}","survival"},
-            {"mc.musteryworld.net","[⚑] {from}: {message}","bedwars"},
-            {"mc.musteryworld.net","{from}: {message}","skywars"},
-            {"mc.musteryworld.net","{rank}: {message}","skywars"},
 
+            //{"mc.musteryworld.net","{from} ⋙ {message}","murdermystery"},
+            // murder
+            // BEDWARS
+            //[⚑] NetTyan: аа
+
+            //[Всем] NetTyan:  е
             {"mc.musteryworld.net","[Всем] {from}: {message}","bedwars"},
-            {"mc.musteryworld.net","SPEC: {from} > {message}","murdermystery"},
-            {"mc.musteryworld.net","{from} > {message}","murdermystery"},
+            //162onmyhead ⋙ ник е*****
+
+
+
+
+
+            // VIME MC MESSAGES TYPES
+            //ღ [G] §8[§f§f§lппп_IVANBANAN§8] | ᖧШУТᖨ ~koshmarik9090 Утопленник › Блин блинский
+            //(i) bxmew наложил мут на игрока apipka228 по причине: попрошайничество [ПОДРОБНЕЕ]
+            //ღ [G] | ᖧИмператорᖨ _twistyyyy  › Какой аыва
+            //ღ [G] | ᖧStaffᖨ ~explyko  › :33
+            //ღ [G] | ᖧunxyᖨ bexzsm1slzn ✔ 私と緒にいて › Тишее
+            //ღ [G] §8[§f§f§lппп_IVANBANAN§8] | ᖧШУТᖨ ~koshmarik9090 Утопленник › Ъхапъхапхъа пвапвап снятый
+            //ღ [G] §8[§f§f§oNyak§e§oy§8] | ᖧYouTubeᖨ HDemonH  › ХАХАХ папап ору дима
+            //ღ [G] | ᖧModerᖨ bxmew ✔ 私と緒にいて › Довели
+            //ღ [L] | ᖧДелюксᖨ Oliver_1445  › Сказал же помоги мне с деньгами
+            //ღ [G] | ᖧИгрокᖨ wqhtxly Samurai ›
 
             {"mc.vimemc.net","{starterPrefix} [{global}] [{clan}] | ᖧ{rank}ᖨ {from}  > {message}","survival"},
             {"mc.vimemc.net","{starterPrefix} [{global}] | ᖧ{rank}ᖨ {from}  > {message}","survival"},
             {"mc.vimemc.net","{starterPrefix} [{global}] [{clan}] | ᖧ{rank}ᖨ {from} {suffix} > {message}","survival"},
             {"mc.vimemc.net","{starterPrefix} [{global}] | ᖧ{rank}ᖨ {from} {suffix} > {message}","survival"},
+            // THE PIT
+            //[36] NetTyan  › 1
+            //ingame //[18 уб.] [КОМАНДЕ/всем] NetTyan ► ээм
             {"mc.vimemc.net","[{rank}] [{team}] {from} > {message}","skywars"},
             {"mc.vimemc.net","[{rank}] ᖧ{donate}ᖨ {from} {suffix} > {message}","thepit"},
             {"mc.vimemc.net","[{rank}] ᖧ{donate}ᖨ {from}  > {message}","thepit"},

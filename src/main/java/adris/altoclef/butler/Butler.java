@@ -116,7 +116,7 @@ public class Butler {
         // Format: <USER> whispers to you: <MESSAGE>
         // Format: <USER> whispers: <MESSAGE>
 
-        String ourName = "NetTyan";//MinecraftClient.getInstance().getName();
+        String ourName = "NetTyan";  // MinecraftClient.getInstance().getName();
         if (_mod.getPlayer() != null) {
             ourName = _mod.getPlayer().getName().getString();
         } else {
@@ -160,7 +160,8 @@ public class Butler {
                 _mod.getCommandExecutor().execute("@stop");
                 Debug.logMessage("Мы в лобби!");
                 _lobbyMovingTimer.reset();
-                _mod.getCommandExecutor().execute("@goto -20 29");
+                //_mod.getCommandExecutor().execute("@goto -20 29"); // mustery world sw
+                _mod.getCommandExecutor().execute("@goto -30 29"); // mustery murder
             } else if (msg.contains("Введите капчу с картинки в чат")) {
                 this.captchaActionsPerform();
             } else if (msg.contains("Войдите в игру - !!! /login [пароль]")) { // for public HIDE!
@@ -205,34 +206,36 @@ public class Butler {
 
             }
         }
-
+        //Debug.logMessage("Recieved msg DEBUG!!! "+ourName+ " " + serverAdress + " " + serverMode + "\n>"+msg+"<");
         WhisperChecker.MessageResult chatParsedResult = this._whisperChecker.receiveChat(_mod, ourName, msg,
                 serverAdress, serverMode);
         if (chatParsedResult != null) {
             if (ButlerConfig.getInstance().debugChatParseResult) {
                 Debug.logMessage(
-                        "Chatparsedresult" + chatParsedResult.toString() + chatParsedResult.serverExactPrediction);
+                        "Chatparsedresult>>" + chatParsedResult.toString() +"<<\nexact:" + chatParsedResult.serverExactPrediction);
             }
             if (chatParsedResult.serverExactPrediction != null) {
                 if (ButlerConfig.getInstance().debugChatParseResult) {
                     Debug.logMessage("serverExactPrediction=" + chatParsedResult.serverExactPrediction + ",server="
                             + chatParsedResult.server);
                 }
-                if (chatParsedResult.serverExactPrediction == "exact") {
-                    Debug.logInternal("Recieved EXACT msg from " + chatParsedResult.from);
-                    _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
-                } else if (!chatParsedResult.server.contains("musteryworld")) {
-                    Debug.logInternal("Recieved >" + chatParsedResult.serverExactPrediction + "< msg from "
-                            + chatParsedResult.from);
-                    _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
-                }
-            }
-        } else {
-            WhisperChecker.MessageResult result = this._whisperChecker.receiveMessage(_mod, ourName, msg);
-            if (result != null) {
-                this.receiveWhisper(result.from, result.message);
+                _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
+                //if (chatParsedResult.serverExactPrediction == "exact") {
+                //    Debug.logInternal("Recieved EXACT msg from " + chatParsedResult.from);
+                //    _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
+                //} else if (!chatParsedResult.server.contains("musteryworld")) {
+                //    Debug.logInternal("Recieved >" + chatParsedResult.serverExactPrediction + "< msg from "
+                //            + chatParsedResult.from);
+                //    _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
+                //}
             }
         }
+        //else {
+        //    WhisperChecker.MessageResult result = this._whisperChecker.receiveMessage(_mod, ourName, msg);
+        //    if (result != null) {
+        //        this.receiveWhisper(result.from, result.message);
+        //    }
+        //}
     }
 
     private void captchaActionsPerform() {

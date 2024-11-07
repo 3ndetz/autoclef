@@ -121,12 +121,12 @@ public class AltoClef implements ModInitializer {
         String msg = "";
         StringBuilder result = new StringBuilder();
         result.append(message.getString()); // Gets main content
-        if (!message.getSiblings().isEmpty()) {
-            result.append(" ").append(message.getSiblings().stream()
-                    .map(Text::getString)
-                    .collect(Collectors.joining(" ")));
-        }
-        msg = result.toString();
+        //if (!message.getSiblings().isEmpty()) {
+        //    result.append(" ").append(message.getSiblings().stream()
+        //            .map(Text::getString)
+        //            .collect(Collectors.joining(" ")));
+        //}
+        msg = result.toString().trim();
         return msg;
     }
     public void onInitializeLoad() {
