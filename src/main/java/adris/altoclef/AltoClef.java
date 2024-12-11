@@ -171,13 +171,7 @@ public class AltoClef implements ModInitializer {
         _butler = new Butler(this);
 
         initializeCommands();
-        _py4jEntryPoint = new Py4jEntryPoint(this);
-        _gatewayServer = new GatewayServer(_py4jEntryPoint);
-        _gatewayServer.start();
-        if (_gatewayServer != null ) {
-            System.out.println("Gateway Server started on port "+_gatewayServer.getPort()+". Listeting port: "+_gatewayServer.getListeningPort());
-        }
-        _py4jEntryPoint.InitPythonCallback();
+        initializePythonSender();
         // Load settings
         adris.altoclef.Settings.load(newSettings -> {
             _settings = newSettings;
@@ -251,7 +245,29 @@ public class AltoClef implements ModInitializer {
         // External mod initialization
         runEnqueuedPostInits();
     }
-
+    public void initializePythonSender() {
+        _py4jEntryPoint = new Py4jEntryPoint(this);
+        _gatewayServer = new GatewayServer(_py4jEntryPoint);
+        _gatewayServer.start();
+        if (_gatewayServer != null ) {
+            System.out.println("Gateway Server started on port "+_gatewayServer.getPort()+". Listeting port: "+_gatewayServer.getListeningPort());
+        }
+        _py4jEntryPoint.InitPythonCallback();
+    }
+    //TODO untested and idk how to test
+    public void reloadPythonSender() {
+        System.out.println("Gateway Reload Initiated...");
+        _py4jEntryPoint = null;
+        _gatewayServer.shutdown();
+        _gatewayServer = null;
+        _py4jEntryPoint = new Py4jEntryPoint(this);
+        _gatewayServer = new GatewayServer(_py4jEntryPoint);
+        _gatewayServer.start();
+        if (_gatewayServer != null ) {
+            System.out.println("Gateway Server started on port "+_gatewayServer.getPort()+". Listeting port: "+_gatewayServer.getListeningPort());
+        }
+        _py4jEntryPoint.InitPythonCallback();
+    }
     // Client tick
     private void onClientTick() {
         runEnqueuedPostInits();

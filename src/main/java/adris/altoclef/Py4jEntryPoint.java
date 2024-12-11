@@ -157,6 +157,9 @@ public class Py4jEntryPoint {
         callbackstarted = result;
         return result;
     }
+    public PythonCallback get_cb(){
+        return _cb;
+    }
     String _state = "starting";
     public String saayHellooo(String name) {
         return "Hello, " + name + "!" + Items.SOUL_SAND.getName().getString();

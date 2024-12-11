@@ -131,16 +131,23 @@ public class Playground {
     public static void TEMP_TEST_FUNCTION(AltoClef mod, String arg) {
         //mod.runUserTask();
         Debug.logMessage("Running test...");
-
+        String all_cases = "stuckdebug, cb_reload, task_info, captmax, captdata, chatparsedebug, chatparseddebug_cancel, captcha_dataset, savemap, groundblock, cam 0, cam 1, cam 2, sign, sign2, pickup, chunk, structure, place, deadmeme, stacked, stacked2, ravage, temples, outer, smelt, iron, avoid, portal, kill, kill2, craft, food, temple, blaze, flint, unobtainable, piglin, stronghold, terminate, stoprot, startrot, killall, t, tt, sw, mm, kpvp, thepit, bow, replace, bed, dragon, dragon-pearl, dragon-old, chest, 173, example, netherite, arrow, whisper";
         switch (arg) {
             case "":
                 // None specified
-                Debug.logWarning("Please specify a test (ex. stacked, bed, terminate)");
+                Debug.logWarning("Please specify a test (ex. stacked, bed, terminate) or use help command @test help");
+                break;
+            case "help":
+                Debug.logMessage(all_cases);
                 break;
             case "stuckdebug":
                 Debug.logMessage("STUCK DEBUG!!!!");
                 mod.runUserTask(new GetToXZTask(0,0));
                 DeathMenuChain.StuckFixActivate();
+                break;
+            case "cb_reload":
+                Debug.logMessage("PYTHON SENDER & CALLBACK RELOAD INITIATED");
+                mod.reloadPythonSender();
                 break;
             case "task_info":
                 Debug.logMessage("INGAME INFO DICT:\n"+mod.getInfoSender().getTaskChainString());

@@ -27,7 +27,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
     private boolean shooting = false;
     private boolean shot = false;
 
-    private final TimerGame _shotTimer = new TimerGame(1);
+    private final TimerGame _shotTimer = new TimerGame(0.7);
 
     public ShootArrowSimpleProjectileTask(Entity target) {
         this.target = target;

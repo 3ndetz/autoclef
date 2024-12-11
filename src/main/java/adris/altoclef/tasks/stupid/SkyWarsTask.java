@@ -253,9 +253,9 @@ public class SkyWarsTask extends Task {
                 mod.getInputControls().tryPress(Input.JUMP);
                 mod.getInputControls().tryPress(Input.MOVE_FORWARD);
                 if(WorldHelper.isBlock(mod, new BlockPos(-17, 96, 19), Blocks.GLASS)) {
-                    return new GetToBlockTask(new BlockPos(7, 96, 0)); // center
+                    return new GetToBlockTask(new BlockPos(0, 96, 0)); // center
                 }else {
-                    BlockPos goalBlockPos = new BlockPos(19, 96, 16);
+                    BlockPos goalBlockPos = new BlockPos(19+1, 96, 16);
                     //BlockPos[] positions = new BlockPos[] {
                     //        new BlockPos(-19, 96, 16), //port
                     //        new BlockPos(19, 96, 16), // city
@@ -269,7 +269,12 @@ public class SkyWarsTask extends Task {
                 }// return null;
             }
         }
-        if (mod.getFoodChain().isTryingToEat()) return null;
+        if (mod.getFoodChain().needsToEat()) { // UNTESTED
+            setDebugState("Eat first.");
+            return null;
+        }
+
+        //if (mod.getFoodChain().isTryingToEat()) return null;
 
         if (shouldForce(mod, _armorTask)) {
             return _armorTask;
