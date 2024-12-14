@@ -353,7 +353,6 @@ public class Py4jEntryPoint {
         }
         return map;
     }
-
     public String parsePlayersInfoToString(Map<String, Map<String, Float>> playersInfo) {
         StringBuilder result = new StringBuilder();
 
