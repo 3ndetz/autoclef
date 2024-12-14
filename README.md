@@ -2,7 +2,7 @@ AutoClef - multiplayer [altoclef](https://github.com/gaucho-matrero/altoclef)
 =========
 
 
-Plays block game. Allows multiplayer and py-scripts support.
+Plays block game. Allows multiplayer and py-scripts support. 
 
 ![Победа над игроком и сбор выпавших ресурсов](https://github.com/3ndetz/autoclef/assets/30196290/7377ec79-1c3d-493b-9a1d-5d701f19d9c9)
 
