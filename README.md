@@ -18,9 +18,15 @@ A**l**toClef can do a minecraft walkthrough. A**u**toClef can do walkthrough sky
 _SkyWars is a Minecraft multiplayer minigame with islands._
 
 
-
-> [!TIP]
-> This mod for minecraft is an interface designed for use with autonomous virtual streamer. It has a Python-callback interface to connect with Python-app and some functions to get info from the game to pass them to  streamer agent. Also it has a rich improved command system, compatible for using with LLM agent.
+> [!CAUTION]
+> <details><summary>RepoCodeDisclaimer ⚠️</summary>
+>
+> The "code" presented in the repository is mostly for prototyping. It should not be considered as a sample, it can be useful only to those who will be interested in repeating my experience, and not for "seekers of other people's mistakes" =)
+>
+> Furthermore, my experience in Java at the time of writing was extremely small (zero) and improving over time, so bugs or very silly things are possible. Unlike my other repositories, where I was in a hurry and would not really want to receive negative feedback, here it is the opposite, please report if you see something potentially bad in the code, because I still know Java not at a high level and would be happy to understand my mistakes!
+>
+> In the code you can see huge commented out dumps, don't pay attention, because I had a choice to publish the code or not. I didn't format it in any way and didn't prepare it for publishing, so I didn't hesitate to leave crutches and other nasty things in there, like debug prints.
+> </details>
 
 
 <details><summary>IDE and other software</summary>
@@ -46,15 +52,9 @@ _SkyWars is a Minecraft multiplayer minigame with islands._
     - you can send to Java-side AltoClef commands, chat msgs, etc.
 </details>
 
-> [!CAUTION]
-> <details><summary>RepoCodeDisclaimer ⚠️</summary>
-> 
-> The "code" presented in the repository is mostly for prototyping. It should not be considered as a sample, it can be useful only to those who will be interested in repeating my experience, and not for "seekers of other people's mistakes" =)
-> 
-> Furthermore, my experience in Java at the time of writing was extremely small (zero) and improving over time, so bugs or very silly things are possible. Unlike my other repositories, where I was in a hurry and would not really want to receive negative feedback, here it is the opposite, please report if you see something potentially bad in the code, because I still know Java not at a high level and would be happy to understand my mistakes!
-> 
-> In the code you can see huge commented out dumps, don't pay attention, because I had a choice to publish the code or not. I didn't format it in any way and didn't prepare it for publishing, so I didn't hesitate to leave crutches and other nasty things in there, like debug prints.
-> </details>
+
+> [!TIP]
+> This mod for minecraft is an interface designed for use with autonomous virtual streamer. It has a Python-callback interface to connect with Python-app and some functions to get info from the game to pass them to  streamer agent. Also it has a rich improved command system, compatible for using with LLM agent.
 
 
 ## Коротко о главном
@@ -117,7 +117,8 @@ _SkyWars is a Minecraft multiplayer minigame with islands._
 
 
 > [!NOTE]
-> This repo (autoclef) is a fork of original [altoclef](https://github.com/gaucho-matrero/altoclef/wiki/1:-Documentation:-Big-Picture)
+> This repo (autoclef) is a fork of original [altoclef](https://github.com/gaucho-matrero/altoclef/wiki/1:-Documentation:-Big-Picture).
+> 
 > Note that original bot is not capable of automatically playing multiplayer servers, but it still can walkthrough minecraft.
 
 AltoClef (не AutoClef, который здесь, а AltoClef) — оригинальный репозиторий клиентского бота, который впервые смог пройти майнкрафт полностью. Имейте ввиду, что [оригинальный](https://github.com/gaucho-matrero/altoclef) бот не приспособлен для игры на многопользовательских серверах с установленными античитами (по крайней мере, на данный момент).
