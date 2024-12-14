@@ -1,17 +1,27 @@
-[<img src="https://img.shields.io/badge/Habr-%D0%A7%D0%B8%D1%82%D0%B0%D1%82%D1%8C-%23000000?style=for-the-badge&link=https://habr.com/ru/articles/812387&logo=habr&logoColor=%23FFFFFF&labelColor=%2365A3BE"/>](https://habr.com/ru/articles/812387/#SkyWarsBot)
+AutoClef - multiplayer [altoclef](https://github.com/gaucho-matrero/altoclef)
+=========
 
-# AutoClef - multiplayer [altoclef](https://github.com/gaucho-matrero/altoclef)
 
 Plays block game. Allows multiplayer and py-scripts support.
 
 ![Победа над игроком и сбор выпавших ресурсов](https://github.com/3ndetz/autoclef/assets/30196290/7377ec79-1c3d-493b-9a1d-5d701f19d9c9)
 
+
+[<img src="https://img.shields.io/badge/Habr-%D0%A7%D0%B8%D1%82%D0%B0%D1%82%D1%8C-%23000000?style=for-the-badge&link=https://habr.com/ru/articles/812387&logo=habr&logoColor=%23FFFFFF&labelColor=%2365A3BE"/>](https://habr.com/ru/articles/812387/#SkyWarsBot)
+
 [<img src="https://img.shields.io/github/stars/3ndetz/AutoClef?style=flat&label=this-repo-stars&link=https%3A%2F%2Fgithub.com%2F3ndetz%2FAutoClef"/>](https://github.com/3ndetz/autoclef)
 [<img src="https://img.shields.io/github/stars/3ndetz/NeuroDeva?style=flat&label=virtual-streamer-repo&link=https%3A%2F%2Fgithub.com%2F3ndetz%2FNeuroDeva"/>](https://github.com/3ndetz/NeuroDeva)
+
 
 A**l**toClef can do a minecraft walkthrough. A**u**toClef can do walkthrough skywars.
 
 _SkyWars is a Minecraft multiplayer minigame with islands._
+
+
+
+> [!TIP]
+> This mod for minecraft is an interface designed for use with autonomous virtual streamer. It has a Python-callback interface to connect with Python-app and some functions to get info from the game to pass them to  streamer agent. Also it has a rich improved command system, compatible for using with LLM agent.
+
 
 <details><summary>IDE and other software</summary>
 
@@ -36,15 +46,15 @@ _SkyWars is a Minecraft multiplayer minigame with islands._
     - you can send to Java-side AltoClef commands, chat msgs, etc.
 </details>
 
-<details><summary>RepoCodeDisclaimer ⚠️</summary>
-
-The "code" presented in the repository is mostly for prototyping. It should not be considered as a sample, it can be useful only to those who will be interested in repeating my experience, and not for "seekers of other people's mistakes" =)
-
-Furthermore, my experience in Java at the time of writing was extremely small (zero) and improving over time, so bugs or very silly things are possible. Unlike my other repositories, where I was in a hurry and would not really want to receive negative feedback, here it is the opposite, please report if you see something potentially bad in the code, because I still know Java not at a high level and would be happy to understand my mistakes!
-
-In the code you can see huge commented out dumps, don't pay attention, because I had a choice to publish the code or not. I didn't format it in any way and didn't prepare it for publishing, so I didn't hesitate to leave crutches and other nasty things in there, like debug prints. However, I did format some things, but only the most attentive will notice this "feature".
-
-</details>
+> [!CAUTION]
+> <details><summary>RepoCodeDisclaimer ⚠️</summary>
+> 
+> The "code" presented in the repository is mostly for prototyping. It should not be considered as a sample, it can be useful only to those who will be interested in repeating my experience, and not for "seekers of other people's mistakes" =)
+> 
+> Furthermore, my experience in Java at the time of writing was extremely small (zero) and improving over time, so bugs or very silly things are possible. Unlike my other repositories, where I was in a hurry and would not really want to receive negative feedback, here it is the opposite, please report if you see something potentially bad in the code, because I still know Java not at a high level and would be happy to understand my mistakes!
+> 
+> In the code you can see huge commented out dumps, don't pay attention, because I had a choice to publish the code or not. I didn't format it in any way and didn't prepare it for publishing, so I didn't hesitate to leave crutches and other nasty things in there, like debug prints.
+> </details>
 
 
 ## Коротко о главном
@@ -106,10 +116,8 @@ In the code you can see huge commented out dumps, don't pay attention, because I
 </details>
 
 
-# Altoclef original [repo](https://github.com/gaucho-matrero/altoclef) & [wiki](https://github.com/gaucho-matrero/altoclef/wiki/1:-Documentation:-Big-Picture)
+> [!NOTE]
+> This repo (autoclef) is a fork of original [altoclef](https://github.com/gaucho-matrero/altoclef/wiki/1:-Documentation:-Big-Picture)
+> Note that original bot is not capable of automatically playing multiplayer servers, but it still can walkthrough minecraft.
 
-_Altoclef. Plays block game. Powered by Baritone._
-
-AltoClef — оригинальный репозиторий клиентского бота, который впервые смог пройти майнкрафт полностью. Имейте ввиду, что [оригинальный](https://github.com/gaucho-matrero/altoclef) бот не приспособлен для игры на многопользовательских серверах с установленными античитами (по крайней мере, на данный момент).
-
-A client side bot that can accomplish any Minecraft task that is relatively simple and can be split into smaller tasks. "Relatively Simple" is a vague term, so check the list of current capabilities to see examples.
+AltoClef (не AutoClef, который здесь, а AltoClef) — оригинальный репозиторий клиентского бота, который впервые смог пройти майнкрафт полностью. Имейте ввиду, что [оригинальный](https://github.com/gaucho-matrero/altoclef) бот не приспособлен для игры на многопользовательских серверах с установленными античитами (по крайней мере, на данный момент).
