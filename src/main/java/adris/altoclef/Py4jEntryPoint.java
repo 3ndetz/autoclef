@@ -333,7 +333,7 @@ public class Py4jEntryPoint {
     public double getSpeedXZ(){
         return _mod.getPlayer() == null ? 0 :Math.sqrt(Math.pow(_mod.getPlayer().getVelocity().getX(),2)+Math.pow(_mod.getPlayer().getVelocity().getZ(),2));
     }
-    
+
     public Map<String, Map<String, Float>> getPlayersInfo(){
         PlayerEntity self = _mod.getPlayer();
         Map<String, Map<String, Float>> map = new HashMap<>();
