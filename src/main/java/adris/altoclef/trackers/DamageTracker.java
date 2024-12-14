@@ -247,4 +247,7 @@ public class DamageTracker extends Tracker {
 
     }
 
+    public List<AbstractClientPlayerEntity> getPlayerList() {
+        return _prevPlayerList;
+    }
 }
