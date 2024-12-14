@@ -334,6 +334,44 @@ public class Py4jEntryPoint {
         return _mod.getPlayer() == null ? 0 :Math.sqrt(Math.pow(_mod.getPlayer().getVelocity().getX(),2)+Math.pow(_mod.getPlayer().getVelocity().getZ(),2));
     }
 
+    public Map<String, Map<String, Float>> getPlayersInfo(){
+        PlayerEntity self = _mod.getPlayer();
+        Map<String, Map<String, Float>> map = new HashMap<>();
+        if (self != null) {
+            Vec3d selfPos = self.getPos();
+            if (selfPos != null) {
+                List<AbstractClientPlayerEntity> playerList = _mod.getDamageTracker().getPlayerList();
+                for (AbstractClientPlayerEntity player : playerList) {
+                    if (player != null && player.getName() != null) {
+                        Vec3d position = player.getPos();
+                        Map<String, Float> playerInfoMap = new HashMap<>();
+                        playerInfoMap.put("health", player.getHealth());
+                        playerInfoMap.put("distance", (float) position.distanceTo(self.getPos()));
+                        map.put(player.getName().getString(), playerInfoMap);
+                    }
+                }
+            }
+        }
+        return map;
+    }
+    public String parsePlayersInfoToString(Map<String, Map<String, Float>> playersInfo) {
+        StringBuilder result = new StringBuilder();
+
+        for (Map.Entry<String, Map<String, Float>> entry : playersInfo.entrySet()) {
+            String playerName = entry.getKey();
+            Map<String, Float> playerInfo = entry.getValue();
+
+            Float health = playerInfo.get("health");
+            Float distance = playerInfo.get("distance");
+
+            result.append("Имя: ").append(playerName)
+                    .append(", Здоровье: ").append(health != null ? health : "N/A")
+                    .append(", Дистанция: ").append(distance != null ? distance : "N/A")
+                    .append("\n");
+        }
+
+        return result.toString();
+    }
 
 
 
