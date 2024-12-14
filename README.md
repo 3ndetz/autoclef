@@ -118,7 +118,7 @@ _SkyWars is a Minecraft multiplayer minigame with islands._
 
 > [!NOTE]
 > This repo (autoclef) is a fork of original [altoclef](https://github.com/gaucho-matrero/altoclef/wiki/1:-Documentation:-Big-Picture).
-> 
+>
 > Note that original bot is not capable of automatically playing multiplayer servers, but it still can walkthrough minecraft.
 
 AltoClef (не AutoClef, который здесь, а AltoClef) — оригинальный репозиторий клиентского бота, который впервые смог пройти майнкрафт полностью. Имейте ввиду, что [оригинальный](https://github.com/gaucho-matrero/altoclef) бот не приспособлен для игры на многопользовательских серверах с установленными античитами (по крайней мере, на данный момент).
