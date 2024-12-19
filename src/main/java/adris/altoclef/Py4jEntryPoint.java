@@ -3,6 +3,7 @@ package adris.altoclef;
 import adris.altoclef.butler.WhisperChecker;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.ui.MessagePriority;
+import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import baritone.api.pathing.calc.IPath;
@@ -16,9 +17,14 @@ import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.option.Perspective;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
+
+import static adris.altoclef.util.helpers.EntityHelper.getWeaponInHand;
+import static adris.altoclef.util.helpers.LookHelper.getLookingProbability;
 
 public class Py4jEntryPoint {
     AltoClef _mod;
@@ -76,7 +82,13 @@ public class Py4jEntryPoint {
                     tasks_string = "";
                     int i = 0;
                     for (Task task : tasks) {
-                        tasks_string += (i+1)+") "+task.toString();
+                        //tasks_string += (i+1)+") "+task.toString();
+                        if(i==0){
+                            tasks_string += "Главная задача: ";
+                        } else {
+                            tasks_string += "- ".repeat(i+1);
+                        }
+                        tasks_string += task.toString();
                         if(i<tasks.size()-1){tasks_string+="\n";}
                         i++;
                     }
@@ -333,6 +345,16 @@ public class Py4jEntryPoint {
     public double getSpeedXZ(){
         return _mod.getPlayer() == null ? 0 :Math.sqrt(Math.pow(_mod.getPlayer().getVelocity().getX(),2)+Math.pow(_mod.getPlayer().getVelocity().getZ(),2));
     }
+    public List<String> getTaskChain() {
+        List<String> tasks_list = new ArrayList<>();
+        if (_mod.getTaskRunner().getCurrentTaskChain() != null) {
+            List<Task> tasks = _mod.getTaskRunner().getCurrentTaskChain().getTasks();
+            if (tasks.size() > 0) {
+                tasks_list.addAll(tasks.stream().map(task -> task.toString()).toList());
+            }
+        }
+        return tasks_list;
+    }
 
     public Map<String, Map<String, Float>> getPlayersInfo(){
         PlayerEntity self = _mod.getPlayer();
@@ -342,12 +364,24 @@ public class Py4jEntryPoint {
             if (selfPos != null) {
                 List<AbstractClientPlayerEntity> playerList = _mod.getDamageTracker().getPlayerList();
                 for (AbstractClientPlayerEntity player : playerList) {
-                    if (player != null && player.getName() != null) {
-                        Vec3d position = player.getPos();
-                        Map<String, Float> playerInfoMap = new HashMap<>();
-                        playerInfoMap.put("health", player.getHealth());
-                        playerInfoMap.put("distance", (float) position.distanceTo(self.getPos()));
-                        map.put(player.getName().getString(), playerInfoMap);
+                    if (player != null) {
+                        Text name = player.getName();
+                        Vec3d pos = player.getPos();
+                        if(name != null && pos != null){
+                            Vec3d position = player.getPos();
+                            Map<String, Float> playerInfoMap = new HashMap<>();
+                            playerInfoMap.put("health", player.getHealth());
+                            playerInfoMap.put("distance", (float) position.distanceTo(self.getPos()));
+                            playerInfoMap.put("isLookingAtYouProb", (float) getLookingProbability(player, self));
+                            //playerInfoMap.put("isYouLookingAtProb", (float) getLookingProbability(player, self));
+                            Item weapon = getWeaponInHand(player);
+                            if(weapon != null){
+                                playerInfoMap.put("hasWeapon", 1.0f);
+                            }else{
+                                playerInfoMap.put("hasWeapon", 0.0f);
+                            }
+                            map.put(player.getName().getString(), playerInfoMap);
+                        }
                     }
                 }
             }

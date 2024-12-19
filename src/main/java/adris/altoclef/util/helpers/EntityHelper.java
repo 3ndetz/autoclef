@@ -4,6 +4,7 @@ import adris.altoclef.AltoClef;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.DamageUtil;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Tameable;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
@@ -12,10 +13,12 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.raid.RaiderEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.tag.DamageTypeTags;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -53,6 +56,27 @@ public class EntityHelper {
                     }
                 }
             }
+        }
+        return false;
+    }
+
+    public static Item getWeaponInHand(Entity entity){
+        if (entity instanceof LivingEntity living) {
+            if (living.getHandItems() != null) {
+                for (ItemStack stack : living.getHandItems()) {
+                    if (Arrays.stream(ItemHelper.WeaponsTopPriority).anyMatch(weapon -> stack.getItem().equals(weapon)) ) {
+                        // We're trading with this one, ignore it.
+                        return stack.getItem();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public static boolean hasWeaponInHand(Entity entity) {
+        if (getWeaponInHand(entity) != null){
+            return true;
         }
         return false;
     }

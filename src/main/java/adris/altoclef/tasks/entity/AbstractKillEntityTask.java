@@ -13,7 +13,6 @@ import adris.altoclef.util.slots.PlayerSlot;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;

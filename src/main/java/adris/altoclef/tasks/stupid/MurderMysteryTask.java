@@ -2,16 +2,14 @@ package adris.altoclef.tasks.stupid;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.butler.ButlerConfig;
+import adris.altoclef.tasks.entity.DoToClosestEntityTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
 import adris.altoclef.tasks.movement.PickupDroppedItemTask;
 import adris.altoclef.tasks.movement.SafeRandomShimmyTask;
 import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
-import adris.altoclef.tasks.movement.TimeoutWanderTask;
-import adris.altoclef.tasks.slot.ClickSlotTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
-import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.slots.Slot;
 import baritone.api.utils.input.Input;
@@ -19,17 +17,11 @@ import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.item.*;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.*;
 
 public class MurderMysteryTask extends Task {
 
@@ -40,6 +32,9 @@ public class MurderMysteryTask extends Task {
     private boolean _forceWait = false;
     private Task _shootArrowTask;
     private Task _pickupTask;
+    public String _killerName;
+    public int _chill_tactics = -1;
+    public boolean _chill_tactics_changed = false;
     private String _stringRole;
     private List<Item> lootableItems(AltoClef mod) {
         List<Item> lootable = new ArrayList<>();
@@ -83,6 +78,7 @@ public class MurderMysteryTask extends Task {
 
     @Override
     protected Task onTick(AltoClef mod) {
+
         setDebugState("MURDER MYSTERY");
         if (ButlerConfig.getInstance().autoJoin) {
             List<String> joinItems = Arrays.asList("новая игра", "начать игру", "быстро играть");
@@ -118,21 +114,36 @@ public class MurderMysteryTask extends Task {
         if(closest.isPresent()){
 
             PlayerEntity entity = (PlayerEntity) closest.get();
-            if(mod.getPlayer().distanceTo(entity)>10 && LookHelper.cleanLineOfSight(entity.getPos(),100)) {
+            float dist = mod.getPlayer().distanceTo(entity);
+            boolean tooClose = dist > 10f;
+            if(entity.getMainHandStack().isOf(Items.SHEARS) || entity.getMainHandStack().isOf(Items.IRON_SWORD)){
+                _killerName = entity.getName().getString();
+            }
+            if(tooClose && LookHelper.cleanLineOfSight(entity.getPos(),100)) {
                 if (mod.getItemStorage().getItemCount(Items.ENDER_PEARL) > 2){
                     return new ThrowEnderPearlSimpleProjectileTask(entity.getBlockPos().add(0, -1, 0));}
-                else if(UseBow(mod, entity)){
+                else if(entity.getName().getString() == _killerName && UseBow(mod, entity)){
                     _shootArrowTask = new ShootArrowSimpleProjectileTask(entity);
                     return _shootArrowTask;
+                } else if (dist < 20) {
+                    return new TerminatorTask.RunAwayFromPlayersTask(entity, 20);
                 }
             }
             if (mod.getItemStorage().hasItemInventoryOnly(Items.SHEARS, Items.IRON_SWORD)) {
                 //tryDoFunnyMessageTo(mod, (PlayerEntity) entity);
-                mod.getSlotHandler().forceEquipItem(Items.SHEARS, Items.IRON_SWORD);
+                _stringRole = "маньяк";
+                if(tooClose) {
+                    mod.getSlotHandler().forceEquipItem(Items.SHEARS, Items.IRON_SWORD);
+                }else{
+                    mod.getSlotHandler().forceDeequip(stack -> stack.getItem() instanceof ToolItem || stack.getItem() instanceof ShearsItem);
+                }
                 return new KillPlayerTask(entity.getName().getString());
             }
         }
-
+        if(mod.getPlayer().hasVehicle()){  // injured
+            setDebugState("Вы ранены и погибаете, остаётся ждать доктора");
+            return new SafeRandomShimmyTask();
+        }
         for (Item check : lootableItems(mod)) {
             if (mod.getEntityTracker().itemDropped(check)) {
 
@@ -141,15 +152,43 @@ public class MurderMysteryTask extends Task {
                 //
                 if(closestEnt.isPresent()) {
                     setDebugState("Пикап предметов");
-                    _pickupTask = new PickupDroppedItemTask(new ItemTarget(check), false);
+                    _pickupTask = new PickupDroppedItemTask(new ItemTarget(check), false, false);
                     return _pickupTask;
                 }
             }
         }
 
+        Random random = new Random();
+        if(_chill_tactics == -1){
+            _chill_tactics = random.nextInt(2);
+            _chill_tactics_changed = true;
+        }
 
-
+        // Only set _chill_tactics_changed to false when actually changing tasks
+        if (_chill_tactics_changed) {
+            //Debug.logMessage("ChillTactics: " + _chill_tactics);
+        }
         setDebugState("Скитание");
+
+        Optional<Entity> player = mod.getEntityTracker().getClosestEntity(PlayerEntity.class);
+        if (player.isPresent() && player.get() instanceof PlayerEntity playerEntity) {
+            setDebugState("Punking.");
+            return new DoToClosestEntityTask(entity -> {
+                    switch (_chill_tactics){
+                        case 0:
+                            return new KillPlayerTask(playerEntity.getName().getString());
+                        case 1:
+                            return new TerminatorTask.RunAwayFromPlayersTask(playerEntity, 20);
+                        default:
+                            _chill_tactics = 0;
+                            return new SafeRandomShimmyTask();
+                    }
+
+                }, PlayerEntity.class
+            );
+        }
+
+        //return new Kil
         return new SafeRandomShimmyTask();
         //return new TimeoutWanderTask();
     }
@@ -164,7 +203,7 @@ public class MurderMysteryTask extends Task {
 
     private boolean UseBow(AltoClef mod, Entity target)
     {
-        return ShouldBow(mod) && ShootArrowSimpleProjectileTask.canUseBow(mod,target);
+        return ShouldBow(mod) && ShootArrowSimpleProjectileTask.canUseRanged(mod,target);
     }
 
     private boolean ShouldBow(AltoClef mod){
@@ -244,7 +283,11 @@ public class MurderMysteryTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Мардер "+_stringRole;
+        if(_killerName == null || _stringRole == "убийца"){
+            return "MurderMystery: " + _stringRole;
+        } else {
+            return "MurderMystery: подозреваемый " + _killerName;
+        }
     }
 
 }

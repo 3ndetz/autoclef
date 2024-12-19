@@ -16,6 +16,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
+import static adris.altoclef.util.helpers.LookHelper.getLookingProbability;
+
 public class DamageTracker extends Tracker {
     private final HashMap<String, PlayerEntity> _playerMap = new HashMap<>();
     private final HashMap<String, Float> _prevPlayerHealth = new HashMap<>();
@@ -153,16 +155,7 @@ public class DamageTracker extends Tracker {
         }
         //Debug.logMessage("Получен урон "+name+ " "+amount);
     }
-    public double getLookingProbability(PlayerEntity plyFrom, PlayerEntity plyTo){
 
-        return getLookingProbability(plyFrom.getEyePos(),plyTo.getEyePos(),plyFrom.getRotationVec(0));
-        //return dot > 0.95D;
-    }
-    public double getLookingProbability(Vec3d eyeFrom, Vec3d eyeTo, Vec3d RotationFrom){
-        Vec3d toEntity = eyeTo.subtract(eyeFrom);
-        double dot = toEntity.normalize().dotProduct(RotationFrom);
-        return dot; //0.8 60 град, 0.9 30 град 0.95 15 град (точный взгляд
-    }
     public void tick() {
 
         if(AltoClef.inGame() && MinecraftClient.getInstance().world != null) {

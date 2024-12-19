@@ -17,37 +17,23 @@ import adris.altoclef.ui.CommandStatusOverlay;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.ui.MessageSender;
 import adris.altoclef.util.helpers.InputHelper;
-import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import baritone.Baritone;
 import baritone.altoclef.AltoClefSettings;
 import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
-import java.util.stream.Collectors;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageRecord;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
-import net.minecraft.text.TextContent;
-import net.minecraft.text.TranslatableTextContent;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Language;
 import org.lwjgl.glfw.GLFW;
-
-import net.minecraft.server.MinecraftServer;
-import py4j.PythonClient;
 
 import java.util.ArrayDeque;
 import java.util.Arrays;
@@ -218,7 +204,9 @@ public class AltoClef implements ModInitializer {
         // WORKING YUU HOO
         ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
             String msg = mcTextToString(message);
-
+            if (msg.startsWith("[Baritone] Failed")){
+                return false;  // FIX THIS BARITONE SPAM!!!!
+            }
             //Debug.logMessage("ALLOW_CHAT DEBUG!!!! MSG CHAT CharReadMixin:\n==" + msg);
             if (!msg.startsWith(this.getModSettings().getCommandPrefix())) {
                 ChatMessageEvent evt = new ChatMessageEvent(msg);  //new ChatMessageEvent(msg, signedMessage, sender, params);
@@ -244,6 +232,7 @@ public class AltoClef implements ModInitializer {
 
         // External mod initialization
         runEnqueuedPostInits();
+        DamageEventHandler.registerDamagePacketReceiver();
     }
     public void initializePythonSender() {
         _py4jEntryPoint = new Py4jEntryPoint(this);

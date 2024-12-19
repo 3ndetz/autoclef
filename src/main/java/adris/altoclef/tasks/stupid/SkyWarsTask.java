@@ -14,10 +14,8 @@ import adris.altoclef.tasks.movement.PickupDroppedItemTask;
 import adris.altoclef.tasks.movement.SearchChunksExploreTask;
 import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
 import adris.altoclef.tasks.resources.GetBuildingMaterialsTask;
-import adris.altoclef.tasks.resources.MineAndCollectTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
-import adris.altoclef.util.MiningRequirement;
 import adris.altoclef.util.helpers.*;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.pathing.goals.Goal;
@@ -39,7 +37,6 @@ import net.minecraft.util.math.Vec3i;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import static java.beans.Beans.isInstanceOf;
 
 /**
  * SlotHandler 39 timer override изменил
@@ -352,7 +349,7 @@ public class SkyWarsTask extends Task {
                     return new ThrowEnderPearlSimpleProjectileTask(player.getBlockPos().add(0, -1, 0));
                 }
             }
-            if (canUseRangedWeapon(mod) && ShootArrowSimpleProjectileTask.canUseBow(mod,player)) {
+            if (canUseRangedWeapon(mod) && ShootArrowSimpleProjectileTask.canUseRanged(mod,player)) {
                 return new ShootArrowSimpleProjectileTask(player);
             }
 

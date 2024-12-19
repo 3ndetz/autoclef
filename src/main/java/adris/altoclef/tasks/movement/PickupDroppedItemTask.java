@@ -55,17 +55,26 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
     // Am starting to regret not making this a singleton
     private AltoClef _mod;
     private boolean _collectingPickaxeForThisResource = false;
+    public boolean _needCollectPickaxe = true;
     private ItemEntity _currentDrop = null;
 
-    public PickupDroppedItemTask(ItemTarget[] itemTargets, boolean freeInventoryIfFull) {
+
+    public PickupDroppedItemTask(ItemTarget[] itemTargets, boolean freeInventoryIfFull, boolean needCollectPickaxe) {
         _itemTargets = itemTargets;
         _freeInventoryIfFull = freeInventoryIfFull;
+        _needCollectPickaxe = needCollectPickaxe;
+    }
+
+    public PickupDroppedItemTask(ItemTarget[] itemTargets, boolean freeInventoryIfFull) {
+        this(itemTargets, freeInventoryIfFull, true);
     }
 
     public PickupDroppedItemTask(ItemTarget target, boolean freeInventoryIfFull) {
         this(new ItemTarget[]{target}, freeInventoryIfFull);
     }
-
+    public PickupDroppedItemTask(ItemTarget target, boolean freeInventoryIfFull, boolean needCollectPickaxe) {
+        this(new ItemTarget[]{target}, freeInventoryIfFull, needCollectPickaxe);  // for murder
+    }
     public PickupDroppedItemTask(Item item, int targetCount, boolean freeInventoryIfFull) {
         this(new ItemTarget(item, targetCount), freeInventoryIfFull);
     }
@@ -186,7 +195,7 @@ public class PickupDroppedItemTask extends AbstractDoToClosestObjectTask<ItemEnt
             mod.getClientBaritone().getPathingBehavior().forceCancel();
             if (_currentDrop != null && !_currentDrop.getStack().isEmpty()) {
                 // We might want to get a pickaxe first.
-                if (!isGettingPickaxeFirstFlag && mod.getModSettings().shouldCollectPickaxeFirst() && !StorageHelper.miningRequirementMetInventory(mod, MiningRequirement.STONE)) {
+                if (_needCollectPickaxe && !isGettingPickaxeFirstFlag && mod.getModSettings().shouldCollectPickaxeFirst() && !StorageHelper.miningRequirementMetInventory(mod, MiningRequirement.STONE)) {
                     Debug.logMessage("Failed to pick up drop, will try to collect a stone pickaxe first and try again!");
                     _collectingPickaxeForThisResource = true;
                     isGettingPickaxeFirstFlag = true;

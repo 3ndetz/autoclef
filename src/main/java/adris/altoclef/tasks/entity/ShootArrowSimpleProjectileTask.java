@@ -5,13 +5,17 @@ import adris.altoclef.Debug;
 import adris.altoclef.tasks.speedrun.BeatMinecraft2Task;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.LookHelper;
+import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
+import adris.altoclef.util.slots.PlayerSlot;
+import adris.altoclef.util.slots.Slot;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.projectile.ArrowEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
@@ -21,12 +25,15 @@ import net.minecraft.util.math.Vec3d;
 import java.util.Arrays;
 import java.util.List;
 
+import static adris.altoclef.util.helpers.ItemHelper.ARROWS;
+import static net.minecraft.item.CrossbowItem.isCharged;
+
 public class ShootArrowSimpleProjectileTask extends Task {
 
     private final Entity target;
     private boolean shooting = false;
     private boolean shot = false;
-
+    private Item _rangedItem = Items.BOW;
     private final TimerGame _shotTimer = new TimerGame(0.7);
 
     public ShootArrowSimpleProjectileTask(Entity target) {
@@ -98,41 +105,93 @@ public class ShootArrowSimpleProjectileTask extends Task {
 
     @Override
     protected Task onTick(AltoClef mod) {
-        setDebugState("Shooting projectile");
-        List<Item> requiredArrows = Arrays.asList(Items.ARROW, Items.SPECTRAL_ARROW, Items.TIPPED_ARROW);
-
-        if (!(mod.getItemStorage().hasItem(Items.BOW) &&
-                requiredArrows.stream().anyMatch(mod.getItemStorage()::hasItem))) {
-            Debug.logMessage("Missing items, stopping.");
+        if(hasArrows(mod)){
+            //setDebugState("DON'T HAVE BOW OR ARROWS!");
+            //return null;
+            if(mod.getItemStorage().hasItemInventoryOnly(Items.BOW)){
+                setDebugState("Bow");
+                _rangedItem = Items.BOW;
+            } else if (mod.getItemStorage().hasItemInventoryOnly(Items.CROSSBOW)) {
+                setDebugState("Crossbow (EXPERIMENTAL)");
+                _rangedItem = Items.CROSSBOW;
+            } else {
+                setDebugState("DON'T HAVE RANGED WEAPON!");
+                return null;
+            }
+        }else{
+            setDebugState("DON'T HAVE ARROWS!");
             return null;
         }
-        if(mod.getPlayer().getItemUseTime() <= 1){
+        int useTime = mod.getPlayer().getItemUseTime();
+        if(useTime <= 1){
             //LookHelper.smoothLookAt(mod, target);
         }else {
             Rotation lookTarget = calculateThrowLook(mod, target);
             LookHelper.smoothLook(mod, lookTarget);
         }
 
-        // check if we are holding a bow
-        boolean charged = mod.getPlayer().getItemUseTime() > 20 && mod.getPlayer().getActiveItem().getItem() == Items.BOW;
+        mod.getSlotHandler().forceEquipItem(_rangedItem);
 
-        mod.getSlotHandler().forceEquipItem(Items.BOW);
+        // check if we are holding a bow
+
+        boolean charged;
+        boolean projectileReady = false;
+        boolean isBow = _rangedItem == Items.BOW;
+        //Debug.logMessage(mod.getPlayer().getActiveItem().getItem().toString());
+        if (isBow) {
+
+            charged = mod.getPlayer().getActiveItem().getItem() == _rangedItem && useTime > 20;
+        }else if (StorageHelper.getItemStackInSlot(PlayerSlot.getEquipSlot()).getItem() == _rangedItem){
+            // TODO untested
+            // } else if(mod.getPlayer().getMainHandStack().getItem() == _rangedItem) {
+            if (_rangedItem == Items.CROSSBOW) {
+                projectileReady = isCharged(StorageHelper.getItemStackInSlot(PlayerSlot.getEquipSlot()));
+
+                setDebugState("Crossbow ready="+projectileReady+ " use=" +useTime);
+                if(!projectileReady){
+                    charged = useTime > 40;
+                    if(!charged) {
+                        setDebugState("charging crossbow...");
+                        mod.getInputControls().hold(Input.CLICK_RIGHT);
+                        return null;
+                    } else {
+                        mod.getInputControls().release(Input.CLICK_RIGHT);
+                    }
+                } else {
+                    setDebugState("crossbow ready!");
+                    charged = true;
+                }
+            } else {
+                projectileReady = true;
+                charged = true;
+            }
+        } else {
+            setDebugState("Item not active");
+            charged = false;
+            return null;
+        }
+
 
         //if (LookHelper.isLookingAt(mod, lookTarget) && !shooting) {
         //    mod.getInputControls().hold(Input.CLICK_RIGHT);
         //    shooting = true;
         //    shotTimer.reset();
         //}
-        if(!shooting || _shotTimer.elapsed()) { //(LookHelper.isLookingAt(mod, lookTarget) && !shooting) {
-            mod.getInputControls().hold(Input.CLICK_RIGHT);
+        if (isBow) {
+            if (!shooting || _shotTimer.elapsed()) { //(LookHelper.isLookingAt(mod, lookTarget) && !shooting) {
+                mod.getInputControls().hold(Input.CLICK_RIGHT);
+                shooting = true;
+                _shotTimer.reset();
+            }
+        } else {
             shooting = true;
-            _shotTimer.reset();
         }
+
         if (shooting && charged) {
-            List<ArrowEntity> arrows = mod.getEntityTracker().getTrackedEntities(ArrowEntity.class);
+            List<ProjectileEntity> arrows = mod.getEntityTracker().getTrackedEntities(ProjectileEntity.class);
             // If any of the arrows belong to us and are moving, do not shoot yet
             // Prevents from shooting multiple arrows to the same target
-            for (ArrowEntity arrow : arrows) {
+            for (ProjectileEntity arrow : arrows) {
                 if (arrow.getOwner() == mod.getPlayer()) {
                     Vec3d velocity = arrow.getVelocity();
                     Vec3d delta = target.getPos().subtract(arrow.getPos());
@@ -147,13 +206,40 @@ public class ShootArrowSimpleProjectileTask extends Task {
                 // For farther entities, the arrow may get stuck in the air, so we need to increase the simulation distance
                 MinecraftClient.getInstance().options.getSimulationDistance().setValue(32);
             }
-            mod.getInputControls().release(Input.CLICK_RIGHT); // Release the arrow
-            shot = true;
+            if(isBow) {
+                mod.getInputControls().release(Input.CLICK_RIGHT); // Release the arrow
+                shot = true;
+            } else if (projectileReady){
+                Debug.logMessage("SHOT");
+                mod.getInputControls().tryPress(Input.CLICK_RIGHT);
+                shot = true;
+            } else {
+                Debug.logMessage("SHOT fdf");
+                //mod.getInputControls().tryPress(Input.CLICK_RIGHT);
+            }
+
         }
+        setDebugState("Charging?");
         return null;
     }
+    public static boolean hasArrows(AltoClef mod){
+        List<Item> requiredArrows = Arrays.asList(ARROWS);
+        if (requiredArrows.stream().anyMatch(mod.getItemStorage()::hasItemInventoryOnly)) {
+            return true;
+        }
+        return false;
+    }
+    public static boolean readyForBow(AltoClef mod){
+        return hasArrows(mod) && mod.getItemStorage().hasItemInventoryOnly(Items.BOW);
+    }
+    public static boolean readyForCrossbow(AltoClef mod){
+        return hasArrows(mod) && mod.getItemStorage().hasItemInventoryOnly(Items.CROSSBOW);
+    }
+    public static boolean readyForRanged(AltoClef mod){
+        return hasArrows(mod) && (mod.getItemStorage().hasItemInventoryOnly(Items.BOW) || mod.getItemStorage().hasItemInventoryOnly(Items.CROSSBOW));
+    }
+    public static boolean checkRangedAttackTrajectory(AltoClef mod, Entity target){
 
-    public static boolean canUseBow(AltoClef mod, Entity target) {
         Vec3d playerPos = mod.getPlayer().getEyePos();
         Vec3d targetPos = target.getEyePos();
         double distance = playerPos.distanceTo(targetPos);
@@ -201,6 +287,9 @@ public class ShootArrowSimpleProjectileTask extends Task {
 
         return true;
     }
+    public static boolean canUseRanged(AltoClef mod, Entity target) {
+        return readyForRanged(mod) && checkRangedAttackTrajectory(mod, target);
+    }
 
     @Override
     protected void onStop(AltoClef mod, Task interruptTask) {
@@ -219,6 +308,6 @@ public class ShootArrowSimpleProjectileTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Shooting arrow at " + target.getType().getTranslationKey();
+        return "Shooting at " + target.getType().getName().getString() + " using "+ _rangedItem.getName().getString();
     }
 }

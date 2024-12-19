@@ -271,7 +271,7 @@ public class TerminatorTask extends Task {
         return "Prepare to get punked, kid";
     }
 
-    private static class RunAwayFromPlayersTask extends RunAwayFromEntitiesTask {
+    public static class RunAwayFromPlayersTask extends RunAwayFromEntitiesTask {
 
         public RunAwayFromPlayersTask(Entity toRunAwayFrom, double distanceToRun) {
             super(toRunAwayFrom, distanceToRun, true, 0.1);
