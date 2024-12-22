@@ -506,15 +506,24 @@ public abstract class LookHelper {
         Box boundingBox = entity.getBoundingBox();
         return getClosestPointOnEntityHitbox(mod.getPlayer().getEyePos(), boundingBox);
     }
-
-
+    public static boolean canHitEntity(AltoClef mod, Entity entity, float range){
+        Vec3d playerEyePos = mod.getPlayer().getEyePos();
+        Vec3d closestPoint = getClosestPointOnEntityHitbox(mod, entity);
+        double distance = playerEyePos.distanceTo(closestPoint);
+        boolean inRange = ((distance*distance) < (range*range));
+        boolean cleanLOS = LookHelper.cleanLineOfSight(closestPoint, distance);
+        return cleanLOS && inRange;
+    }
+    public static boolean canHitEntity(AltoClef mod, Entity entity){
+        return canHitEntity(mod, entity, mod.getModSettings().getEntityReachRange());
+    }
     /**
      * Gets optimal aim position for targeting an entity
      * @param mod AltoClef mod instance
      * @param entity Target entity
      * @return Best position to aim at
      */
-    static Vec3d getOptimalAimPoint(AltoClef mod, Entity entity) {
+    public static Vec3d getOptimalAimPoint(AltoClef mod, Entity entity) {
         Vec3d playerEyePos = mod.getPlayer().getEyePos();
 
         // Get closest point on hitbox

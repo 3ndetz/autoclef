@@ -57,7 +57,7 @@ public class PlayerExtraController {
     }
 
     public boolean inRange(Entity entity) {
-        return _mod.getPlayer().isInRange(entity, _mod.getModSettings().getEntityReachRange());
+        return LookHelper.canHitEntity(_mod, entity); // _mod.getPlayer().isInRange(entity, _mod.getModSettings().getEntityReachRange());
     }
 
     public boolean attack(Entity entity, boolean DoRotates) {
@@ -84,6 +84,7 @@ public class PlayerExtraController {
 
         return _succesfulHit;
     }
+
 
     public boolean attack(Entity entity) {
         return this.attack(entity, false);

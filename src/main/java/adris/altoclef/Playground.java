@@ -40,12 +40,14 @@ import adris.altoclef.util.helpers.WorldHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.GhastEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
@@ -57,6 +59,8 @@ import java.io.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
+
+import static adris.altoclef.util.helpers.StringHelper.removeMCFormatCodes;
 
 /**
  * For testing.
@@ -131,7 +135,7 @@ public class Playground {
     public static void TEMP_TEST_FUNCTION(AltoClef mod, String arg) {
         //mod.runUserTask();
         Debug.logMessage("Running test...");
-        String all_cases = "stuckdebug, cb_reload, task_info, captmax, captdata, chatparsedebug, chatparseddebug_cancel, captcha_dataset, savemap, groundblock, cam 0, cam 1, cam 2, sign, sign2, pickup, chunk, structure, place, deadmeme, stacked, stacked2, ravage, temples, outer, smelt, iron, avoid, portal, kill, kill2, craft, food, temple, blaze, flint, unobtainable, piglin, stronghold, terminate, stoprot, startrot, killall, t, tt, sw, mm, kpvp, thepit, bow, replace, bed, dragon, dragon-pearl, dragon-old, chest, 173, example, netherite, arrow, whisper";
+        String all_cases = "inv, stuckdebug, cb_reload, task_info, captmax, captdata, chatparsedebug, chatparseddebug_cancel, captcha_dataset, savemap, groundblock, cam 0, cam 1, cam 2, sign, sign2, pickup, chunk, structure, place, deadmeme, stacked, stacked2, ravage, temples, outer, smelt, iron, avoid, portal, kill, kill2, craft, food, temple, blaze, flint, unobtainable, piglin, stronghold, terminate, stoprot, startrot, killall, t, tt, sw, mm, kpvp, thepit, bow, replace, bed, dragon, dragon-pearl, dragon-old, chest, 173, example, netherite, arrow, whisper";
         switch (arg) {
             case "":
                 // None specified
@@ -139,6 +143,25 @@ public class Playground {
                 break;
             case "help":
                 Debug.logMessage(all_cases);
+                break;
+            case "inv":
+                List<ItemStack> itemStacks = mod.getItemStorage().getItemStacksPlayerInventory(true);
+                for (ItemStack item : itemStacks) {
+                    if(item.getItem()!=null) {
+
+                        String itemName = item.getItem().getName().getString().toLowerCase();
+                        if (!itemName.equals("воздух")) {
+                            if (item.contains(DataComponentTypes.CUSTOM_NAME)) {
+                                String itemCustomName = removeMCFormatCodes(item.getName().getString().toLowerCase());
+                                Debug.logMessage("ITEM CUSTOM NAME = "+itemCustomName);
+                                //return itemName+" (с названием " + itemCustomName+")";
+                            }
+
+                            //Debug.logMessage("ITEM CUSTOM NAME = "+itemCustomName);
+                        }
+                    }
+                }
+                Debug.logMessage("End of item list");
                 break;
             case "stuckdebug":
                 Debug.logMessage("STUCK DEBUG!!!!");
@@ -379,11 +402,6 @@ public class Playground {
             case "startrot":
                 MouseMoveHelper.RotationEnabled = true;
                 break;
-            case "killall":
-                mod.getButler().ClearTeammates();
-                mod.getButler().AddNearestPlayerToFriends(mod,5);
-                mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), 900,false));
-                break;
             case "t":
                 mod.runUserTask(new SafeRandomShimmyTask());
                 break;
@@ -391,13 +409,18 @@ public class Playground {
                 //mod.getClientBaritone().getPathingBehavior().;
                 break;
             case "sw":
-                mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), 500,false));
+                mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), 300,false));
+                break;
+            case "swt":
+                mod.getButler().ClearTeammates();
+                mod.getButler().AddNearestPlayerToFriends(mod,5);
+                mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), 300,false));
                 break;
             case "mm":
                 mod.getInfoSender().UpdateServerInfo("serverMode", "murdermystery");
-                int role_int = 0;
+                int role_int = -1;
                 try {role_int = Integer.parseInt(arg.split(" ")[1]);}
-                catch (Exception e){Debug.logWarning("Не указано значение, значит невиновный");}
+                catch (Exception e){Debug.logWarning("Не указано значение, значит НЕИЗВЕСТНО");}
                 mod.runUserTask(new MurderMysteryTask(role_int));
                 break;
             case "kpvp":

@@ -204,10 +204,13 @@ public class Py4jEntryPoint {
             _cb.onVerifedChat(messageDict);
         }
     }
-    public void ChatMessage(String msg){
-        if(AltoClef.inGame())
-        _mod.getMessageSender().enqueueChat(msg, MessagePriority.ASAP);
-        //Object myPythonClass =  _mod.getGateway().getPythonServerEntryPoint(new Class[]{MyPythonClass.class});
+    public void ChatMessage(String msg) {
+        if (msg != null) {
+            if (AltoClef.inGame() && !msg.isBlank()) {
+                _mod.getMessageSender().enqueueChat(msg, MessagePriority.ASAP);
+                //Object myPythonClass =  _mod.getGateway().getPythonServerEntryPoint(new Class[]{MyPythonClass.class});
+            }
+        }
     }
     public void RunInnerCommand(String command){
         AltoClef.getCommandExecutor().execute(command); //@stop

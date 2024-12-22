@@ -5,14 +5,12 @@ import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.Subscription;
 import adris.altoclef.eventbus.events.BlockPlaceEvent;
+import adris.altoclef.tasks.DoToClosestBlockTask;
 import adris.altoclef.tasks.container.LootContainerTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
 import adris.altoclef.tasks.misc.EquipArmorTask;
-import adris.altoclef.tasks.movement.GetToBlockTask;
-import adris.altoclef.tasks.movement.PickupDroppedItemTask;
-import adris.altoclef.tasks.movement.SearchChunksExploreTask;
-import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
+import adris.altoclef.tasks.movement.*;
 import adris.altoclef.tasks.resources.GetBuildingMaterialsTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
@@ -65,10 +63,11 @@ public class SkyWarsTask extends Task {
     private int lootRange = LOOT_RANGE;
     private double combatRange = COMBAT_RANGE;
     private boolean _started = false;
-    private LootContainerTask _lootTask;
+    private Task _lootTask;
     private Task _structureMaterialsTask;
     private TimerGame _buildBlocksCollectTimer = new TimerGame(3);
     private Block[] buildableBlocks = {Blocks.STONE, Blocks.COBBLESTONE, Blocks.DIRT, Blocks.GRASS_BLOCK};
+    private List<Block> handBuildableBlocks = new ArrayList<>();
 
     private List<Item> lootableItems(AltoClef mod) {
         List<Item> lootable = new ArrayList<>();
@@ -81,6 +80,9 @@ public class SkyWarsTask extends Task {
         //lootable.addAll(Arrays.stream(ItemHelper.BootsTopPriority).toList());
         lootable.addAll(Arrays.stream(ItemHelper.PLANKS).toList());
         lootable.addAll(Arrays.stream(ItemHelper.blocksToItems(buildableBlocks)).toList());
+        lootable.addAll(Arrays.stream(ItemHelper.WeaponsTopPriority).toList());
+        lootable.addAll(Arrays.stream(ItemHelper.ShootWeapons).toList());
+        lootable.addAll(Arrays.stream(ItemHelper.ARROWS).toList());
         lootable.add(Items.GOLDEN_APPLE);
         lootable.add(Items.COBBLESTONE);
         lootable.add(Items.STONE);
@@ -88,8 +90,8 @@ public class SkyWarsTask extends Task {
         lootable.add(Items.ENCHANTED_GOLDEN_APPLE);
         lootable.add(Items.GOLDEN_CARROT);
         lootable.add(Items.STONE);
-        lootable.add(Items.BOW);
-        lootable.add(Items.ARROW);
+        //lootable.add(Items.BOW);
+        //lootable.add(Items.ARROW);
         lootable.add(Items.GUNPOWDER);
         lootable.add(Items.ENDER_PEARL);
         if (!mod.getItemStorage().hasItemInventoryOnly(Items.WATER_BUCKET)) {
@@ -108,7 +110,11 @@ public class SkyWarsTask extends Task {
         _canTerminate = canTerminate;
         _finishOnKilled = FinishOnKilled;
         _startedPos = center;
-        _structureMaterialsTask = new GetBuildingMaterialsTask(ItemHelper.blocksToItems(buildableBlocks)); //new MineAndCollectTask(toItemTargets(ItemHelper.blocksToItems(buildableBlocks)), MiningRequirement.HAND);//new GetBuildingMaterialsTask(32);
+        handBuildableBlocks.addAll(Arrays.stream(new Block[]{Blocks.DIRT, Blocks.GRASS_BLOCK}).toList());
+        handBuildableBlocks.addAll(Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.WOOL)).toList());
+        handBuildableBlocks.addAll(Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.WOOD)).toList());
+        handBuildableBlocks.addAll(Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.PLANKS)).toList());
+        _structureMaterialsTask = new GetBuildingMaterialsTask(ItemHelper.blocksToItems(handBuildableBlocks.stream().toArray(Block[]::new))); //new MineAndCollectTask(toItemTargets(ItemHelper.blocksToItems(buildableBlocks)), MiningRequirement.HAND);//new GetBuildingMaterialsTask(32);
         //_structureMaterialsTask = new GetBuildingMaterialsTask(32);
         _scanTask = new ScanChunksInRadius(center, scanRadius);
     }
@@ -276,7 +282,10 @@ public class SkyWarsTask extends Task {
         if (shouldForce(mod, _armorTask)) {
             return _armorTask;
         }
-        if(shouldForce(mod, _lootTask) && _lootTask.isInChest()){
+        //if(shouldForce(mod, _lootTask)) {// || (_lootTask instanceof LootContainerTask lootTask && lootTask.isInChest())){
+        //    return _lootTask;
+        //}
+        if(_lootTask != null && _lootTask instanceof LootContainerTask lootTask && lootTask.isInChest() && shouldForce(mod, _lootTask)){
             return _lootTask;
         }
         _armorTask = autoArmor(mod);
@@ -379,7 +388,12 @@ public class SkyWarsTask extends Task {
                 setDebugState("Поиск ресурсов -> контейнеры: дорога");
                 _lastLootPos = closestCont.get();
                 //if(!shouldForce(mod, _lootTask)) {
-                _lootTask = new LootContainerTask(closestCont.get(), lootableItems(mod));
+                boolean startLoot = closestCont.get().isWithinDistance(mod.getPlayer().getPos(), 3);
+                if (!startLoot) {
+                    _lootTask = new GetToBlockTask(closestCont.get().up());
+                } else {
+                    _lootTask = new LootContainerTask(closestCont.get(), lootableItems(mod));
+                }
                 //}
                 //Random random = new Random();
                 //if (_lootTask != null && _lootTask.isActive()) {} else {

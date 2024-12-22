@@ -4,6 +4,7 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.chains.DeathMenuChain;
 import adris.altoclef.tasks.movement.GetToBlockTask;
+import adris.altoclef.tasks.movement.GetToEntityTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.KillAuraHelper;
 import adris.altoclef.util.helpers.LookHelper;
@@ -80,28 +81,42 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
     @Override
     protected Task onEntityInteract(AltoClef mod, Entity entity) {
         // Equip weapon
-        if(!WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos()) && entity.isPlayer()){
-            boolean RotatedJump = entity.squaredDistanceTo(mod.getPlayer()) < 4.4*4.4;
-            KillAuraHelper.GoJump(mod,RotatedJump);
-        }
-        if (!equipWeapon(mod)) {
-            float hitProg = mod.getPlayer().getAttackCooldownProgress(0);
-            LookHelper.smoothLook(mod, entity);
-            boolean canPunk = hitProg >= 0.99;
-            if (entity instanceof LivingEntity) {
-                LivingEntity livingEnt = (LivingEntity) entity;
-                canPunk = canPunk && livingEnt.hurtTime <= 0;
+        //TODO if can't hit DO CLOSER
+        // _ztask[0] = new GetToBlockTask(entity.getBlockPos());
+        boolean isPlayer = entity.isPlayer();
+        boolean canHit = LookHelper.canHitEntity(mod, entity);
+        //if (isPlayer){
+        //    canHit = LookHelper.canHitEntity(mod, entity, 3.7f);
+        //} else {
+        //    canHit = LookHelper.canHitEntity(mod, entity);
+        //}
+        if (canHit) {
+            if (isPlayer && !mod.getClientBaritone().getPathingBehavior().isPathing() && !WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos())) {
+                boolean RotatedJump = entity.squaredDistanceTo(mod.getPlayer()) < 4.4 * 4.4;
+                KillAuraHelper.GoJump(mod, RotatedJump);
             }
+            if (!equipWeapon(mod)) {
+                float hitProg = mod.getPlayer().getAttackCooldownProgress(0);
+                LookHelper.smoothLook(mod, entity);
+                boolean canPunk = hitProg >= 0.99;
+                if (entity instanceof LivingEntity) {
+                    LivingEntity livingEnt = (LivingEntity) entity;
+                    canPunk = canPunk && livingEnt.hurtTime <= 0;
+                }
 
-            if (canPunk) {
-                if (//mod.getPlayer().isOnGround() ||
-                 mod.getPlayer().getVelocity().getY() < 0 || mod.getPlayer().isTouchingWater()) {
-                    //LookHelper.smoothLookAt(mod, entity.getEyePos());
-                    mod.getControllerExtras().attack(entity);
+                if (canPunk) {
+                    if (//mod.getPlayer().isOnGround() ||
+                            mod.getPlayer().getVelocity().getY() < 0 || mod.getPlayer().isTouchingWater()) {
+                        //LookHelper.smoothLookAt(mod, entity.getEyePos());
+                        mod.getControllerExtras().attack(entity);
+                    }
                 }
             }
+        } else {
+            return new GetToEntityTask(entity);
+            // working good
+            //return new GetToBlockTask(entity.getBlockPos());
         }
-
         return null;
     }
 

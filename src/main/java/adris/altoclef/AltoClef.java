@@ -42,6 +42,9 @@ import java.util.Queue;
 import java.util.function.Consumer;
 import py4j.GatewayServer;
 
+import static adris.altoclef.util.helpers.StringHelper.mcTextToString;
+import static adris.altoclef.util.helpers.StringHelper.removeMCFormatCodes;
+
 /**
  * Central access point for AltoClef
  */
@@ -103,18 +106,8 @@ public class AltoClef implements ModInitializer {
         EventBus.subscribe(TitleScreenEntryEvent.class, evt -> onInitializeLoad());
 
     }
-    String mcTextToString(Text message){
-        String msg = "";
-        StringBuilder result = new StringBuilder();
-        result.append(message.getString()); // Gets main content
-        //if (!message.getSiblings().isEmpty()) {
-        //    result.append(" ").append(message.getSiblings().stream()
-        //            .map(Text::getString)
-        //            .collect(Collectors.joining(" ")));
-        //}
-        msg = result.toString().trim();
-        return msg;
-    }
+
+    public String _modPrefixNoCodes = "[Alto Clef]";
     public void onInitializeLoad() {
         // This code should be run after Minecraft loads everything else in.
         // This is the actual start point, controlled by a mixin.
@@ -200,15 +193,14 @@ public class AltoClef implements ModInitializer {
         //    //EventBus.publish(evt);
         //}
         //);
-
+        _modPrefixNoCodes = removeMCFormatCodes(this.getModSettings().getCommandPrefix());
+        String _modChatPrefixNoCodes = removeMCFormatCodes(this.getModSettings().getChatLogPrefix());
         // WORKING YUU HOO
         ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
             String msg = mcTextToString(message);
-            if (msg.startsWith("[Baritone] Failed")){
-                return false;  // FIX THIS BARITONE SPAM!!!!
-            }
+
             //Debug.logMessage("ALLOW_CHAT DEBUG!!!! MSG CHAT CharReadMixin:\n==" + msg);
-            if (!msg.startsWith(this.getModSettings().getCommandPrefix())) {
+            if (!msg.startsWith(_modPrefixNoCodes)) {
                 ChatMessageEvent evt = new ChatMessageEvent(msg);  //new ChatMessageEvent(msg, signedMessage, sender, params);
                 EventBus.publish(evt);
             }
@@ -219,11 +211,16 @@ public class AltoClef implements ModInitializer {
 
                 String msg = mcTextToString(message);
                 //Debug.logInternal("ALLOW_GAME DEBUG!!!! MSG CHAT CharReadMixin:\n==" + msg);
+                if (msg.startsWith("[Baritone] Failed")){
+                    return false;  // FIX THIS BARITONE SPAM!!!!
+                }
+                //Debug.logInternal("ALLOW_GAME DEBUG!!!! MSG CHAT CharReadMixin:\n==" + msg);
             // ISSUE WITH SYMBOL CODES!!!
-                if (!msg.contains(this.getModSettings().getChatLogPrefix())) {
+                if (!msg.contains(_modChatPrefixNoCodes)) {
                     ChatMessageEvent evt = new ChatMessageEvent(msg, overlay);
                     EventBus.publish(evt);
                 }
+
                 return true;
             }
         );

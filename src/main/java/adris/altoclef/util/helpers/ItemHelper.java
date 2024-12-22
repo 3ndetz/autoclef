@@ -273,15 +273,17 @@ public class ItemHelper {
     public static final Item[] ChestplatesTopPriority = new Item[] {Items.NETHERITE_CHESTPLATE, Items.DIAMOND_CHESTPLATE, Items.IRON_CHESTPLATE, Items.CHAINMAIL_CHESTPLATE, Items.GOLDEN_CHESTPLATE, Items.LEATHER_CHESTPLATE};
     public static final Item[] LeggingsTopPriority = new Item[] {Items.NETHERITE_LEGGINGS, Items.DIAMOND_LEGGINGS, Items.IRON_LEGGINGS, Items.CHAINMAIL_LEGGINGS, Items.GOLDEN_LEGGINGS, Items.LEATHER_LEGGINGS};
     public static final Item[] BootsTopPriority = new Item[] {Items.NETHERITE_BOOTS, Items.DIAMOND_BOOTS, Items.IRON_BOOTS, Items.CHAINMAIL_BOOTS, Items.GOLDEN_BOOTS, Items.LEATHER_BOOTS};
-
+    public static final Item[] ShootWeapons = new Item[] {Items.BOW, Items.CROSSBOW};
+    public static final Item[] RangedTopPriority = new Item[] {Items.BOW, Items.CROSSBOW}; //TODO ADD SNOWBALL POTIONS TRIDENT ETC
     public static final Item[] WeaponsTopPriority = new Item[] {Items.NETHERITE_SWORD, Items.DIAMOND_SWORD, Items.IRON_SWORD, Items.DIAMOND_AXE,  Items.STONE_SWORD, Items.STONE_AXE, Items.GOLDEN_SWORD, Items.WOODEN_SWORD, Items.GOLDEN_AXE, Items.WOODEN_AXE};
     public static final Item[] SwordsTopPriority = new Item[] {Items.NETHERITE_SWORD, Items.DIAMOND_SWORD, Items.IRON_SWORD, Items.STONE_SWORD, Items.GOLDEN_SWORD, Items.WOODEN_SWORD};
     public static final Item[] PickaxesTopPriority = new Item[] {Items.NETHERITE_PICKAXE, Items.DIAMOND_PICKAXE, Items.IRON_PICKAXE, Items.STONE_PICKAXE, Items.GOLDEN_PICKAXE, Items.WOODEN_PICKAXE};
     public static final Item[] ShovelsTopPriority = new Item[] {Items.NETHERITE_SHOVEL, Items.DIAMOND_SHOVEL, Items.IRON_SHOVEL, Items.STONE_SHOVEL, Items.GOLDEN_SHOVEL, Items.WOODEN_SHOVEL};
     public static final Item[] HoesTopPriority = new Item[] {Items.NETHERITE_HOE, Items.DIAMOND_HOE, Items.IRON_HOE, Items.STONE_HOE, Items.GOLDEN_HOE, Items.WOODEN_HOE};
     public static final Item[] AxesTopPriority = new Item[] {Items.NETHERITE_AXE, Items.DIAMOND_AXE, Items.IRON_AXE, Items.STONE_AXE, Items.GOLDEN_AXE, Items.WOODEN_AXE};
-
-
+    public static final Item[] MMKillerWeapons = new Item[] {Items.SHEARS, Items.IRON_SWORD, Items.IRON_AXE};
+    public static final Item[] MMDetectiveWeapons = new Item[] {Items.BOW, Items.CROSSBOW};
+    public static final Item[] MMBenefits = new Item[] {Items.POTION, Items.SNOWBALL};
     public static String stripItemName(Item item) {
         String[] possibilities = new String[]{"item.minecraft.", "block.minecraft."};
         for (String possible : possibilities) {

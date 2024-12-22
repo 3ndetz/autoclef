@@ -4,6 +4,7 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.tasks.speedrun.BeatMinecraft2Task;
 import adris.altoclef.tasksystem.Task;
+import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
@@ -33,6 +34,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
     private final Entity target;
     private boolean shooting = false;
     private boolean shot = false;
+    private boolean failed = false;
     private Item _rangedItem = Items.BOW;
     private final TimerGame _shotTimer = new TimerGame(0.7);
 
@@ -116,10 +118,12 @@ public class ShootArrowSimpleProjectileTask extends Task {
                 _rangedItem = Items.CROSSBOW;
             } else {
                 setDebugState("DON'T HAVE RANGED WEAPON!");
+                failed = true;
                 return null;
             }
         }else{
             setDebugState("DON'T HAVE ARROWS!");
+            failed = true;
             return null;
         }
         int useTime = mod.getPlayer().getItemUseTime();
@@ -229,6 +233,12 @@ public class ShootArrowSimpleProjectileTask extends Task {
         }
         return false;
     }
+    public static boolean hasShootingWeapon(AltoClef mod){
+        if (Arrays.stream(ItemHelper.ShootWeapons).anyMatch(mod.getItemStorage()::hasItemInventoryOnly)) {
+            return true;
+        }
+        return false;
+    }
     public static boolean readyForBow(AltoClef mod){
         return hasArrows(mod) && mod.getItemStorage().hasItemInventoryOnly(Items.BOW);
     }
@@ -298,7 +308,10 @@ public class ShootArrowSimpleProjectileTask extends Task {
 
     @Override
     public boolean isFinished(AltoClef mod) {
-        return shot;
+        return shot || failed;
+    }
+    public boolean isFailed(){
+        return failed;
     }
 
     @Override

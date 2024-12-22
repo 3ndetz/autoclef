@@ -609,7 +609,7 @@ public class TaskCatalogue {
             mobCook("chicken", Items.CHICKEN, Items.COOKED_CHICKEN, ChickenEntity.class);
             mobCook("mutton", Items.MUTTON, Items.COOKED_MUTTON, SheepEntity.class);
             mobCook("rabbit", Items.RABBIT, Items.COOKED_RABBIT, RabbitEntity.class);
-            mobCook("salmon", Items.SALMON, Items.COOKED_SALMON, SalmonEntity.class);
+            //mobCook("salmon", Items.SALMON, Items.COOKED_SALMON, SalmonEntity.class);
             mobCook("cod", Items.COD, Items.COOKED_COD, CodEntity.class);
             simple("milk", Items.MILK_BUCKET, CollectMilkTask::new);
             mine("apple", Blocks.OAK_LEAVES, Items.APPLE);

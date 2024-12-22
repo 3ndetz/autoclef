@@ -150,7 +150,7 @@ public class Settings implements IFailableConfigFile {
      * How close we must be to attack/interact with an entity. 6 works well for singleplayer 4 works better on more
      * restrictive multiplayer servers
      */
-    private float entityReachRange = 3.2f;
+    private float entityReachRange = 3.0f;
 
     /**
      * Before grabbing ANYTHING, get a pickaxe.
