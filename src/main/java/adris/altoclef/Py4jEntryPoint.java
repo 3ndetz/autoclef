@@ -359,9 +359,9 @@ public class Py4jEntryPoint {
         return tasks_list;
     }
 
-    public Map<String, Map<String, Float>> getPlayersInfo(){
+    public Map<String, Map<String, String>> getPlayersInfo(){
         PlayerEntity self = _mod.getPlayer();
-        Map<String, Map<String, Float>> map = new HashMap<>();
+        Map<String, Map<String, String>> map = new HashMap<>();
         if (self != null) {
             Vec3d selfPos = self.getPos();
             if (selfPos != null) {
@@ -372,16 +372,21 @@ public class Py4jEntryPoint {
                         Vec3d pos = player.getPos();
                         if(name != null && pos != null){
                             Vec3d position = player.getPos();
-                            Map<String, Float> playerInfoMap = new HashMap<>();
-                            playerInfoMap.put("health", player.getHealth());
-                            playerInfoMap.put("distance", (float) position.distanceTo(self.getPos()));
-                            playerInfoMap.put("isLookingAtYouProb", (float) getLookingProbability(player, self));
+                            Map<String, String> playerInfoMap = new HashMap<>();
+                            playerInfoMap.put("health", String.valueOf(player.getHealth()));
+                            playerInfoMap.put("distance", String.valueOf(position.distanceTo(self.getPos())));
+                            playerInfoMap.put("isLookingAtYouProb", String.valueOf(getLookingProbability(player, self)));
                             //playerInfoMap.put("isYouLookingAtProb", (float) getLookingProbability(player, self));
+                            Item item = player.getMainHandStack().getItem();
+                            if(item != null){
+                                playerInfoMap.put("item", item.toString());
+                            }
+                            playerInfoMap.put("groundBlock", this.getGroundBlock());
                             Item weapon = getWeaponInHand(player);
                             if(weapon != null){
-                                playerInfoMap.put("hasWeapon", 1.0f);
+                                playerInfoMap.put("hasWeapon", "1");
                             }else{
-                                playerInfoMap.put("hasWeapon", 0.0f);
+                                playerInfoMap.put("hasWeapon", "0");
                             }
                             map.put(player.getName().getString(), playerInfoMap);
                         }
@@ -391,19 +396,23 @@ public class Py4jEntryPoint {
         }
         return map;
     }
-    public String parsePlayersInfoToString(Map<String, Map<String, Float>> playersInfo) {
+    public String parsePlayersInfoToString(Map<String, Map<String, String>> playersInfo) {
         StringBuilder result = new StringBuilder();
 
-        for (Map.Entry<String, Map<String, Float>> entry : playersInfo.entrySet()) {
+        for (Map.Entry<String, Map<String, String>> entry : playersInfo.entrySet()) {
             String playerName = entry.getKey();
-            Map<String, Float> playerInfo = entry.getValue();
+            Map<String, String> playerInfo = entry.getValue();
 
-            Float health = playerInfo.get("health");
-            Float distance = playerInfo.get("distance");
+            String health = playerInfo.get("health");
+            String distance = playerInfo.get("distance");
+            String item = playerInfo.get("item");
+            String groundBlock = playerInfo.get("groundBlock");
 
             result.append("Имя: ").append(playerName)
                     .append(", Здоровье: ").append(health != null ? health : "N/A")
                     .append(", Дистанция: ").append(distance != null ? distance : "N/A")
+                    .append(", Предмет в руках: ").append(item != null ? item : "N/A")
+                    .append(", блок на котором стоит: ").append(groundBlock != null ? groundBlock : "N/A")
                     .append("\n");
         }
 
