@@ -3,6 +3,7 @@ package adris.altoclef;
 import adris.altoclef.butler.ButlerConfig;
 import adris.altoclef.butler.WhisperChecker;
 import adris.altoclef.chains.DeathMenuChain;
+import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.tasks.CraftGenericManuallyTask;
 import adris.altoclef.tasks.construction.PlaceBlockNearbyTask;
 import adris.altoclef.tasks.construction.PlaceSignTask;
@@ -12,6 +13,7 @@ import adris.altoclef.tasks.construction.compound.ConstructNetherPortalObsidianT
 import adris.altoclef.tasks.container.SmeltInFurnaceTask;
 import adris.altoclef.tasks.container.StoreInAnyContainerTask;
 import adris.altoclef.tasks.entity.KillEntityTask;
+import adris.altoclef.tasks.entity.ShiftEntityTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
 import adris.altoclef.tasks.examples.ExampleTask2;
 import adris.altoclef.tasks.misc.EquipArmorTask;
@@ -37,6 +39,7 @@ import adris.altoclef.util.*;
 import adris.altoclef.util.helpers.MapItemHelper;
 import adris.altoclef.util.helpers.MouseMoveHelper;
 import adris.altoclef.util.helpers.WorldHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -44,6 +47,7 @@ import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.GhastEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.ZombieEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
@@ -56,6 +60,7 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.chunk.EmptyChunk;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -132,7 +137,7 @@ public class Playground {
         // Test code here
     }
 
-    public static void TEMP_TEST_FUNCTION(AltoClef mod, String arg) {
+    public static void TEMP_TEST_FUNCTION(AltoClef mod, String arg, ArgParser argParser) {
         //mod.runUserTask();
         Debug.logMessage("Running test...");
         String all_cases = "inv, stuckdebug, cb_reload, task_info, captmax, captdata, chatparsedebug, chatparseddebug_cancel, captcha_dataset, savemap, groundblock, cam 0, cam 1, cam 2, sign, sign2, pickup, chunk, structure, place, deadmeme, stacked, stacked2, ravage, temples, outer, smelt, iron, avoid, portal, kill, kill2, craft, food, temple, blaze, flint, unobtainable, piglin, stronghold, terminate, stoprot, startrot, killall, t, tt, sw, mm, kpvp, thepit, bow, replace, bed, dragon, dragon-pearl, dragon-old, chest, 173, example, netherite, arrow, whisper";
@@ -419,7 +424,8 @@ public class Playground {
             case "mm":
                 mod.getInfoSender().UpdateServerInfo("serverMode", "murdermystery");
                 int role_int = -1;
-                try {role_int = Integer.parseInt(arg.split(" ")[1]);}
+
+                try {role_int = Integer.parseInt(argParser.getArgUnits()[1]);}
                 catch (Exception e){Debug.logWarning("Не указано значение, значит НЕИЗВЕСТНО");}
                 mod.runUserTask(new MurderMysteryTask(role_int));
                 break;
@@ -429,11 +435,33 @@ public class Playground {
             case "thepit":
                 mod.runUserTask(new SkyWarsTask(mod.getPlayer().getBlockPos(), true, false));
                 break;
+            case "networktest":
+                Debug.logMessage("GLOBAL RECEIVERS" + ClientPlayNetworking.getGlobalReceivers() + " rc " + ClientPlayNetworking.getReceived());
+                break;
+            case "shift":
+                int shiftType = 0;
+                ShiftEntityTask.ShiftType actualShiftType = ShiftEntityTask.ShiftType.values()[shiftType];
+                try {shiftType = Integer.parseInt(argParser.getArgUnits()[1]);
+                    actualShiftType = ShiftEntityTask.ShiftType.values()[shiftType];
+                }
+                catch (Exception e){Debug.logWarning("Не указано значение, значит НЕИЗВЕСТНО");}
+                List<Entity> fdgdf = mod.getEntityTracker().getTrackedEntities(Entity.class);
+                Optional<Entity> closestTarget = mod.getEntityTracker().getClosestEntity(
+                        mod.getPlayer().getPos(),
+                        entity -> true,
+                        PlayerEntity.class, MobEntity.class);
+                if (closestTarget.isPresent()) {
+                    Debug.logMessage("Testing shift task , ent:" + closestTarget.get().getName().getString() + ", type: " + actualShiftType.toString());
+                    mod.runUserTask(new ShiftEntityTask(closestTarget.get(), actualShiftType));
+                } else {
+                    Debug.logWarning("No targets found.");
+                }
+                break;
             case "bow":
                 List<PlayerEntity> players = mod.getEntityTracker().getTrackedEntities(PlayerEntity.class);
 
                 if (players.size() == 0) {
-                    Debug.logWarning("No ghasts found.");
+                    Debug.logWarning("No targets found.");
                     break;
                 }
 

@@ -5,6 +5,7 @@ import adris.altoclef.Playground;
 import adris.altoclef.butler.ButlerConfig;
 import adris.altoclef.tasks.entity.DoToClosestEntityTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
+import adris.altoclef.tasks.entity.ShiftEntityTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
 import adris.altoclef.tasks.movement.GetToEntityTask;
 import adris.altoclef.tasks.movement.PickupDroppedItemTask;
@@ -250,15 +251,16 @@ public class MurderMysteryTask extends Task {
 
             return new DoToClosestEntityTask(entity -> {
                     switch (_chill_tactics){
-                        case 0:
-                            return new KillPlayerTask(playerEntity.getName().getString());
-                        case 1:
-                            _runAwayTask = new TerminatorTask.RunAwayFromPlayersTask(playerEntity, 5);
-                            _runAwayExtraTime.reset();
-                            return _runAwayTask;
+                        //case 0:
+                        //    return new KillPlayerTask(playerEntity.getName().getString());
+                        //case 1:
+                        //    _runAwayTask = new TerminatorTask.RunAwayFromPlayersTask(playerEntity, 5);
+                        //    _runAwayExtraTime.reset();
+                        //    return _runAwayTask;
                         default:
                             _chill_tactics = 0;
-                            return new SafeRandomShimmyTask();
+                            return new ShiftEntityTask(entity);
+                            //return new SafeRandomShimmyTask();
                     }
 
                 }, PlayerEntity.class

@@ -904,6 +904,10 @@ public abstract class LookHelper {
         Rotation targetRot = getLookRotation(mod, getClosestPointOnEntityHitbox(mod, entity));
         smoothLookInternal(mod, targetRot, entity, DEFAULT_SMOOTH_LOOK_SPEED);
     }
+    public static void smoothLook(AltoClef mod, Vec3d pos) {
+        Rotation targetRot = getLookRotation(mod, pos);
+        smoothLookInternal(mod, targetRot, null, DEFAULT_SMOOTH_LOOK_SPEED);
+    }
 
     /**
      * Overload for rotation targeting

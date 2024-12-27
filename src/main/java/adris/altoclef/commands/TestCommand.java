@@ -10,12 +10,12 @@ import adris.altoclef.commandsystem.CommandException;
 public class TestCommand extends Command {
 
     public TestCommand() throws CommandException {
-        super("test", "Generic command for testing", new Arg(String.class, "extra", "", 0));
+        super("test", "Generic command for testing", new Arg(String.class, "extra", "", 0), new Arg(String.class, "extra2", "", 0));
     }
 
     @Override
     protected void call(AltoClef mod, ArgParser parser) throws CommandException {
-        Playground.TEMP_TEST_FUNCTION(mod, parser.get(String.class));
+        Playground.TEMP_TEST_FUNCTION(mod, parser.get(String.class), parser);
         finish();
     }
 }

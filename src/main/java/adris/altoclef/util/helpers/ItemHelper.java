@@ -8,6 +8,8 @@ import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.MapColor;
 import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -282,6 +284,7 @@ public class ItemHelper {
     public static final Item[] HoesTopPriority = new Item[] {Items.NETHERITE_HOE, Items.DIAMOND_HOE, Items.IRON_HOE, Items.STONE_HOE, Items.GOLDEN_HOE, Items.WOODEN_HOE};
     public static final Item[] AxesTopPriority = new Item[] {Items.NETHERITE_AXE, Items.DIAMOND_AXE, Items.IRON_AXE, Items.STONE_AXE, Items.GOLDEN_AXE, Items.WOODEN_AXE};
     public static final Item[] MMKillerWeapons = new Item[] {Items.SHEARS, Items.IRON_SWORD, Items.IRON_AXE};
+    public static final Item[] FunnyShiftItems = new Item[] {Items.BLAZE_ROD, Items.STICK, Items.BREEZE_ROD};
     public static final Item[] MMDetectiveWeapons = new Item[] {Items.BOW, Items.CROSSBOW};
     public static final Item[] MMBenefits = new Item[] {Items.POTION, Items.SNOWBALL};
     public static String stripItemName(Item item) {
@@ -302,6 +305,16 @@ public class ItemHelper {
         return result;
     }
 
+    public static boolean hasItems(PlayerEntity entity, Item... items) {
+        for(Item weapon : items) {
+            boolean has_weapon = entity.getMainHandStack().isOf(weapon);
+            if (has_weapon) return true;
+        }
+        return false;
+    }
+    public static boolean hasItems(AltoClef mod, Item... items) {
+        return hasItems(mod.getPlayer(), items);
+    }
     /* Logs:
         ACACIA
         BIRCH

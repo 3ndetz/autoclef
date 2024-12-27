@@ -6,6 +6,7 @@ import adris.altoclef.chains.DeathMenuChain;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.ChatMessageEvent;
 import adris.altoclef.eventbus.events.TaskFinishedEvent;
+import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasks.movement.GetToXZTask;
 import adris.altoclef.tasks.movement.LobbyMoveTask;
 import adris.altoclef.tasksystem.Task;
@@ -26,6 +27,7 @@ import net.minecraft.client.option.Perspective;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.message.MessageType;
+import net.minecraft.util.math.BlockPos;
 
 import java.util.Objects;
 
@@ -155,13 +157,14 @@ public class Butler {
         }
         if (ButlerConfig.getInstance().autoJoin) {
             // AUTO JOIN SOLVER
-            if (msg.contains("] Вы находитесь в Лобби. Выберите сервер и пройдите в портал!") || msg.contains(
-                    "Вы успешно вошли!")) {
+            if ((msg.contains("] Вы находитесь в Лобби. Выберите сервер и пройдите в портал!") || msg.contains(
+                    "Вы успешно вошли!")) && serverAdress.contains("musteryworld")) {
                 _mod.getCommandExecutor().execute("@stop");
                 Debug.logMessage("Мы в лобби!");
                 _lobbyMovingTimer.reset();
                 //_mod.getCommandExecutor().execute("@goto -20 29"); // mustery world sw
-                _mod.getCommandExecutor().execute("@goto -30 29"); // mustery murder
+                //_mod.getCommandExecutor().execute("@goto -30 29"); // mustery murder
+                _mod.runUserTask(new GetCloseToBlockTask(new BlockPos(-30, 53, 30)));
             } else if (msg.contains("Введите капчу с картинки в чат")) {
                 this.captchaActionsPerform();
             } else if (msg.contains("Войдите в игру - !!! /login [пароль]")) { // for public HIDE!

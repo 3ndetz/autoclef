@@ -3,6 +3,13 @@ package adris.altoclef;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 // TODO: Debug library or use Minecraft's built in debugger
 public class Debug {
 
@@ -85,5 +92,104 @@ public class Debug {
             }
         }
         return stacktrace.toString();
+    }
+    public static void logObject(Object obj) {
+        Debug.logMessage("Debug object:\n=====\n" + dumpObject(obj) + "\n=====");
+    }
+
+    public static String dumpObject(Object obj) {
+        return dumpObject(obj, new ArrayList<>(), 1);
+    }
+
+    private static String dumpObject(Object obj, List<Object> visited, int depth) {
+        if (obj == null) return "null";
+        if (depth > 10) return "..."; // Prevent infinite recursion
+        if (visited.contains(obj)) return "[CIRCULAR REF]";
+
+        visited.add(obj);
+        StringBuilder result = new StringBuilder();
+        Class<?> clazz = obj.getClass();
+
+        result.append(clazz.getSimpleName()).append(" {\n");
+
+        // Get all fields including inherited ones
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+            Field[] fields = c.getDeclaredFields();
+            for (Field field : fields) {
+                // Skip synthetic fields
+                if (field.isSynthetic()) continue;
+
+                // Try to make the field accessible
+                try {
+                    field.trySetAccessible();
+                    String indent = "  ".repeat(depth + 1);
+                    result.append(indent).append(field.getName()).append(": ");
+
+                    Object value = field.get(obj);
+                    if (value == null) {
+                        result.append("null\n");
+                    } else if (isPrimitive(value.getClass()) || value.getClass().isEnum()) {
+                        result.append(value).append("\n");
+                    } else if (value.getClass().isArray()) {
+                        result.append(arrayToString(value, visited, depth)).append("\n");
+                    } else {
+                        //result.append("\n").append(dumpObject(value, visited, depth + 1));
+                    }
+                } catch (Exception e) {
+                    // If we can't access the field, just note that it's inaccessible
+                    String indent = "  ".repeat(depth + 1);
+                    result.append(indent)
+                            .append(field.getName())
+                            .append(": [INACCESSIBLE]\n");
+                }
+            }
+        }
+
+        result.append("  ".repeat(depth)).append("}");
+        return result.toString();
+    }
+
+    private static String arrayToString(Object array, List<Object> visited, int depth) {
+        if (array == null) return "null";
+
+        int length = Array.getLength(array);
+        if (length == 0) return "[]";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+
+        for (int i = 0; i < length; i++) {
+            Object element = Array.get(array, i);
+            if (i > 0) sb.append(", ");
+
+            if (element == null) {
+                sb.append("null");
+            } else if (isPrimitive(element.getClass())) {
+                sb.append(element);
+            } else {
+                sb.append(dumpObject(element, visited, depth + 1));
+            }
+
+            if (i >= 9 && length > 10) {
+                sb.append(", ... (").append(length - i - 1).append(" more)");
+                break;
+            }
+        }
+
+        sb.append("]");
+        return sb.toString();
+    }
+
+    private static boolean isPrimitive(Class<?> type) {
+        return type.isPrimitive() ||
+                type == String.class ||
+                type == Boolean.class ||
+                type == Character.class ||
+                type == Byte.class ||
+                type == Short.class ||
+                type == Integer.class ||
+                type == Long.class ||
+                type == Float.class ||
+                type == Double.class;
     }
 }

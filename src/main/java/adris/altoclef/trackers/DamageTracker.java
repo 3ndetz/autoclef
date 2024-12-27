@@ -5,6 +5,7 @@ import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.ClientDamageEvent;
 import adris.altoclef.eventbus.events.ClientHandSwingEvent;
+import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,19 +41,19 @@ public class DamageTracker extends Tracker {
         //EventBus.subscribe(DeathEvent.class, evt -> OnDeath());
     }
 
-    public final TimerReal _resentDamageTimer = new TimerReal(0.05);
+    public final TimerReal _recentDamageTimer = new TimerReal(0.05);
     public final TimerReal _attackCheckTimer = new TimerReal(0.7);
     private PlayerEntity _attackerCheck;
     private boolean _attackerCheckHit = false;
 
     public void DamageTimerReset(){
-        _resentDamageTimer.reset();
+        _recentDamageTimer.reset();
 
     }
     public boolean WasResentlyDamaged(String name){
 
         if(_mod.getPlayer().getName().getString().equals(name))
-            return !_resentDamageTimer.elapsed();
+            return !_recentDamageTimer.elapsed();
         else {
             if(_playerMap.get(name)!= null && _playerMap.get(name).getRecentDamageSource() != null) // в идеале бы добавить проверку есть ли игрок в списке
             {
@@ -87,14 +88,15 @@ public class DamageTracker extends Tracker {
 
     public void onClientDamage(){
         //Debug.logMessage("ПУК!");
-        _resentDamageTimer.reset();
+        _recentDamageTimer.reset();
         //Debug.logMessage("Получен урон "+Py4jEntryPoint.lastDamage);
     }
     public double lastDamage = 0.0;
     public void onChangeHealth(String name, float oldHealth, float newHealth){
+        Debug.logMessage("onChangeHealth " + name + ": " + oldHealth + " -> " + newHealth);
         float changed = newHealth - oldHealth;
 
-        if(newHealth==0.0f &&WasResentlyDamaged(name)){ // 100% смэрт
+        if (newHealth==0.0f && WasResentlyDamaged(name) ){ // 100% смэрт
             onDeath(name);
         } else if(Math.floor(changed*20)==0){
             //нет существенных изменений
@@ -106,7 +108,7 @@ public class DamageTracker extends Tracker {
 
             //EventBus.publish(new DeathEvent());
         }else {
-            //Debug.logMessage("Ебнулись на "+(-changed)+" таймер дамага "+WasResentlyDamaged());
+            //Debug.logMessage("Ударились на "+(-changed)+" таймер дамага "+WasResentlyDamaged());
             lastDamage = -changed;
             if (WasResentlyDamaged(name)) {
                 onDamage(name,-changed);
@@ -116,22 +118,22 @@ public class DamageTracker extends Tracker {
     }
     public void onDeath(String name){
 
-        //Debug.logMessage("---===*"+name +" ЗДОХ*===---");
+        Debug.logMessage("---===*"+name +" killed*===---");
         if (_mod.getPlayer().getName().getString().equals(name))
         {
-            Debug.logMessage("чо ? здохла "+_lastAttackingPlayerIsLookingProbablity+" mda "+_lastAttackingPlayerName);
+            Debug.logMessage("death "+_lastAttackingPlayerIsLookingProbablity+" mda "+_lastAttackingPlayerName);
             String killername = "undefined";
             if(_lastAttackingPlayerName != null && _lastAttackingPlayerIsLookingProbablity>0.70D) {killername =_lastAttackingPlayerName;}
             onClientDeath(killername);
         }
         else if (_lastAttackingPlayerName != null && _lastAttackingPlayerName.equals(name)  && _lastAttackingPlayerMyLookingProbablity>0.70D)
         {
-            Debug.logMessage("чо ? килл "+_lastAttackingPlayerMyLookingProbablity+" mda "+_lastAttackingPlayerName);
+            Debug.logMessage("kill "+_lastAttackingPlayerMyLookingProbablity+" mda "+_lastAttackingPlayerName);
             onClientKill(name);
         }
     }
     public void onClientDeath(String killername){
-        Debug.logMessage("YA ZDOXLA OT "+killername);
+        Debug.logMessage("confirmed death from "+killername);
         if(!killername.equals("undefined")){
             _mod.getInfoSender().onDeath(killername);
         }
@@ -140,7 +142,7 @@ public class DamageTracker extends Tracker {
         }
     }
     public void onClientKill(String name){
-        Debug.logMessage("GOTOV -"+name);
+        Debug.logMessage("confirmed kill -"+name);
         if(!name.equals("undefined")){
             _mod.getInfoSender().onKill(name);}
     }
@@ -198,8 +200,8 @@ public class DamageTracker extends Tracker {
                 if(_mod.getPlayer() != null) {
                     //_lastAttackingPlayerMyDir = _mod.getPlayer().getRotationVector();
                     //_lastAttackingPlayerMyEye = _mod.getPlayer().getEyePos();
-                    _lastAttackingPlayerIsLookingProbablity = getLookingProbability((PlayerEntity)attacking, _mod.getPlayer());
-                    _lastAttackingPlayerMyLookingProbablity = getLookingProbability(_mod.getPlayer(), (PlayerEntity) attacking);
+                    _lastAttackingPlayerIsLookingProbablity = LookHelper.getLookingProbability((PlayerEntity)attacking, _mod.getPlayer());
+                    _lastAttackingPlayerMyLookingProbablity = LookHelper.getLookingProbability(_mod.getPlayer(), (PlayerEntity) attacking);
                 }
                 if(_attackerCheckHit&&_attackCheckTimer.elapsed()){
                     Debug.logMessage("Урон по "+_lastAttackingPlayerName+" НЕ прошел!");

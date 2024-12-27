@@ -49,7 +49,7 @@ import static adris.altoclef.util.helpers.StringHelper.removeMCFormatCodes;
  * Central access point for AltoClef
  */
 public class AltoClef implements ModInitializer {
-
+    public static final String MOD_ID = "altoclef";
     // Static access to altoclef
     private static final Queue<Consumer<AltoClef>> _postInitQueue = new ArrayDeque<>();
 
@@ -229,7 +229,7 @@ public class AltoClef implements ModInitializer {
 
         // External mod initialization
         runEnqueuedPostInits();
-        DamageEventHandler.registerDamagePacketReceiver();
+        DamageEventHandler.registerDamagePacketReceiver(this);
     }
     public void initializePythonSender() {
         _py4jEntryPoint = new Py4jEntryPoint(this);
