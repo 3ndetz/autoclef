@@ -1,21 +1,13 @@
 package adris.altoclef.control;
 
 import adris.altoclef.AltoClef;
-import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.BlockBreakingCancelEvent;
 import adris.altoclef.eventbus.events.BlockBreakingEvent;
-import adris.altoclef.util.helpers.KillAuraHelper;
 import adris.altoclef.util.helpers.LookHelper;
-import baritone.api.utils.Rotation;
-import baritone.api.utils.RotationUtils;
 import baritone.api.utils.input.Input;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.Hand;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 
 public class PlayerExtraController {
 
@@ -78,7 +70,7 @@ public class PlayerExtraController {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    _mod.getDamageTracker().onMeleeAttack(entity);
+                    _mod.getDamageTracker().onClientMeleeAttack(entity);
                     _succesfulHit = true;
                 }
 

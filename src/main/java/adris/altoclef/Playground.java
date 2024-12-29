@@ -438,6 +438,9 @@ public class Playground {
             case "networktest":
                 Debug.logMessage("GLOBAL RECEIVERS" + ClientPlayNetworking.getGlobalReceivers() + " rc " + ClientPlayNetworking.getReceived());
                 break;
+            case "threats":
+                Debug.logMessage(mod.getDamageTracker().getThreatStatus());
+                break;
             case "shift":
                 int shiftType = 0;
                 ShiftEntityTask.ShiftType actualShiftType = ShiftEntityTask.ShiftType.values()[shiftType];

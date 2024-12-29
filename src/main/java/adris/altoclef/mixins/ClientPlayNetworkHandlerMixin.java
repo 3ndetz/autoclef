@@ -2,10 +2,14 @@ package adris.altoclef.mixins;
 
 import adris.altoclef.DamageEventHandler;
 import adris.altoclef.Debug;
+import adris.altoclef.eventbus.EventBus;
+import adris.altoclef.eventbus.events.AnimEvent;
+import adris.altoclef.eventbus.events.DamageEvent;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.network.NetworkThreadUtils;
 import net.minecraft.network.packet.s2c.play.*;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -62,6 +66,7 @@ public class ClientPlayNetworkHandlerMixin {
         //Debug.logObject(packet);
     }
 
+    // client only?
     //@Inject(method = "onPlayerSpawnPosition", at = @At("HEAD"))
     //private void onPlayerSpawnPosition(PlayerSpawnPositionS2CPacket packet, CallbackInfo ci) {
     //    Debug.logObject(packet);
@@ -89,7 +94,11 @@ public class ClientPlayNetworkHandlerMixin {
     @Inject(method = "onEntityDamage", at = @At("HEAD"))
     private void onEntityDamage(EntityDamageS2CPacket packet, CallbackInfo ci) {
         // WOOOOORKIIIIING !!!!!!!!!!!!!!! but doubling event (x2 times in a moment)
-        DamageEventHandler.handleDamagePacket(packet);
+        //DamageEventHandler.handleDamagePacket(packet);
+        Entity entity = world != null ? world.getEntityById(packet.entityId()) : null;
+        if(entity != null) {
+            EventBus.publish(new DamageEvent(entity));
+        }
         //Debug.logObject(packet);
         //int entityId = packet.entityId();
         //int attackerId = packet.sourceCauseId();
@@ -104,6 +113,10 @@ public class ClientPlayNetworkHandlerMixin {
     //DOESN'T GET SELF ANIMATIONS!
     @Inject(method = "onEntityAnimation", at = @At("HEAD"))
     public void onEntityAnimation(EntityAnimationS2CPacket packet, CallbackInfo ci) {
+        Entity entity = world != null ? world.getEntityById(packet.getEntityId()) : null;
+        if(entity != null) {
+            EventBus.publish(new AnimEvent(entity, packet.getAnimationId()));
+        }
         //РАБОТАЕТ все анимации ударов ловит (кроме своих)
         //Debug.logObject(packet);
         //Entity entity = world.getEntityById(packet.getId());

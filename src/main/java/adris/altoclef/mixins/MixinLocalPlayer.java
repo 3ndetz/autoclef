@@ -1,11 +1,10 @@
 package adris.altoclef.mixins;
 
 import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.events.ChangeHealthEvent;
-import adris.altoclef.eventbus.events.ClientDamageEvent;
-import adris.altoclef.eventbus.events.ClientHandSwingEvent;
+import adris.altoclef.eventbus.events.*;
 import adris.altoclef.util.helpers.MouseMoveHelper;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
@@ -44,7 +43,9 @@ public abstract class MixinLocalPlayer extends AbstractClientPlayerEntity {
     }
     @Inject(method="swingHand", at=@At("HEAD"))
     public void onHandSwing(Hand hand, CallbackInfo ci) {
+
         if(hand.toString()=="MAIN_HAND")
+            EventBus.publish(new AnimEvent(MinecraftClient.getInstance().player, AnimType.SWING_MAIN_HAND));
             EventBus.publish(new ClientHandSwingEvent(hand));
     }
     @Inject(method="updateHealth", at=@At("HEAD"))

@@ -3,68 +3,49 @@ package adris.altoclef.trackers;
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.events.ClientDamageEvent;
-import adris.altoclef.eventbus.events.ClientHandSwingEvent;
+import adris.altoclef.eventbus.events.*;
+import adris.altoclef.trackers.threats.ThreatTable;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+
+import java.util.*;
+
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.Vec3d;
 
 import static adris.altoclef.util.helpers.LookHelper.getLookingProbability;
 
 public class DamageTracker extends Tracker {
     private final HashMap<String, PlayerEntity> _playerMap = new HashMap<>();
     private final HashMap<String, Float> _prevPlayerHealth = new HashMap<>();
-
+    private final TimerReal _recentDamageTimer = new TimerReal(0.05);
     private List<AbstractClientPlayerEntity> _prevPlayerList = new ArrayList<>();
     public String _lastAttackingPlayerName = "undefined";
-    private Vec3d _lastAttackingPlayerEye;
-    private Vec3d _lastAttackingPlayerDir;
-    private Vec3d _lastAttackingPlayerMyEye;
-    private Vec3d _lastAttackingPlayerMyDir;
-    private double _lastAttackingPlayerIsLookingProbablity;
-    private double _lastAttackingPlayerMyLookingProbablity;
-    private String _lastRemovedPlayer = "";
+    private double _lastAttackingPlayerIsLookingProbability;
+    private double _lastAttackingPlayerMyLookingProbability;
+    public final TimerReal _attackCheckTimer = new TimerReal(0.7);
+    //public final TimerReal _clientEventLimitTimer = new TimerReal(1.2);
+    //TODO do something with too often onClientDeath / onClientKill (may spam bcs bad system work)
+    private PlayerEntity _attackerCheck;
+    private boolean _attackerCheckHit = false;
+    // Add a map to track recent damage for each player
+    private final HashMap<String, TimerReal> _playerDamageTimers = new HashMap<>();
+    private final HashMap<String, TimerReal> _playerAttackTimers = new HashMap<>();
+    private final float DEATH_HEALTH_THRESHOLD = 10.0f; // Configurable threshold
+    private final float FULL_HEALTH = 20.0f;
+    public final ThreatTable threatTable = new ThreatTable(_mod);
 
     public DamageTracker(TrackerManager manager) {
         super(manager);
         EventBus.subscribe(ClientDamageEvent.class, evt -> onClientDamage());
         EventBus.subscribe(ClientHandSwingEvent.class, evt -> onHandSwing());
-        //EventBus.subscribe(ChangeHealthEvent.class, evt -> onChangeHealth(_mod.getPlayer().getName().getString(),evt.OldHealth,evt.NewHealth));
-        //EventBus.subscribe(DeathEvent.class, evt -> OnDeath());
-    }
+        EventBus.subscribe(DamageEvent.class, evt -> onAnyDamage(evt._entity));
+        EventBus.subscribe(AnimEvent.class, evt -> onSwing(evt._entity, evt._type));
+        //EventBus.subscribe(PlayerRemoveEvent.class, this::onPlayerRemove);
 
-    public final TimerReal _recentDamageTimer = new TimerReal(0.05);
-    public final TimerReal _attackCheckTimer = new TimerReal(0.7);
-    private PlayerEntity _attackerCheck;
-    private boolean _attackerCheckHit = false;
-
-    public void DamageTimerReset(){
-        _recentDamageTimer.reset();
-
-    }
-    public boolean WasResentlyDamaged(String name){
-
-        if(_mod.getPlayer().getName().getString().equals(name))
-            return !_recentDamageTimer.elapsed();
-        else {
-            if(_playerMap.get(name)!= null && _playerMap.get(name).getRecentDamageSource() != null) // в идеале бы добавить проверку есть ли игрок в списке
-            {
-                //Debug.logMessage("ПОЛУЧАЛ УРОН НЕДАВНО "+name);
-                return true;
-            }
-            else{
-                //Debug.logMessage("НЕ ПОЛУЧАЛ УРОН НЕДАВНО "+name);
-                return false;
-            }
-        }
     }
     public void onHandSwing(){
         LivingEntity attacking = _mod.getPlayer().getAttacking();
@@ -72,7 +53,108 @@ public class DamageTracker extends Tracker {
             //attacking.getHealth();
         }
     }
-    public void onMeleeAttack(Entity target){
+    public void onClientDamage() {
+        _recentDamageTimer.reset();
+    }
+    public void onAnyDamage(Entity entity){
+        threatTable.recordDamage(entity.getId());
+    }
+    public void onSwing(Entity entity, AnimType type){
+        //Debug.logMessage("[DEBUG] Registered swing: " + entity.getName().getString() + " anim " + type.toString() );
+        if(type.equals(AnimType.SWING_MAIN_HAND)) {
+            threatTable.recordAttackAnimation(entity.getId());
+        }
+        if(type.equals(AnimType.TAKE_DAMAGE)) {
+            threatTable.recordDamage(entity.getId());
+        }
+    }
+
+    private void updatePlayerDamageTimer(String playerName) {
+        _playerDamageTimers.computeIfAbsent(playerName, k -> new TimerReal(2.0)); // 2 second window
+        _playerDamageTimers.get(playerName).reset();
+    }
+
+    public boolean wasRecentlyDamaged(String name) {
+        return threatTable.isInCombat(name);
+        //TimerReal timer = _playerDamageTimers.get(name);
+        //if (timer == null) return false;
+        //return !timer.elapsed();
+    }
+
+
+    public void onClientDeath(String killername){
+        Debug.logMessage("confirmed death from "+killername);
+        if(!killername.equals("undefined")){
+            _mod.getInfoSender().onDeath(killername);
+        }
+        else if(Math.random()>0.5d){
+            _mod.getInfoSender().onDeath("неизвестный");
+        }
+    }
+    public void onClientKill(String name) {
+        Debug.logMessage("confirmed kill -"+name);
+        if(!name.equals("undefined")){
+            _mod.getInfoSender().onKill(name);}
+    }
+    public ThreatTable getThreatTable() {
+        return threatTable;
+    }
+    public String getThreatStatus() {
+        return threatTable.toString();
+    }
+    public void onDamage(String name, float amount){
+        if(name.equals(_mod.getPlayer().getName().getString())){
+            _mod.getInfoSender().onDamage(amount);
+        }
+        if(amount>1&&name.equals(_lastAttackingPlayerName) && !_attackCheckTimer.elapsed()){
+            Debug.logMessage("Урон по "+_lastAttackingPlayerName+" прошел!");
+            _attackerCheckHit = false;
+        }
+        String att_name = threatTable.getLastAttacker(name);
+        if (att_name != null) {
+            int id = threatTable.get(name);
+            int att_id = threatTable.get(att_name);
+            if (id != -1 && att_id != -1) {
+                threatTable.recordDamage(id, att_id, amount);
+                //Debug.logMessage("2Получен урон "+name+ " "+att_name + amount);
+            }
+        }
+        //Debug.logMessage("Получен урон "+name+ " "+att_name + amount);
+    }
+
+
+    public void onChangeHealth(String name, float oldHealth, float newHealth) {
+        //Debug.logMessage("Health change for " + name + ": " + oldHealth + " -> " + newHealth);
+        float healthDelta = newHealth - oldHealth;
+
+        // Case 1: Direct death detection (rare case where health hits 0)
+        if (wasRecentlyDamaged(name)) {
+            if (newHealth <= 0.0f) {
+                onDeath(name);
+                return;
+            }
+
+            // Case 2: Respawn detection (low health to full health while recently damaged)
+            if (newHealth >= FULL_HEALTH && oldHealth <= DEATH_HEALTH_THRESHOLD) {
+                onDeath(name);
+                return;
+            }
+
+            // Case 3: too many heal at a time?
+            if (healthDelta > DEATH_HEALTH_THRESHOLD) {
+                onDeath(name);
+                return;
+            }
+        }
+
+        // Track damage
+        if (healthDelta < 0) {
+            updatePlayerDamageTimer(name);
+            onDamage(name, -healthDelta);
+        }
+    }
+
+    public void onClientMeleeAttack(Entity target){
         if(target!= null && target instanceof PlayerEntity) {
             PlayerEntity player = (PlayerEntity) target;
             _attackerCheck = player;
@@ -85,150 +167,103 @@ public class DamageTracker extends Tracker {
     }
 
 
+    private void onDeath(String name) {
+        String killerName = determineKiller(name);
+        Debug.logMessage("Death: " + killerName + " killed " + name + ".");
 
-    public void onClientDamage(){
-        //Debug.logMessage("ПУК!");
-        _recentDamageTimer.reset();
-        //Debug.logMessage("Получен урон "+Py4jEntryPoint.lastDamage);
-    }
-    public double lastDamage = 0.0;
-    public void onChangeHealth(String name, float oldHealth, float newHealth){
-        Debug.logMessage("onChangeHealth " + name + ": " + oldHealth + " -> " + newHealth);
-        float changed = newHealth - oldHealth;
+        if (_mod.getPlayer().getName().getString().equals(name)) {
+            // Player death
 
-        if (newHealth==0.0f && WasResentlyDamaged(name) ){ // 100% смэрт
-            onDeath(name);
-        } else if(Math.floor(changed*20)==0){
-            //нет существенных изменений
-        }else if(changed>0){ //получили хил
-            //Debug.logMessage("Захилились на "+changed);
-            if((oldHealth+changed==_mod.getPlayer().getMaxHealth()||_lastRemovedPlayer.equals(name))&&WasResentlyDamaged(name)){
-                onDeath(name);
-            }
-
-            //EventBus.publish(new DeathEvent());
-        }else {
-            //Debug.logMessage("Ударились на "+(-changed)+" таймер дамага "+WasResentlyDamaged());
-            lastDamage = -changed;
-            if (WasResentlyDamaged(name)) {
-                onDamage(name,-changed);
-                //Debug.logMessage("ДОСТОВЕРНО УРОН ПОЛУЧЕН = "+lastDamage);
-            }
-        }
-    }
-    public void onDeath(String name){
-
-        Debug.logMessage("---===*"+name +" killed*===---");
-        if (_mod.getPlayer().getName().getString().equals(name))
-        {
-            Debug.logMessage("death "+_lastAttackingPlayerIsLookingProbablity+" mda "+_lastAttackingPlayerName);
-            String killername = "undefined";
-            if(_lastAttackingPlayerName != null && _lastAttackingPlayerIsLookingProbablity>0.70D) {killername =_lastAttackingPlayerName;}
-            onClientDeath(killername);
-        }
-        else if (_lastAttackingPlayerName != null && _lastAttackingPlayerName.equals(name)  && _lastAttackingPlayerMyLookingProbablity>0.70D)
-        {
-            Debug.logMessage("kill "+_lastAttackingPlayerMyLookingProbablity+" mda "+_lastAttackingPlayerName);
+            onClientDeath(killerName);
+        } else if (isPlayerKill(name)) {
+            // Kill by player
             onClientKill(name);
         }
-    }
-    public void onClientDeath(String killername){
-        Debug.logMessage("confirmed death from "+killername);
-        if(!killername.equals("undefined")){
-            _mod.getInfoSender().onDeath(killername);
-        }
-        else if(Math.random()>0.5d){
-            _mod.getInfoSender().onDeath("неизвестный");
-        }
-    }
-    public void onClientKill(String name){
-        Debug.logMessage("confirmed kill -"+name);
-        if(!name.equals("undefined")){
-            _mod.getInfoSender().onKill(name);}
+
+        // Clear damage timer after death
+        _playerDamageTimers.remove(name);
     }
 
-    public void onDamage(String name, float amount){
-        if(name.equals(_mod.getPlayer().getName().getString())){
-            _mod.getInfoSender().onDamage(amount);
+    private String determineKiller(String name) {
+        String killer = threatTable.getLastAttacker(name);
+        if(killer!= null){
+            return killer;
         }
-        if(amount>1&&name.equals(_lastAttackingPlayerName)&&!_attackCheckTimer.elapsed()){
-            Debug.logMessage("Урон по "+_lastAttackingPlayerName+" прошел!");
-            _attackerCheckHit = false;
-        }
-        //Debug.logMessage("Получен урон "+name+ " "+amount);
+        //if (_lastAttackingPlayerName != null && _lastAttackingPlayerIsLookingProbability > 0.70D) {
+        //    return _lastAttackingPlayerName;
+        //}
+        return "undefined";
+    }
+
+    private boolean isPlayerKill(String name) {
+        return _lastAttackingPlayerName != null &&
+                _lastAttackingPlayerName.equals(name) &&
+                _lastAttackingPlayerMyLookingProbability > 0.70D;
     }
 
     public void tick() {
+        if (!AltoClef.inGame() || MinecraftClient.getInstance().world == null) return;
 
-        if(AltoClef.inGame() && MinecraftClient.getInstance().world != null) {
-            List<AbstractClientPlayerEntity> playerList = MinecraftClient.getInstance().world.getPlayers();
-            if(!_prevPlayerList.equals(playerList)) {
-                _prevPlayerList.removeAll(playerList);
-                for(AbstractClientPlayerEntity player : _prevPlayerList){
-                    //Debug.logMessage("Удалились игроки: "+player);
-                    if (player != null) {
-                        _lastRemovedPlayer = player.getName().getString();
-                        if(WasResentlyDamaged(_lastRemovedPlayer)){
-                            onDeath(_lastRemovedPlayer);
-                        }
-                        //Debug.logMessage("Удалились игроки: " + _lastRemovedPlayer+" WasResentlyDamaged "+WasResentlyDamaged(_lastRemovedPlayer));
+        List<AbstractClientPlayerEntity> currentPlayers = MinecraftClient.getInstance().world.getPlayers();
+
+        // Handle player removals (possible death by disconnect)
+        if (!_prevPlayerList.equals(currentPlayers)) {
+            Set<AbstractClientPlayerEntity> removedPlayers = new HashSet<>(_prevPlayerList);
+            removedPlayers.removeAll(currentPlayers);
+
+            for (AbstractClientPlayerEntity player : removedPlayers) {
+                if (player != null) {
+                    String playerName = player.getName().getString();
+                    float lastHealth = _prevPlayerHealth.getOrDefault(playerName, FULL_HEALTH);
+
+                    // If player disconnected while at low health and recently damaged
+                    if (lastHealth <= DEATH_HEALTH_THRESHOLD && wasRecentlyDamaged(playerName)) {
+                        onDeath(playerName);
                     }
                 }
-                _prevPlayerList.clear();
-                for (AbstractClientPlayerEntity player : playerList) {
-                    _prevPlayerList.add(player);
-                    if (player != null && player.getName() != null) {
-                        String name = player.getName().getString();
-                        if(!_prevPlayerHealth.containsKey(name))
-                            _prevPlayerHealth.put(name, player.getHealth());
-                        float prevHealth = _prevPlayerHealth.get(name);
-                        float health = player.getHealth();
-                        //if (player != _mod.getPlayer())
-                        //Debug.logMessage("найден игрок " + name + " хп " + health + " прошлое хп "+prevHealth);
-                        _playerMap.put(name, player);
-                    }
-                    //Debug.logMessage("Число элементов "+playerList.size());
-                }
-            }else{
-                //Debug.logMessage("листы равны.");
-            }
-            LivingEntity attacking = _mod.getPlayer().getAttacking();
-            if(attacking != null && attacking instanceof PlayerEntity) {
-                _lastAttackingPlayerName = attacking.getName().getString();
-                //_lastAttackingPlayerEye = attacking.getEyePos();
-                //_lastAttackingPlayerDir = attacking.getRotationVector();
-                if(_mod.getPlayer() != null) {
-                    //_lastAttackingPlayerMyDir = _mod.getPlayer().getRotationVector();
-                    //_lastAttackingPlayerMyEye = _mod.getPlayer().getEyePos();
-                    _lastAttackingPlayerIsLookingProbablity = LookHelper.getLookingProbability((PlayerEntity)attacking, _mod.getPlayer());
-                    _lastAttackingPlayerMyLookingProbablity = LookHelper.getLookingProbability(_mod.getPlayer(), (PlayerEntity) attacking);
-                }
-                if(_attackerCheckHit&&_attackCheckTimer.elapsed()){
-                    Debug.logMessage("Урон по "+_lastAttackingPlayerName+" НЕ прошел!");
-                    _attackerCheckHit = false;
-                }
-                //Debug.logMessage("ыы "+_lastAttackingPlayerName);
-
             }
 
-            for (AbstractClientPlayerEntity player : playerList) {
-                if (player != null && player.getName() != null) {
-                    String name = player.getName().getString();
-                    if(_lastRemovedPlayer.equals(name)) _lastRemovedPlayer = "";
-                    if(!_prevPlayerHealth.containsKey(name))
-                        _prevPlayerHealth.put(name, player.getHealth());
-                    float prevHealth = _prevPlayerHealth.get(name);
-                    float health = player.getHealth();
-                    if(prevHealth!=player.getHealth()){
-                        onChangeHealth(name,prevHealth,health);
-                        _prevPlayerHealth.put(name, player.getHealth());
-                    }
-                    //if (InputHelper.isKeyPressed(71)){
-                        //    //Debug.logMessage("looking "+name+" ?"+isLookingAt(player,_mod.getPlayer()));
-                        //}
-                }
+            // Update player tracking
+            _prevPlayerList = new ArrayList<>(currentPlayers);
+            updatePlayerStates(currentPlayers);
+        }
 
+        // Regular health updates for connected players
+        for (AbstractClientPlayerEntity player : currentPlayers) {
+            if (player != null && player.getName() != null) {
+                String name = player.getName().getString();
+                float prevHealth = _prevPlayerHealth.getOrDefault(name, player.getHealth());
+                float currentHealth = player.getHealth();
+
+                if (prevHealth != currentHealth) {
+                    onChangeHealth(name, prevHealth, currentHealth);
+                    _prevPlayerHealth.put(name, currentHealth);
+                }
             }
+
+        }
+
+        updateAttackingPlayerInfo();
+    }
+
+    private void updatePlayerStates(List<AbstractClientPlayerEntity> currentPlayers) {
+        for (AbstractClientPlayerEntity player : currentPlayers) {
+            if (player != null && player.getName() != null) {
+                String name = player.getName().getString();
+                _playerMap.put(name, player);
+                _prevPlayerHealth.putIfAbsent(name, player.getHealth());
+            }
+        }
+    }
+
+    private void updateAttackingPlayerInfo() {
+        LivingEntity attacking = _mod.getPlayer().getAttacking();
+        if (attacking instanceof PlayerEntity) {
+            _lastAttackingPlayerName = attacking.getName().getString();
+            _lastAttackingPlayerIsLookingProbability = LookHelper.getLookingProbability(
+                    (PlayerEntity)attacking, _mod.getPlayer());
+            _lastAttackingPlayerMyLookingProbability = LookHelper.getLookingProbability(
+                    _mod.getPlayer(), (PlayerEntity)attacking);
         }
     }
 
