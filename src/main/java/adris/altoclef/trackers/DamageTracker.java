@@ -110,16 +110,13 @@ public class DamageTracker extends Tracker {
             Debug.logMessage("Урон по "+_lastAttackingPlayerName+" прошел!");
             _attackerCheckHit = false;
         }
+
         String att_name = threatTable.getLastAttacker(name);
-        if (att_name != null) {
-            int id = threatTable.get(name);
-            int att_id = threatTable.get(att_name);
-            if (id != -1 && att_id != -1) {
-                threatTable.recordDamage(id, att_id, amount);
-                //Debug.logMessage("2Получен урон "+name+ " "+att_name + amount);
-            }
+        int id = threatTable.get(name);
+        if (id != -1) {
+            threatTable.recordDamage(id, amount);
+            Debug.logMessage("2Получен урон "+name+ " "+att_name + amount);
         }
-        //Debug.logMessage("Получен урон "+name+ " "+att_name + amount);
     }
 
 
@@ -166,9 +163,7 @@ public class DamageTracker extends Tracker {
         //handtool.getMaterial().getAttackDamage();
     }
 
-
-    private void onDeath(String name) {
-        String killerName = determineKiller(name);
+    private void onDeath(String name, String killerName) {
         Debug.logMessage("Death: " + killerName + " killed " + name + ".");
 
         if (_mod.getPlayer().getName().getString().equals(name)) {
@@ -182,6 +177,12 @@ public class DamageTracker extends Tracker {
 
         // Clear damage timer after death
         _playerDamageTimers.remove(name);
+    }
+
+
+    private void onDeath(String name) {
+        String killerName = determineKiller(name);
+        onDeath(name, killerName);
     }
 
     private String determineKiller(String name) {
@@ -232,6 +233,7 @@ public class DamageTracker extends Tracker {
         for (AbstractClientPlayerEntity player : currentPlayers) {
             if (player != null && player.getName() != null) {
                 String name = player.getName().getString();
+                threatTable.updatePlayerData(name, player);
                 float prevHealth = _prevPlayerHealth.getOrDefault(name, player.getHealth());
                 float currentHealth = player.getHealth();
 

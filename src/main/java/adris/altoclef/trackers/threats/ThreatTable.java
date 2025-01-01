@@ -1,11 +1,11 @@
 package adris.altoclef.trackers.threats;
 
 import adris.altoclef.AltoClef;
-import adris.altoclef.Debug;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
 
@@ -16,7 +16,7 @@ public class ThreatTable {
             this.id = new_id;
         }
         public int id;
-        public double combatTime = 4;
+        public double combatTime = 10;
         public double damagedTime = 0.4;
         private final TimerReal lastAttackTimer = new TimerReal(damagedTime);
         private final TimerReal lastDamagedTimer = new TimerReal(damagedTime);
@@ -25,7 +25,9 @@ public class ThreatTable {
         private int lastAttackerEntityId = -1;
         private float lastDamageAmount = 0;
         public float cumulativeDamage = 0; // damage sum in last combat
-        public float health = 20.0f;
+        public float lastHealth = 20.0f;
+        public Vec3d lastPos;
+        public Vec3d lastRotationVec;
 
         // Add map to track potential attackers and their attack timers
         private final Map<Integer, TimerReal> potentialAttackers = new HashMap<>();
@@ -64,7 +66,7 @@ public class ThreatTable {
                 entityIdToName.put(entityId, playerName);
                 playerThreats.putIfAbsent(playerName, new PlayerThreat(entityId));
                 PlayerThreat threat = playerThreats.get(playerName);
-                threat.health = ((PlayerEntity) entity).getHealth();
+                threat.lastHealth = ((PlayerEntity) entity).getHealth();
             }
         }
     }
@@ -105,8 +107,27 @@ public class ThreatTable {
             PlayerThreat threat = playerThreats.get(damagedName);
             threat.damagedTimer.reset();
             threat.lastDamagedTimer.reset();
-            threat.combatEngagementTimer.reset();
+
             // Find the most likely attacker from recent attack animations
+
+        }
+    }
+
+    public void recordDamage(int damagedEntityId, float amount) {
+        String damagedName = entityIdToName.get(damagedEntityId);
+        if (damagedName != null) {
+            PlayerThreat threat = playerThreats.get(damagedName);
+
+            threat.lastDamageAmount = amount;
+            threat.combatEngagementTimer.reset();
+            // Update cumulative damage only if in combat
+            if (!threat.combatEngagementTimer.elapsed()) {
+                threat.cumulativeDamage += amount;
+            } else {
+                // Reset cumulative damage if starting new combat
+                threat.cumulativeDamage = amount;
+            }
+
             List<Integer> recentAttackers = threat.getRecentAttackers();
             if (!recentAttackers.isEmpty()) {
                 // Sort attackers by looking probability
@@ -123,35 +144,27 @@ public class ThreatTable {
                     return 0;
                 });
                 int attackerEntityId = recentAttackers.get(0);
-                // Set the most likely attacker
                 threat.lastAttackerEntityId = attackerEntityId;
 
 
                 //ebug.logMessage("Most likely attacker for " + damagedName + " is " + entityIdToName.get(threat.lastAttackerEntityId));
             }
-        }
-    }
-
-    public void recordDamage(int damagedEntityId, int attackerEntityId, float amount) {
-        String damagedName = entityIdToName.get(damagedEntityId);
-        if (damagedName != null) {
-            PlayerThreat threat = playerThreats.get(damagedName);
-
-            threat.lastDamageAmount = amount;
-
-            // Update cumulative damage only if in combat
-            if (!threat.combatEngagementTimer.elapsed()) {
-                threat.cumulativeDamage += amount;
-            } else {
-                // Reset cumulative damage if starting new combat
-                threat.cumulativeDamage = amount;
-            }
 
             // Update health
             Entity damaged = _mod.getWorld().getEntityById(damagedEntityId);
             if (damaged instanceof PlayerEntity) {
-                threat.health = ((PlayerEntity) damaged).getHealth();
+                threat.lastHealth = ((PlayerEntity) damaged).getHealth();
             }
+        }
+    }
+    public void updatePlayerData(String playerName, PlayerEntity entity) {
+        registerPlayer(entity.getId());
+        PlayerThreat threat = playerThreats.get(playerName);
+        if (threat != null){
+            threat.id = entity.getId();
+            threat.lastHealth = entity.getHealth();
+            threat.lastPos = entity.getPos();
+            threat.lastRotationVec = entity.getRotationVec(0);
         }
     }
 
@@ -185,7 +198,7 @@ public class ThreatTable {
 
     public float getCurrentHealth(String playerName) {
         PlayerThreat threat = playerThreats.get(playerName);
-        return threat != null ? threat.health : 20.0f;
+        return threat != null ? threat.lastHealth : 20.0f;
     }
 
     public String toString() {
@@ -212,7 +225,7 @@ public class ThreatTable {
             sb.append("┐\n");
 
             // Health and combat status
-            sb.append("│ Health: ").append(String.format("%.1f/20.0", threat.health))
+            sb.append("│ Health: ").append(String.format("%.1f/20.0", threat.lastHealth))
                     .append(isInCombat(playerName) ? " 🗡️ IN COMBAT" : " ⚔ PEACEFUL")
                     .append("\n");
 

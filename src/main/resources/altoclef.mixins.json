@@ -3,6 +3,7 @@
   "package": "adris.altoclef.mixins",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "CameraMixin",
     "AbstractFurnaceScreenHandlerAccessor",
     "BlockModifiedByPlayerMixin",
     "ClientBlockBreakAccessor",

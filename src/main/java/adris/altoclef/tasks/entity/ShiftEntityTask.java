@@ -69,6 +69,7 @@ public class ShiftEntityTask extends AbstractDoToEntityTask {
         boolean tooClose;
         boolean shifting;
         double yBorder = 0.9f;
+
         if (!canShift){
             return new GetToEntityTask(entity);
         }
@@ -111,7 +112,7 @@ public class ShiftEntityTask extends AbstractDoToEntityTask {
             // Look at the position behind the entity
             tooClose = originPos.isWithinRangeOf(targetPos, _stopDistance, 1d);
             shifting = originPos.isWithinRangeOf(targetPos, _shiftDistance, 1d);
-            LookHelper.smoothLook(mod, targetPos);
+            LookHelper.smoothLook(mod, new Vec3d(targetPos.getX(), mod.getPlayer().getEyePos().getY(), targetPos.getZ()));
         }
         // Debug.logMessage("_phase" + _phase);
         //Debug.logMessage("ydiff" + yDiff);
