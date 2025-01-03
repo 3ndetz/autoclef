@@ -1,6 +1,9 @@
 package adris.altoclef.util.helpers;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
+import adris.altoclef.trackers.threats.ThreatTable;
+import adris.altoclef.trackers.threats.WeaponThreat;
 import adris.altoclef.util.WoodType;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -8,17 +11,19 @@ import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.MapColor;
 import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.component.DataComponentTypes;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
+import net.minecraft.item.*;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.tag.EnchantmentTags;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.DyeColor;
 
+import javax.tools.Tool;
 import java.util.*;
 
 /**
@@ -276,7 +281,7 @@ public class ItemHelper {
     public static final Item[] LeggingsTopPriority = new Item[] {Items.NETHERITE_LEGGINGS, Items.DIAMOND_LEGGINGS, Items.IRON_LEGGINGS, Items.CHAINMAIL_LEGGINGS, Items.GOLDEN_LEGGINGS, Items.LEATHER_LEGGINGS};
     public static final Item[] BootsTopPriority = new Item[] {Items.NETHERITE_BOOTS, Items.DIAMOND_BOOTS, Items.IRON_BOOTS, Items.CHAINMAIL_BOOTS, Items.GOLDEN_BOOTS, Items.LEATHER_BOOTS};
     public static final Item[] ShootWeapons = new Item[] {Items.BOW, Items.CROSSBOW};
-    public static final Item[] RangedTopPriority = new Item[] {Items.BOW, Items.CROSSBOW}; //TODO ADD SNOWBALL POTIONS TRIDENT ETC
+    public static final Item[] RangedTopPriority = new Item[] {Items.BOW, Items.CROSSBOW, Items.SPLASH_POTION, Items.LINGERING_POTION, Items.SNOWBALL}; //TODO ADD SNOWBALL POTIONS TRIDENT ETC
     public static final Item[] WeaponsTopPriority = new Item[] {Items.NETHERITE_SWORD, Items.DIAMOND_SWORD, Items.IRON_SWORD, Items.DIAMOND_AXE,  Items.STONE_SWORD, Items.STONE_AXE, Items.GOLDEN_SWORD, Items.WOODEN_SWORD, Items.GOLDEN_AXE, Items.WOODEN_AXE};
     public static final Item[] SwordsTopPriority = new Item[] {Items.NETHERITE_SWORD, Items.DIAMOND_SWORD, Items.IRON_SWORD, Items.STONE_SWORD, Items.GOLDEN_SWORD, Items.WOODEN_SWORD};
     public static final Item[] PickaxesTopPriority = new Item[] {Items.NETHERITE_PICKAXE, Items.DIAMOND_PICKAXE, Items.IRON_PICKAXE, Items.STONE_PICKAXE, Items.GOLDEN_PICKAXE, Items.WOODEN_PICKAXE};
@@ -304,8 +309,35 @@ public class ItemHelper {
         }
         return result;
     }
+    public static WeaponThreat getWeaponThreat(AltoClef mod, PlayerEntity entity) {
+        ItemStack stack =  entity.getMainHandStack();
+        if (stack != null) {
+            if (holdWeapon(entity, RangedTopPriority))
+                return WeaponThreat.Ranged;
+            Item handItem = stack.getItem();
 
-    public static boolean hasItems(PlayerEntity entity, Item... items) {
+            float damage = (float) entity.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE);  // 1
+            if (handItem instanceof ToolItem tool && (tool instanceof SwordItem || tool instanceof AxeItem)) {
+                //Item DESTRUCTION damage, NOT ENTITY damage
+                //Debug.logMessage("Dmg=" + handItemStack.getDamage() + ", maxdmg=" + handItemStack.getMaxDamage() + ", usertime=" + handItemStack.getMaxUseTime(entity));
+                damage += tool.getMaterial().getAttackDamage() + 3;  //wood - 0
+            }
+            if (handItem instanceof TridentItem || handItem instanceof MaceItem) {
+                damage += 7f;
+            }
+            // not working
+            // enchanted items
+            //if (stack.getEnchantments() != null && stack.getEnchantments().getEnchantments() != null
+            //        && stack.getEnchantments().getEnchantments().contains(EnchantmentTags.DAMAGE_EXCLUSIVE_SET)) {
+            //    damage += 2f;
+            //}
+            //Debug.logMessage("ItemDamageFinal=" + damage);
+            if (damage >= 4f)
+                return WeaponThreat.Melee;
+        }
+        return WeaponThreat.Harmless;
+    }
+    public static boolean holdWeapon(PlayerEntity entity, Item... items) {
         for(Item weapon : items) {
             boolean has_weapon = entity.getMainHandStack().isOf(weapon);
             if (has_weapon) return true;
@@ -313,8 +345,13 @@ public class ItemHelper {
         return false;
     }
     public static boolean hasItems(AltoClef mod, Item... items) {
-        return hasItems(mod.getPlayer(), items);
+        for(Item weapon : items) {
+            boolean has_weapon = mod.getItemStorage().hasItemInventoryOnly(weapon);
+            if (has_weapon) return true;
+        }
+        return false;
     }
+
     /* Logs:
         ACACIA
         BIRCH

@@ -4,10 +4,7 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.control.KillAura;
 import adris.altoclef.tasks.entity.KillEntitiesTask;
-import adris.altoclef.tasks.movement.CustomBaritoneGoalTask;
-import adris.altoclef.tasks.movement.DodgeProjectilesTask;
-import adris.altoclef.tasks.movement.RunAwayFromCreepersTask;
-import adris.altoclef.tasks.movement.RunAwayFromHostilesTask;
+import adris.altoclef.tasks.movement.*;
 import adris.altoclef.tasks.speedrun.DragonBreathTracker;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.control.KillAura;
@@ -171,7 +168,13 @@ public class MobDefenseChain extends SingleTaskChain {
         // Force field
         doForceField(mod);
 
-
+        Optional<Entity> avoidTarget = getAvoidTarget(mod);
+        if (avoidTarget.isPresent()){
+            // TODO run away from players task
+            //_runAwayTask = new RunAwayFromPositionTask(DANGER_KEEP_DISTANCE, avoidTarget.get().getBlockPos());
+            setTask(new RunAwayFromPositionTask(DANGER_KEEP_DISTANCE, avoidTarget.get().getBlockPos()));
+            return 70;
+        }
         // Tell baritone to avoid mobs if we're vulnurable.
         // Costly.
         //mod.getClientBaritoneSettings().avoidance.value = isVulnurable(mod);
@@ -272,7 +275,11 @@ public class MobDefenseChain extends SingleTaskChain {
                 return 70;
             }
         }
-
+        Optional<Entity> toAttackPlayer = getAttackPlayer(mod);
+        if (toAttackPlayer.isPresent() && toAttackPlayer.get() instanceof PlayerEntity player) {
+            setTask(new KillEntitiesTask(toAttack -> toAttack.equals(player), PlayerEntity.class));
+            return 65;
+        }
         if (mod.getModSettings().shouldDealWithAnnoyingHostiles()) {
             // Deal with hostiles because they are annoying.
             List<Entity> hostiles = mod.getEntityTracker().getHostiles();
@@ -562,6 +569,39 @@ public class MobDefenseChain extends SingleTaskChain {
         }
         return false;
     }
+
+    public Optional<Entity> getAvoidTarget(AltoClef mod) {
+        // Wither skeletons are dangerous because of the wither effect. Oof kinda obvious.
+        // If we merely force field them, we will run into them and get the wither effect which will kill us.
+        Optional<Entity> closestAvoidPlayer = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
+                entity -> mod.getDamageTracker().getThreatTable()
+                        .shouldAvoid(entity.getName().getString()),
+                PlayerEntity.class);
+        if (closestAvoidPlayer.isPresent()) {
+            double range = SAFE_KEEP_DISTANCE - 2;
+            if (closestAvoidPlayer.get().squaredDistanceTo(mod.getPlayer()) < range * range) {
+                return closestAvoidPlayer;
+            }
+        }
+        return Optional.empty();
+    }
+
+    public Optional<Entity> getAttackPlayer(AltoClef mod) {
+        // Wither skeletons are dangerous because of the wither effect. Oof kinda obvious.
+        // If we merely force field them, we will run into them and get the wither effect which will kill us.
+        Optional<Entity> closestAvoidPlayer = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
+                entity -> mod.getDamageTracker().getThreatTable()
+                        .shouldAttack(entity.getName().getString()),
+                PlayerEntity.class);
+        if (closestAvoidPlayer.isPresent()) {
+            double range = DANGER_KEEP_DISTANCE - 2;
+            if (closestAvoidPlayer.get().squaredDistanceTo(mod.getPlayer()) < range * range) {
+                return closestAvoidPlayer;
+            }
+        }
+        return Optional.empty();
+    }
+
 
     private Optional<Entity> getUniversallyDangerousMob(AltoClef mod) {
         // Wither skeletons are dangerous because of the wither effect. Oof kinda obvious.

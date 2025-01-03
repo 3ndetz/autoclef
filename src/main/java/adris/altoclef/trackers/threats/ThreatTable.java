@@ -1,10 +1,10 @@
 package adris.altoclef.trackers.threats;
 
 import adris.altoclef.AltoClef;
-import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.SneakEvent;
 import adris.altoclef.eventbus.events.multiplayer.TeleportEvent;
+import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
 import net.minecraft.entity.Entity;
@@ -16,48 +16,8 @@ import java.util.stream.Collectors;
 
 public class ThreatTable {
     public AltoClef _mod;
-    public class PlayerThreat {
-        public PlayerThreat(int new_id){
-            this.id = new_id;
-        }
-        public int id;
-        public String name;
-        public double combatTime = 10;
-        public double damagedTime = 0.4;
-        private final TimerReal lastAttackTimer = new TimerReal(damagedTime);
-        private final TimerReal lastDamagedTimer = new TimerReal(damagedTime);
-        private final TimerReal damagedTimer = new TimerReal(damagedTime);
-        private final TimerReal combatEngagementTimer = new TimerReal(combatTime);
-        private TimerReal shouldAvoidTimer = new TimerReal(20);
-        private TimerReal shouldKillTimer = new TimerReal(50);
-        private int lastAttackerEntityId = -1;
-        private float lastDamageAmount = 0;
-        public float cumulativeDamage = 0; // damage sum in last combat
-        public float lastHealth = 20.0f;
-        public Vec3d lastPos;
-        public Vec3d lastRotationVec;
-        public boolean sneak = false;
-        public int sneakRate = 0;
-        private final TimerReal shiftTimer = new TimerReal(5);
 
-        // Add map to track potential attackers and their attack timers
-        private final Map<Integer, TimerReal> potentialAttackers = new HashMap<>();
 
-        public void addPotentialAttacker(int entityId) {
-            potentialAttackers.putIfAbsent(entityId, new TimerReal(2.0));
-            potentialAttackers.get(entityId).reset();
-        }
-
-        public List<Integer> getRecentAttackers() {
-            List<Integer> recent = new ArrayList<>();
-            for (Map.Entry<Integer, TimerReal> entry : potentialAttackers.entrySet()) {
-                if (!entry.getValue().elapsed()) {
-                    recent.add(entry.getKey());
-                }
-            }
-            return recent;
-        }
-    }
 
     private final Map<Integer, String> entityIdToName = new HashMap<>();
     private final Map<String, PlayerThreat> playerThreats = new HashMap<>();
@@ -75,7 +35,7 @@ public class ThreatTable {
                     threat.shiftTimer.reset();
                     threat.sneakRate += 1;
                 }
-                if (threat.sneakRate > 5) {
+                if (threat.sneakRate > 7) {
                     threat.shouldAvoidTimer.reset();
                 }
 
@@ -146,10 +106,19 @@ public class ThreatTable {
         if (a != null && a.lastPos != null && a.lastRotationVec != null && c != null && c.lastPos != null) {
             double score = LookHelper.getLookingProbability(a.lastPos, c.lastPos, a.lastRotationVec);
             double distance = a.lastPos.distanceTo(c.lastPos);
-            if (distance < 10) {
-                score =  (10-distance) / 10;
-            } else if (distance < 100) {
-                score += (100-distance) / 100;
+            if (distance <= 10) {
+                if (a.weaponThreat.equals(WeaponThreat.Melee)) {
+                    score += (10 - distance) / 10;
+                } else {
+                    score += (10 - distance) / 20;
+                }
+
+            } else if (distance <= 100) {
+                if (a.weaponThreat.equals(WeaponThreat.Ranged)) {
+                    score += (100 - distance) / 1000;
+                } else {
+                    score += (100 - distance) / 80;
+                }
             } else {
                 score -= 0.5;
             }
@@ -244,6 +213,7 @@ public class ThreatTable {
                     if (attackerThreat.name != null && !attackerThreat.name.isBlank()) {
                         pursue(attackerThreat.name);
                     }
+                    threat.addDamageRecord(attackerEntityId, amount);
                     return attackerEntityId;
                 }
             }
@@ -281,6 +251,7 @@ public class ThreatTable {
                 }
                 threat.lastPos = entity.getPos();
             }
+            threat.weaponThreat = ItemHelper.getWeaponThreat(_mod, entity);
             threat.lastHealth = entity.getHealth();
             // health change event, handled in tracker directly
             threat.lastRotationVec = entity.getRotationVec(0);

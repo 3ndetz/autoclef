@@ -36,6 +36,7 @@ import adris.altoclef.tasks.stupid.SCP173Task;
 import adris.altoclef.tasks.stupid.SkyWarsTask;
 import adris.altoclef.tasks.stupid.TerminatorTask;
 import adris.altoclef.util.*;
+import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.MapItemHelper;
 import adris.altoclef.util.helpers.MouseMoveHelper;
 import adris.altoclef.util.helpers.WorldHelper;
@@ -470,6 +471,16 @@ public class Playground {
 
                 PlayerEntity target_ply = players.get(0);
                 mod.runUserTask(new ShootArrowSimpleProjectileTask(target_ply));
+                break;
+            case "itemthreat":
+                List<PlayerEntity> players2 = mod.getEntityTracker().getTrackedEntities(PlayerEntity.class);
+
+                if (players2.size() == 0) {
+                    Debug.logWarning("No targets found.");
+                    break;
+                }
+                PlayerEntity target_ply2 = players2.get(0);
+                Debug.logMessage( target_ply2.getName().getString() + ": " + ItemHelper.getWeaponThreat(mod, target_ply2).toString());
                 break;
             case "replace":
                 // Creates a mini valley of crafting tables.

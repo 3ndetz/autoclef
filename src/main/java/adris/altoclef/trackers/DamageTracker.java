@@ -6,6 +6,7 @@ import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.*;
 import adris.altoclef.tasks.stupid.MurderMysteryTask;
 import adris.altoclef.trackers.threats.DamageTrackerStrategy;
+import adris.altoclef.trackers.threats.PlayerThreat;
 import adris.altoclef.trackers.threats.ThreatTable;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
@@ -228,7 +229,7 @@ public class DamageTracker extends Tracker {
                 }
                 case MurderMystery:
                     // TODO find killer with murder weapons
-                    ThreatTable.PlayerThreat threat = threatTable.getLastAttacker(playerName, true);
+                    PlayerThreat threat = threatTable.getLastAttacker(playerName, true);
                     if (threat != null && threat.name != null) {
                         onDeath(playerName, threat.name);
                     } else {

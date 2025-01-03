@@ -8,10 +8,7 @@ import adris.altoclef.tasks.entity.DoToClosestEntityTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.entity.ShiftEntityTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
-import adris.altoclef.tasks.movement.GetToEntityTask;
-import adris.altoclef.tasks.movement.PickupDroppedItemTask;
-import adris.altoclef.tasks.movement.SafeRandomShimmyTask;
-import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
+import adris.altoclef.tasks.movement.*;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.trackers.threats.DamageTrackerStrategy;
 import adris.altoclef.util.ItemTarget;
@@ -192,7 +189,8 @@ public class MurderMysteryTask extends Task {
             if (mod.getPlayer().distanceTo(danger) < 20) {
                 setDebugState("RUNNING FROM DANGER");
                 _runAwayExtraTime.reset();
-                _runAwayTask = new TerminatorTask.RunAwayFromPlayersTask(danger, 20);
+                _runAwayTask = new RunAwayFromPositionTask(40, danger.getBlockPos());
+                //_runAwayTask = new TerminatorTask.RunAwayFromPlayersTask(danger, 20);
                 return _runAwayTask;
             }
         }
