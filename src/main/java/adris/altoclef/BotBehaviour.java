@@ -1,5 +1,6 @@
 package adris.altoclef;
 
+import adris.altoclef.trackers.threats.DamageTrackerStrategy;
 import adris.altoclef.util.slots.Slot;
 import baritone.altoclef.AltoClefSettings;
 import baritone.api.Settings;
@@ -46,6 +47,10 @@ public class BotBehaviour {
      */
     public boolean shouldEscapeLava() {
         return current().escapeLava;
+    }
+
+    public DamageTrackerStrategy getDamageTrackerStrategy() {
+        return current().damageTrackerStrategy;
     }
 
     /// Parameters
@@ -190,6 +195,10 @@ public class BotBehaviour {
         current().allowDiagonalAscend = allow;
         current().applyState();
     }
+    public void setDamageTrackerStrategy(DamageTrackerStrategy strategy) {
+        current().damageTrackerStrategy = strategy;
+        current().applyState();
+    }
 
     public void setBlockPlacePenalty(double penalty) {
         current().blockPlacePenalty = penalty;
@@ -271,6 +280,7 @@ public class BotBehaviour {
         // Alto Clef params
         public boolean exclusivelyMineLogs;
         public boolean forceFieldPlayers;
+        public DamageTrackerStrategy damageTrackerStrategy = DamageTrackerStrategy.Smart;
         public List<Predicate<Entity>> avoidDodgingProjectile = new ArrayList<>();
         public List<Predicate<Entity>> excludeFromForceField = new ArrayList<>();
         public List<Pair<Slot, Predicate<ItemStack>>> conversionSlots = new ArrayList<>();
@@ -314,6 +324,7 @@ public class BotBehaviour {
                 conversionSlots.addAll(toCopy.conversionSlots);
                 forceFieldPlayers = toCopy.forceFieldPlayers;
                 escapeLava = toCopy.escapeLava;
+                damageTrackerStrategy = toCopy.damageTrackerStrategy;
             }
         }
 

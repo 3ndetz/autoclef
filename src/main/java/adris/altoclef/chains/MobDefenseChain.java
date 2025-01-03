@@ -424,10 +424,12 @@ public class MobDefenseChain extends SingleTaskChain {
                     } else if (entity instanceof FireballEntity) {
                         // Ghast ball
                         shouldForce = true;
-                    } else if (entity instanceof PlayerEntity player && mod.getBehaviour().shouldForceFieldPlayers()) {
+                    } else if (entity instanceof PlayerEntity player) {
                         if (!player.equals(mod.getPlayer())) {
                             String name = player.getName().getString();
-                            if (!mod.getButler().isUserAuthorized(name)) {
+                            if (!mod.getButler().isUserAuthorized(name) && mod.getBehaviour().shouldForceFieldPlayers()) {
+                                shouldForce = true;
+                            } else if (mod.getDamageTracker().getThreatTable().shouldAvoid(name) || mod.getDamageTracker().getThreatTable().shouldAttack(name)){
                                 shouldForce = true;
                             }
                         }

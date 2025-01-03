@@ -52,7 +52,7 @@ public abstract class MixinLocalPlayer extends AbstractClientPlayerEntity {
     public void onHealthChange(float health,CallbackInfo ci) {
 
         //Debug.logMessage("Здоровье изменилось: "+_oldHealth+" -> "+health);
-        EventBus.publish(new ChangeHealthEvent(_oldHealth,health));
+        EventBus.publish(new ChangeHealthEvent(_oldHealth, health));
         _oldHealth = health;
     }
 }

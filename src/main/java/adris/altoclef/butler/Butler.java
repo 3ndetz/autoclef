@@ -75,7 +75,7 @@ public class Butler {
 
         // Receive system events
         EventBus.subscribe(ChatMessageEvent.class, evt -> {
-            if(mod.getPlayer() != null) {
+            if(mod.getPlayer() != null && !evt.overlay) {
                 boolean debug = ButlerConfig.getInstance().whisperFormatDebug;
                 String message = evt.messageRawContent();
                 if (message != null && !message.contains(mod.getModSettings().getChatLogPrefix())) {
@@ -205,11 +205,12 @@ public class Butler {
                 _mod.getButler().ClearTeammates();
                 _mod.getButler().AddNearestPlayerToFriends(_mod, 5);
                 DeathMenuChain.NeedtoStopTasksOnDeath = true;
-                _mod.getCommandExecutor().execute("@test killall");
+                _mod.getCommandExecutor().execute("@test sw");
 
             }
         }
         //Debug.logMessage("Recieved msg DEBUG!!! "+ourName+ " " + serverAdress + " " + serverMode + "\n>"+msg+"<");
+        boolean strongChatMessage = false;
         WhisperChecker.MessageResult chatParsedResult = this._whisperChecker.receiveChat(_mod, ourName, msg,
                 serverAdress, serverMode);
         if (chatParsedResult != null) {
@@ -222,7 +223,18 @@ public class Butler {
                     Debug.logMessage("serverExactPrediction=" + chatParsedResult.serverExactPrediction + ",server="
                             + chatParsedResult.server);
                 }
-                _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
+                String nick = chatParsedResult.from;
+                if (!nick.isBlank()) {
+                    if (nick.contains("MurderMystery")){
+
+                    } else if (nick.matches(".*[^a-zA-Zа-яА-Я0-9_].*")) { // contains bad chars
+
+                    } else {
+                        _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
+                        strongChatMessage = true;
+                    }
+                }
+
                 //if (chatParsedResult.serverExactPrediction == "exact") {
                 //    Debug.logInternal("Recieved EXACT msg from " + chatParsedResult.from);
                 //    _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
@@ -232,6 +244,9 @@ public class Butler {
                 //    _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
                 //}
             }
+        }
+        if(!strongChatMessage){
+            _mod.getInfoSender().onWeakChatMessage(msg);
         }
         //else {
         //    WhisperChecker.MessageResult result = this._whisperChecker.receiveMessage(_mod, ourName, msg);

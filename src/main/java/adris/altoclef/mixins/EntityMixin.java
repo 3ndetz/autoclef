@@ -1,18 +1,25 @@
 package adris.altoclef.mixins;
 
+import adris.altoclef.Debug;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(Entity.class)
 public class EntityMixin {
+        // NOT WORK!!!!!!
+        //@Inject(at = @At("HEAD"), method = "setSneaking")
+        //public void sneakingActivate(boolean sneaking, CallbackInfo ci) {
+        //        Debug.logMessage("SNEAKING " + sneaking);
+        //}
+
 
 //    @Inject(method = "damage", at = @At("HEAD"))
 //    public void onDamage(DamageSource source, float amount, CallbackInfoReturnable<Boolean> ci) {
-//        //Debug.logMessage("SUKA MAT EBALLL");
 //        //if (amount > 0 && ((Object) this) instanceof LivingEntity) {
 //        //    if (((Object) this) instanceof PlayerEntity) {
 //        //        // If the entity receiving damage is a player, cast it to a PlayerEntity and do something.

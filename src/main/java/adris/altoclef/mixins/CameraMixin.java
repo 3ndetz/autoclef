@@ -32,36 +32,42 @@ public abstract class CameraMixin {
     private Vec3d lastPos = Vec3d.ZERO;
     private float lastYaw = 0.0F;
     private float lastPitch = 0.0F;
-    private float smoothSpeed = 0.1F; // Position smoothing
-    private float rotationSmoothSpeed = 0.07F; // Rotation smoothing
+    private float smoothSpeed = 0.12F; // Position smoothing
+    private float rotationSmoothSpeed = 0.08F; // Rotation smoothing
 
     @Inject(at = @At("TAIL"), method = "update")
     private void onUpdate(BlockView area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta, CallbackInfo ci) {
         if (thirdPerson && !inverseView) {
             // GTA-style camera configuration
             float shoulderOffset = 0.7F;    // How far right from player
-            float heightOffset = 0.5F;      // Additional height adjustment
-            float distanceBack = -0.9F;     // How far back
+            float heightOffset = 1f;      // Additional height adjustment
+            float distanceBack = 2f;     // How far back
 
-            // Calculate smooth interpolated position
+// Calculate smooth interpolated base position
             double x = MathHelper.lerp(tickDelta, focusedEntity.prevX, focusedEntity.getX());
             double y = MathHelper.lerp(tickDelta, focusedEntity.prevY, focusedEntity.getY())
-                    + MathHelper.lerp(tickDelta, this.lastCameraY, this.cameraY)
-                    + heightOffset;
+                    + MathHelper.lerp(tickDelta, this.lastCameraY, this.cameraY);
             double z = MathHelper.lerp(tickDelta, focusedEntity.prevZ, focusedEntity.getZ());
 
-            // Calculate shoulder offset
+// Calculate shoulder offset (unchanged)
             double angleRad = Math.toRadians(this.yaw + 180);
             double shoulderX = Math.cos(angleRad) * shoulderOffset;
             double shoulderZ = Math.sin(angleRad) * shoulderOffset;
 
-            // Calculate target position
-            Vec3d newTargetPos = new Vec3d(
-                    x + shoulderX - Math.sin(Math.toRadians(this.yaw)) * distanceBack,
-                    y,
-                    z + shoulderZ + Math.cos(Math.toRadians(this.yaw)) * distanceBack
-            );
+// Get the head pitch to adjust camera height based on looking up/down (unchanged)
+            float pitchRadians = (float) Math.toRadians(this.pitch);
+            float verticalAdjustment = (float) (Math.sin(pitchRadians)) * heightOffset
+                    - (float) (Math.cos(Math.toRadians(this.pitch - 180))) * heightOffset;
 
+// FIX: Adjust horizontalDistance so it stays behind the player and moves closer when looking up
+            float horizontalDistance = - (float) Math.abs(distanceBack) * (float) Math.cos(pitchRadians);
+
+// Calculate target position with pitch influence (shoulder offset remains on the right)
+            Vec3d newTargetPos = new Vec3d(
+                    x + shoulderX - Math.sin(Math.toRadians(this.yaw)) * horizontalDistance,
+                    y + verticalAdjustment,
+                    z + shoulderZ + Math.cos(Math.toRadians(this.yaw)) * horizontalDistance
+            );
             // Initialize lastPos if needed
             if (lastPos == Vec3d.ZERO) {
                 lastPos = newTargetPos;
@@ -70,10 +76,13 @@ public abstract class CameraMixin {
             }
 
             // Smooth position transition
-            double smoothX = MathHelper.lerp(smoothSpeed, lastPos.x, newTargetPos.x);
-            double smoothY = MathHelper.lerp(smoothSpeed, lastPos.y, newTargetPos.y);
-            double smoothZ = MathHelper.lerp(smoothSpeed, lastPos.z, newTargetPos.z);
+            double smoothX = MathHelper.lerp(tickDelta, lastPos.x, newTargetPos.x);
+            double smoothY = MathHelper.lerp(tickDelta, lastPos.y, newTargetPos.y);
+            double smoothZ = MathHelper.lerp(tickDelta, lastPos.z, newTargetPos.z);
 
+            smoothX = MathHelper.lerp(smoothSpeed, lastPos.x, smoothX);
+            smoothY = MathHelper.lerp(smoothSpeed, lastPos.y, smoothY);
+            smoothZ = MathHelper.lerp(smoothSpeed, lastPos.z, smoothZ);
             // Smooth rotation transition
             float targetYaw = this.yaw;
             float targetPitch = this.pitch;
@@ -82,8 +91,11 @@ public abstract class CameraMixin {
             while (targetYaw - lastYaw > 180.0F) targetYaw -= 360.0F;
             while (targetYaw - lastYaw < -180.0F) targetYaw += 360.0F;
 
-            float smoothYaw = MathHelper.lerp(rotationSmoothSpeed, lastYaw, targetYaw);
-            float smoothPitch = MathHelper.lerp(rotationSmoothSpeed, lastPitch, targetPitch);
+            float smoothYaw = MathHelper.lerp(tickDelta, lastYaw, targetYaw);
+            float smoothPitch = MathHelper.lerp(tickDelta, lastPitch, targetPitch);
+
+            smoothYaw = MathHelper.lerp(rotationSmoothSpeed, lastYaw, smoothYaw);
+            smoothPitch = MathHelper.lerp(rotationSmoothSpeed, lastPitch, smoothPitch);
 
             // Update last positions and rotations
             lastPos = new Vec3d(smoothX, smoothY, smoothZ);

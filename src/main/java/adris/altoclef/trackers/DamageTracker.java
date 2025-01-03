@@ -4,6 +4,8 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.*;
+import adris.altoclef.tasks.stupid.MurderMysteryTask;
+import adris.altoclef.trackers.threats.DamageTrackerStrategy;
 import adris.altoclef.trackers.threats.ThreatTable;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
@@ -41,20 +43,38 @@ public class DamageTracker extends Tracker {
     public DamageTracker(TrackerManager manager) {
         super(manager);
         EventBus.subscribe(ClientDamageEvent.class, evt -> onClientDamage());
-        EventBus.subscribe(ClientHandSwingEvent.class, evt -> onHandSwing());
+        EventBus.subscribe(ClientHandSwingEvent.class, evt -> onClientHandSwing());
         EventBus.subscribe(DamageEvent.class, evt -> onAnyDamage(evt._entity));
         EventBus.subscribe(AnimEvent.class, evt -> onSwing(evt._entity, evt._type));
+
         //EventBus.subscribe(PlayerRemoveEvent.class, this::onPlayerRemove);
 
     }
-    public void onHandSwing(){
+    public void onClientHandSwing(){
         LivingEntity attacking = _mod.getPlayer().getAttacking();
         if(attacking != null){//если есть атакуемый
+            recordOnSwing(_mod.getPlayer());
             //attacking.getHealth();
         }
     }
+
+    public void recordOnSwing(Entity entity){
+
+
+        if(_mod.getBehaviour().getDamageTrackerStrategy().equals(DamageTrackerStrategy.MurderMystery)){
+            // add check
+            if (entity instanceof PlayerEntity player) {
+                if(MurderMysteryTask.hasKillerWeapon(player)){
+                    threatTable.recordAttackAnimation(entity.getId());
+                }
+            }
+            return;
+        }
+        threatTable.recordAttackAnimation(entity.getId());
+    }
     public void onClientDamage() {
         _recentDamageTimer.reset();
+        onAnyDamage(_mod.getPlayer());
     }
     public void onAnyDamage(Entity entity){
         threatTable.recordDamage(entity.getId());
@@ -62,11 +82,11 @@ public class DamageTracker extends Tracker {
     public void onSwing(Entity entity, AnimType type){
         //Debug.logMessage("[DEBUG] Registered swing: " + entity.getName().getString() + " anim " + type.toString() );
         if(type.equals(AnimType.SWING_MAIN_HAND)) {
-            threatTable.recordAttackAnimation(entity.getId());
+            recordOnSwing(entity);
         }
-        if(type.equals(AnimType.TAKE_DAMAGE)) {
-            threatTable.recordDamage(entity.getId());
-        }
+        //if(type.equals(AnimType.TAKE_DAMAGE)) {
+            //    threatTable.recordDamage(entity.getId());
+            //}
     }
 
     private void updatePlayerDamageTimer(String playerName) {
@@ -110,12 +130,14 @@ public class DamageTracker extends Tracker {
             Debug.logMessage("Урон по "+_lastAttackingPlayerName+" прошел!");
             _attackerCheckHit = false;
         }
-
-        String att_name = threatTable.getLastAttacker(name);
         int id = threatTable.get(name);
         if (id != -1) {
-            threatTable.recordDamage(id, amount);
-            Debug.logMessage("2Получен урон "+name+ " "+att_name + amount);
+            threatTable.recordDamageConfirmed(id, amount);
+        }
+        String att_name = threatTable.getLastAttacker(name);
+
+        if (att_name != null) {
+            Debug.logMessage("Получен урон игроком "+name+ " от "+att_name + ": " + amount);
         }
     }
 
@@ -184,6 +206,45 @@ public class DamageTracker extends Tracker {
         String killerName = determineKiller(name);
         onDeath(name, killerName);
     }
+    public void onPlayerRemove(AbstractClientPlayerEntity player){
+        if (player != null) {
+            String playerName = player.getName().getString();
+            float lastHealth = _prevPlayerHealth.getOrDefault(playerName, FULL_HEALTH);
+
+
+            switch (_mod.getBehaviour().getDamageTrackerStrategy()) {
+                case Smart: {
+                    if (wasRecentlyDamaged(playerName)) {
+                        onDeath(playerName);
+                    }
+                    break;
+                }
+                case Vanilla: {
+                    // If player disconnected while at low health and recently damaged
+                    if (lastHealth <= DEATH_HEALTH_THRESHOLD && wasRecentlyDamaged(playerName)) {
+                        onDeath(playerName);
+                    }
+                    break;
+                }
+                case MurderMystery:
+                    // TODO find killer with murder weapons
+                    ThreatTable.PlayerThreat threat = threatTable.getLastAttacker(playerName, true);
+                    if (threat != null && threat.name != null) {
+                        onDeath(playerName, threat.name);
+                    } else {
+                        onDeath(playerName);
+                    }
+                default:
+                    break;
+            }
+
+            if(_mod.getBehaviour().getDamageTrackerStrategy().equals(DamageTrackerStrategy.MurderMystery)){
+
+            }else if(_mod.getBehaviour().getDamageTrackerStrategy().equals(DamageTrackerStrategy.Smart)){
+
+            }
+        }
+    }
 
     private String determineKiller(String name) {
         String killer = threatTable.getLastAttacker(name);
@@ -213,15 +274,7 @@ public class DamageTracker extends Tracker {
             removedPlayers.removeAll(currentPlayers);
 
             for (AbstractClientPlayerEntity player : removedPlayers) {
-                if (player != null) {
-                    String playerName = player.getName().getString();
-                    float lastHealth = _prevPlayerHealth.getOrDefault(playerName, FULL_HEALTH);
-
-                    // If player disconnected while at low health and recently damaged
-                    if (lastHealth <= DEATH_HEALTH_THRESHOLD && wasRecentlyDamaged(playerName)) {
-                        onDeath(playerName);
-                    }
-                }
+                onPlayerRemove(player);
             }
 
             // Update player tracking
@@ -229,7 +282,7 @@ public class DamageTracker extends Tracker {
             updatePlayerStates(currentPlayers);
         }
 
-        // Regular health updates for connected players
+        // Regular data updates for connected players
         for (AbstractClientPlayerEntity player : currentPlayers) {
             if (player != null && player.getName() != null) {
                 String name = player.getName().getString();
@@ -275,8 +328,10 @@ public class DamageTracker extends Tracker {
     }
     @Override
     protected void reset() {
-        // Dirty clears everything else.
-
+        // Runs on world change
+        threatTable.clearWorldData();
+        _prevPlayerHealth.clear();
+        _playerMap.clear();
     }
 
     public List<AbstractClientPlayerEntity> getPlayerList() {

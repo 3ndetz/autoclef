@@ -21,12 +21,42 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 @Environment(EnvType.CLIENT)
 @Mixin(ClientPlayNetworkHandler.class)
 public class ClientPlayNetworkHandlerMixin {
     @Shadow
     private ClientWorld world;
+
+    // all working proper, but saving color codes...
+    @Inject(method = "onOverlayMessage", at = @At("TAIL"))
+    public void onOverlayMessage(OverlayMessageS2CPacket packet, CallbackInfo ci) {
+        if(packet != null && packet.text() != null){
+            //Debug.logMessage("OverlayMessageS2CPacket: " + packet.text().getString());
+        }
+    }
+    @Inject(method = "onTitle", at = @At("TAIL"))
+    public void onTitle(TitleS2CPacket packet, CallbackInfo ci) {
+        if(packet != null && packet.text() != null){
+            //EventBus.publish(new CustomMessage(entity));
+            //Map<String,String> messageDict = new HashMap<>();
+            ////if()
+            //messageDict.put("parse_type","unparsed");
+            //messageDict.put("message_type","chat");
+            //messageDict.put("msg",packet.text().getString());
+            //Debug.logMessage("TitleS2CPacket: " + packet.text().getString());
+        }
+    }
+    @Inject(method = "onSubtitle", at = @At("TAIL"))
+    public void onSubtitle(SubtitleS2CPacket packet, CallbackInfo ci) {
+        if(packet != null && packet.text() != null){
+            //Debug.logMessage("SubtitleS2CPacket: " + packet.text().getString());
+        }
+    }
+
+
 
 
     //@Inject(method = "onEntityAttributes", at = @At("HEAD"))
@@ -49,18 +79,18 @@ public class ClientPlayNetworkHandlerMixin {
     //}
 
     // THIS CLIENT ONLY
-    @Inject(method = "onEndCombat", at = @At("HEAD"))
+    @Inject(method = "onEndCombat", at = @At("TAIL"))
     private void onEndCombat(EndCombatS2CPacket packet, CallbackInfo ci) {
         //Debug.logObject(packet);
     }
     // THIS CLIENT ONLY
     // FIRES, waits 3 sec, then runs combat end
-    @Inject(method = "onEnterCombat", at = @At("HEAD"))
+    @Inject(method = "onEnterCombat", at = @At("TAIL"))
     private void onEnterCombat(EnterCombatS2CPacket packet, CallbackInfo ci) {
         //Debug.logObject(packet);
     }
 
-    @Inject(method = "createEntity", at = @At("HEAD"))
+    @Inject(method = "createEntity", at = @At("TAIL"))
     private void createEntity(EntitySpawnS2CPacket packet, CallbackInfoReturnable cir) {
         // VERY OFTEN WORK
         //Debug.logObject(packet);
@@ -80,7 +110,7 @@ public class ClientPlayNetworkHandlerMixin {
     //}
 
     // only on ply logout FULL from tab
-    @Inject(method = "onPlayerRemove", at = @At("HEAD"))
+    @Inject(method = "onPlayerRemove", at = @At("TAIL"))
     private void onPlayerRemove(PlayerRemoveS2CPacket packet, CallbackInfo ci) {
         //Debug.logObject(packet);
     }
@@ -91,7 +121,7 @@ public class ClientPlayNetworkHandlerMixin {
     //    Debug.logObject(packet);
     //}
 
-    @Inject(method = "onEntityDamage", at = @At("HEAD"))
+    @Inject(method = "onEntityDamage", at = @At("TAIL"))
     private void onEntityDamage(EntityDamageS2CPacket packet, CallbackInfo ci) {
         // WOOOOORKIIIIING !!!!!!!!!!!!!!! but doubling event (x2 times in a moment)
         //DamageEventHandler.handleDamagePacket(packet);
@@ -111,7 +141,7 @@ public class ClientPlayNetworkHandlerMixin {
 
 
     //DOESN'T GET SELF ANIMATIONS!
-    @Inject(method = "onEntityAnimation", at = @At("HEAD"))
+    @Inject(method = "onEntityAnimation", at = @At("TAIL"))
     public void onEntityAnimation(EntityAnimationS2CPacket packet, CallbackInfo ci) {
         Entity entity = world != null ? world.getEntityById(packet.getEntityId()) : null;
         if(entity != null) {

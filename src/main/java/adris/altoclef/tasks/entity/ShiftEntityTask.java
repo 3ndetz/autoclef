@@ -45,7 +45,7 @@ public class ShiftEntityTask extends AbstractDoToEntityTask {
         _shiftType = type;
     }
     public ShiftEntityTask(Entity target) {
-        this(target, ShiftType.values()[new Random().nextInt(ShiftType.values().length)]); // random
+        this(target, ShiftType.values()[new Random().nextInt(ShiftType.values().length-1)]); // random
     }
     @Override
     protected Optional<Entity> getEntityTarget(AltoClef mod) {
@@ -112,7 +112,11 @@ public class ShiftEntityTask extends AbstractDoToEntityTask {
             // Look at the position behind the entity
             tooClose = originPos.isWithinRangeOf(targetPos, _stopDistance, 1d);
             shifting = originPos.isWithinRangeOf(targetPos, _shiftDistance, 1d);
-            LookHelper.smoothLook(mod, new Vec3d(targetPos.getX(), mod.getPlayer().getEyePos().getY(), targetPos.getZ()));
+            if (tooClose) {
+                LookHelper.smoothLook(mod, new Vec3d(entity.getEyePos().getX(), mod.getPlayer().getEyePos().getY() - 0.3, entity.getEyePos().getZ()));
+            } else {
+                LookHelper.smoothLook(mod, new Vec3d(targetPos.getX(), mod.getPlayer().getEyePos().getY() - 0.3, targetPos.getZ()));
+            }
         }
         // Debug.logMessage("_phase" + _phase);
         //Debug.logMessage("ydiff" + yDiff);
@@ -133,9 +137,15 @@ public class ShiftEntityTask extends AbstractDoToEntityTask {
             mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SNEAK, false);
         }
         if (tooClose) {
+            if ( mod.getPlayer().forwardSpeed > 0.05 ){
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, true);
+            } else {
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, false);
+            }
             mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SPRINT, false);
             mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, false);
         } else {
+            mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, false);
             mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SPRINT, true);
             mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, true);
         }

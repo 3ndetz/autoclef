@@ -1,6 +1,10 @@
 package adris.altoclef.trackers.threats;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
+import adris.altoclef.eventbus.EventBus;
+import adris.altoclef.eventbus.events.SneakEvent;
+import adris.altoclef.eventbus.events.multiplayer.TeleportEvent;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
 import net.minecraft.entity.Entity;
@@ -8,26 +12,33 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ThreatTable {
     public AltoClef _mod;
-    private class PlayerThreat {
+    public class PlayerThreat {
         public PlayerThreat(int new_id){
             this.id = new_id;
         }
         public int id;
+        public String name;
         public double combatTime = 10;
         public double damagedTime = 0.4;
         private final TimerReal lastAttackTimer = new TimerReal(damagedTime);
         private final TimerReal lastDamagedTimer = new TimerReal(damagedTime);
         private final TimerReal damagedTimer = new TimerReal(damagedTime);
         private final TimerReal combatEngagementTimer = new TimerReal(combatTime);
+        private TimerReal shouldAvoidTimer = new TimerReal(20);
+        private TimerReal shouldKillTimer = new TimerReal(50);
         private int lastAttackerEntityId = -1;
         private float lastDamageAmount = 0;
         public float cumulativeDamage = 0; // damage sum in last combat
         public float lastHealth = 20.0f;
         public Vec3d lastPos;
         public Vec3d lastRotationVec;
+        public boolean sneak = false;
+        public int sneakRate = 0;
+        private final TimerReal shiftTimer = new TimerReal(5);
 
         // Add map to track potential attackers and their attack timers
         private final Map<Integer, TimerReal> potentialAttackers = new HashMap<>();
@@ -53,22 +64,57 @@ public class ThreatTable {
 
     public ThreatTable(AltoClef mod) {
         this._mod = mod;
+        EventBus.subscribe(SneakEvent.class, evt -> onSneak(evt.entity, evt.sneak));
+    }
+    public void onSneak (Entity entity, boolean sneak) {
+        if (entity instanceof PlayerEntity player) {
+
+            PlayerThreat threat = playerThreats.get(player.getName().getString());
+            if (threat != null) {
+                if (sneak) {
+                    threat.shiftTimer.reset();
+                    threat.sneakRate += 1;
+                }
+                if (threat.sneakRate > 5) {
+                    threat.shouldAvoidTimer.reset();
+                }
+
+                //Debug.logMessage("[SNEAK debug]Sneak detected: " + player.getName().getString()
+                //        + ", sneak="+sneak +
+                //        ", sneak rate="+ threat.sneakRate
+                //        + ", shiftTimer " + threat.shiftTimer.getDuration()
+                //        + ", avoidTimer" + threat.shouldAvoidTimer.elapsed() );
+
+            }
+        }
+
+    }
+    public void clearWorldData(){
+        playerThreats.clear();
+        entityIdToName.clear();
     }
     public int get(String name){
         return playerThreats.getOrDefault(name, new PlayerThreat(-1)).id;
     }
-    public void registerPlayer(int entityId) {
-        // Update player health if available
+    public void registerPlayer(int entityId, boolean updateData) {
+        if (playerThreats.entrySet().stream().anyMatch(e -> e.getValue().id == entityId)){
+            // already exist
+            return;
+        }
         Entity entity = _mod.getWorld().getEntityById(entityId);
-        if (entity instanceof PlayerEntity) {
+        if (entity instanceof PlayerEntity player) {
             String playerName = entity.getName().getString();
             if (playerName != null) {
                 entityIdToName.put(entityId, playerName);
                 playerThreats.putIfAbsent(playerName, new PlayerThreat(entityId));
-                PlayerThreat threat = playerThreats.get(playerName);
-                threat.lastHealth = ((PlayerEntity) entity).getHealth();
+                if (updateData)
+                    updatePlayerData(playerName, player, false);
             }
         }
+    }
+
+    public void registerPlayer(int entityId) {
+        registerPlayer(entityId, false);
     }
 
     public void recordAttackAnimation(int attackerEntityId) {
@@ -81,25 +127,88 @@ public class ThreatTable {
             // Check if this attacker is looking at any other players
             for (Map.Entry<String, PlayerThreat> entry : playerThreats.entrySet()) {
                 if (!entry.getKey().equals(attackerName)) {
-                    Entity attacker = _mod.getWorld().getEntityById(attackerEntityId);
-                    Entity target = getEntityByPlayerName(entry.getKey());
-
-                    if (attacker instanceof PlayerEntity && target instanceof PlayerEntity) {
-                        double lookingProbability = LookHelper.getLookingProbability(
-                                (PlayerEntity)attacker,
-                                (PlayerEntity)target
-                        );
+                        double lookingProbability = LookHelper.getLookingProbability(threat.lastPos, entry.getValue().lastPos, threat.lastRotationVec
+                                //attacker.getEyePos(), target.getEyePos(), attacker.getRotationVec(0);
+                        );//LookHelper.getLookingProbability((PlayerEntity)entityA, (PlayerEntity)damaged);
 
                         // If attacker is likely looking at this player, record them as potential attacker
                         if (lookingProbability > 0.7) {
                             entry.getValue().addPotentialAttacker(attackerEntityId);
                         }
-                    }
+
+
                 }
             }
         }
     }
 
+    public double compareThreatProbablity(PlayerThreat a, PlayerThreat c){
+        if (a != null && a.lastPos != null && a.lastRotationVec != null && c != null && c.lastPos != null) {
+            double score = LookHelper.getLookingProbability(a.lastPos, c.lastPos, a.lastRotationVec);
+            double distance = a.lastPos.distanceTo(c.lastPos);
+            if (distance < 10) {
+                score =  (10-distance) / 10;
+            } else if (distance < 100) {
+                score += (100-distance) / 100;
+            } else {
+                score -= 0.5;
+            }
+            return score;
+        }
+        return 0;
+    }
+
+    public int compareThreatsProbablity(PlayerThreat a, PlayerThreat b, PlayerThreat c){
+        if (a != null && a.lastPos != null && a.lastRotationVec != null && b != null && b.lastPos != null && b.lastRotationVec != null && c != null && c.lastPos != null) {
+            double probA = compareThreatProbablity(a, c);
+            double probB = compareThreatProbablity(b, c);
+            return Double.compare(probB, probA);
+        }
+        return 0;
+    }
+
+    public ArrayList<PlayerThreat> getAllRecentAttackers(String damagedName, boolean sorted){
+
+        ArrayList<PlayerThreat> recentAttackers = new ArrayList<>(playerThreats.entrySet()
+                .stream()
+                .filter(a->!a.getValue().lastAttackTimer.elapsed() && !a.getKey().equals(damagedName))
+                .collect(Collectors.toMap(e->e.getKey(), e->e.getValue())).values().stream().toList());
+
+        if (!recentAttackers.isEmpty() && sorted) {
+            PlayerThreat threat = playerThreats.get(damagedName);
+            if (threat != null) {
+                // Sort attackers by looking probability
+                recentAttackers.sort((a, b) -> {
+                    //Entity entityA = _mod.getWorld().getEntityById(a);
+                    //Entity entityB = _mod.getWorld().getEntityById(b);
+                    //Entity damaged = _mod.getWorld().getEntityById(damagedEntityId);
+                    return compareThreatsProbablity(a, b, threat);
+                });
+
+            }
+
+            //ebug.logMessage("Most likely attacker for " + damagedName + " is " + entityIdToName.get(threat.lastAttackerEntityId));
+        }
+        return recentAttackers;
+    }
+    public PlayerThreat getLastAttacker(String damagedName, boolean writeNew){
+        ArrayList<PlayerThreat> recentAttackers = getAllRecentAttackers(damagedName);
+        PlayerThreat threat = playerThreats.get(damagedName);
+        if(!recentAttackers.isEmpty()){
+            PlayerThreat lastAttackerThreat = recentAttackers.get(0);
+            int attackerEntityId = lastAttackerThreat.id;
+            if(attackerEntityId != -1) {
+                if (writeNew) {
+                    threat.lastAttackerEntityId = attackerEntityId;
+                }
+                return lastAttackerThreat;
+            }
+        }
+        return null;
+    }
+    public ArrayList<PlayerThreat> getAllRecentAttackers(String damagedName){
+        return getAllRecentAttackers(damagedName, true);
+    }
     public void recordDamage(int damagedEntityId) {
         registerPlayer(damagedEntityId);
         String damagedName = entityIdToName.get(damagedEntityId);
@@ -113,7 +222,7 @@ public class ThreatTable {
         }
     }
 
-    public void recordDamage(int damagedEntityId, float amount) {
+    public int recordDamageConfirmed(int damagedEntityId, float amount) {
         String damagedName = entityIdToName.get(damagedEntityId);
         if (damagedName != null) {
             PlayerThreat threat = playerThreats.get(damagedName);
@@ -128,51 +237,88 @@ public class ThreatTable {
                 threat.cumulativeDamage = amount;
             }
 
-            List<Integer> recentAttackers = threat.getRecentAttackers();
-            if (!recentAttackers.isEmpty()) {
-                // Sort attackers by looking probability
-                recentAttackers.sort((a, b) -> {
-                    Entity entityA = _mod.getWorld().getEntityById(a);
-                    Entity entityB = _mod.getWorld().getEntityById(b);
-                    Entity damaged = _mod.getWorld().getEntityById(damagedEntityId);
-
-                    if (entityA instanceof PlayerEntity && entityB instanceof PlayerEntity && damaged instanceof PlayerEntity) {
-                        double probA = LookHelper.getLookingProbability((PlayerEntity)entityA, (PlayerEntity)damaged);
-                        double probB = LookHelper.getLookingProbability((PlayerEntity)entityB, (PlayerEntity)damaged);
-                        return Double.compare(probB, probA);
+            PlayerThreat attackerThreat = getLastAttacker(damagedName, true);
+            if(attackerThreat != null){
+                int attackerEntityId = attackerThreat.id;
+                if(attackerEntityId != -1) {
+                    if (attackerThreat.name != null && !attackerThreat.name.isBlank()) {
+                        pursue(attackerThreat.name);
                     }
-                    return 0;
-                });
-                int attackerEntityId = recentAttackers.get(0);
-                threat.lastAttackerEntityId = attackerEntityId;
-
-
-                //ebug.logMessage("Most likely attacker for " + damagedName + " is " + entityIdToName.get(threat.lastAttackerEntityId));
+                    return attackerEntityId;
+                }
             }
+        }
+        return -1;
+    }
 
-            // Update health
-            Entity damaged = _mod.getWorld().getEntityById(damagedEntityId);
-            if (damaged instanceof PlayerEntity) {
-                threat.lastHealth = ((PlayerEntity) damaged).getHealth();
+    public void updatePlayerData(String playerName, PlayerEntity entity, boolean register) {
+        if (register)
+            registerPlayer(entity.getId());
+        PlayerThreat threat = playerThreats.get(playerName);
+        if (threat != null){
+            int entityId = entity.getId();
+            if (threat.id != entityId) {
+                entityIdToName.put(entityId, playerName);
+                threat.id = entityId;
+                entityIdToName.remove(threat.id);
             }
+            if (threat.sneak != entity.isSneaking()){
+                EventBus.publish(new SneakEvent(entity, entity.isSneaking()));
+                threat.sneak = entity.isSneaking();
+            }
+            if (threat.sneakRate > 0 && threat.shiftTimer.elapsed()) {
+                threat.sneakRate = 0;
+            }
+            if (entity.getPos() != null) {
+                if (threat.lastPos == null) {
+
+                    // Publish entity spawn event
+                } else if (threat.lastPos != entity.getPos()) {
+                    if (threat.lastPos.distanceTo(entity.getPos()) > 10) {
+                        // Publish entity teleport event
+                        EventBus.publish(new TeleportEvent(entity, threat.lastPos, entity.getPos()));
+                    }
+                }
+                threat.lastPos = entity.getPos();
+            }
+            threat.lastHealth = entity.getHealth();
+            // health change event, handled in tracker directly
+            threat.lastRotationVec = entity.getRotationVec(0);
+            threat.name = entity.getName().getString();
         }
     }
     public void updatePlayerData(String playerName, PlayerEntity entity) {
-        registerPlayer(entity.getId());
-        PlayerThreat threat = playerThreats.get(playerName);
-        if (threat != null){
-            threat.id = entity.getId();
-            threat.lastHealth = entity.getHealth();
-            threat.lastPos = entity.getPos();
-            threat.lastRotationVec = entity.getRotationVec(0);
-        }
+        updatePlayerData(playerName, entity, true);
     }
 
     public boolean isInCombat(String playerName) {
         PlayerThreat threat = playerThreats.get(playerName);
         return threat != null && (!threat.combatEngagementTimer.elapsed() || !threat.lastAttackTimer.elapsed() || !threat.lastDamagedTimer.elapsed() );
     }
-
+    public boolean shouldAvoid(String playerName) {
+        PlayerThreat threat = playerThreats.get(playerName);
+        return threat != null && (!threat.shouldAvoidTimer.elapsed());
+    }
+    public boolean shouldAttack(String playerName) {
+        PlayerThreat threat = playerThreats.get(playerName);
+        return threat != null && (!threat.shouldKillTimer.elapsed());
+    }
+    public boolean avoid(String playerName) {
+        PlayerThreat threat = playerThreats.get(playerName);
+        if (threat != null) {
+            threat.shouldAvoidTimer.reset();
+            return true;
+        }
+        return false;
+    }
+    public boolean pursue(String playerName) {
+        PlayerThreat threat = playerThreats.get(playerName);
+        if (threat != null) {
+            threat.shouldKillTimer.reset();
+            return true;
+        }
+        return false;
+    }
     public String getLastAttacker(String playerName) {
         PlayerThreat threat = playerThreats.get(playerName);
         if (threat != null && !threat.lastDamagedTimer.elapsed()) {

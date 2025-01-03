@@ -193,6 +193,8 @@ public class Py4jEntryPoint {
             //if()
             messageDict.put("user",message.from);
             messageDict.put("msg",message.message);
+            messageDict.put("parse_type","parsed");
+            messageDict.put("message_type","chat");
             if(message.clan != null) messageDict.put("clan",message.clan);
             if(message.team != null) messageDict.put("team",message.team);
             if(message.starter_prefix != null) messageDict.put("pre",message.starter_prefix);
@@ -201,6 +203,22 @@ public class Py4jEntryPoint {
             if(message.server != null) messageDict.put("server",message.server);
             if(message.serverMode != null) messageDict.put("serverMode",message.serverMode);
             if(message.chat_type != null) messageDict.put("chat_type",message.chat_type);
+            _cb.onVerifedChat(messageDict);
+        }
+    }
+
+    public void onWeakChatMessage(String message){
+        if(IsCallbackServerStarted()) {
+            Map<String,String> messageDict = new HashMap<>();
+            //if()
+            messageDict.put("parse_type","unparsed");
+            messageDict.put("message_type","chat");
+            messageDict.put("msg",message);
+            _cb.onVerifedChat(messageDict);
+        }
+    }
+    public void onCustomMessage(Map<String,String> messageDict){
+        if(IsCallbackServerStarted()) {
             _cb.onVerifedChat(messageDict);
         }
     }

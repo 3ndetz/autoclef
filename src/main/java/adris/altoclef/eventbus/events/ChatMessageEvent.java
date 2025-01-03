@@ -11,7 +11,7 @@ import net.minecraft.text.Text;
 public class ChatMessageEvent {
     SignedMessage message;
     String message_raw;
-    boolean overlay = false;
+    public boolean overlay = false;
     GameProfile sender;
     MessageType.Parameters messageType;
 
