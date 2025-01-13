@@ -187,7 +187,6 @@ public class DamageTracker extends Tracker {
     }
 
     private void onDeath(String name, String killerName) {
-        Debug.logMessage("Death: " + killerName + " killed " + name + ".");
 
         if (_mod.getPlayer().getName().getString().equals(name)) {
             // Player death
@@ -197,7 +196,9 @@ public class DamageTracker extends Tracker {
             // Kill by player
             onClientKill(name);
         }
-
+        if (!(killerName.equals("undefined") || killerName.equals("неизвестный"))) {
+            Debug.logMessage("Death: " + killerName + " killed " + name + ".");
+        }
         // Clear damage timer after death
         _playerDamageTimers.remove(name);
     }

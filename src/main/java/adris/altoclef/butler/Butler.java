@@ -9,6 +9,7 @@ import adris.altoclef.eventbus.events.TaskFinishedEvent;
 import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasks.movement.GetToXZTask;
 import adris.altoclef.tasks.movement.LobbyMoveTask;
+import adris.altoclef.tasks.multiplayer.LobbyTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.util.helpers.MapItemHelper;
@@ -164,7 +165,8 @@ public class Butler {
                 _lobbyMovingTimer.reset();
                 //_mod.getCommandExecutor().execute("@goto -20 29"); // mustery world sw
                 //_mod.getCommandExecutor().execute("@goto -30 29"); // mustery murder
-                _mod.runUserTask(new GetCloseToBlockTask(new BlockPos(-30, 53, 30)));
+                //_mod.runUserTask(new GetCloseToBlockTask(new BlockPos(-30, 53, 30)));
+                _mod.runUserTask(new LobbyTask());
             } else if (msg.contains("Введите капчу с картинки в чат")) {
                 this.captchaActionsPerform();
             } else if (msg.contains("Войдите в игру - !!! /login [пароль]")) { // for public HIDE!

@@ -15,12 +15,14 @@ import adris.altoclef.tasks.container.StoreInAnyContainerTask;
 import adris.altoclef.tasks.entity.KillEntityTask;
 import adris.altoclef.tasks.entity.ShiftEntityTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
+import adris.altoclef.tasks.examples.ExampleStrategyTask;
 import adris.altoclef.tasks.examples.ExampleTask2;
 import adris.altoclef.tasks.misc.EquipArmorTask;
 import adris.altoclef.tasks.misc.PlaceBedAndSetSpawnTask;
 import adris.altoclef.tasks.misc.RavageDesertTemplesTask;
 import adris.altoclef.tasks.misc.RavageRuinedPortalsTask;
 import adris.altoclef.tasks.movement.*;
+import adris.altoclef.tasks.multiplayer.LobbyTask;
 import adris.altoclef.tasks.resources.CollectBlazeRodsTask;
 import adris.altoclef.tasks.resources.CollectFlintTask;
 import adris.altoclef.tasks.resources.CollectFoodTask;
@@ -441,6 +443,14 @@ public class Playground {
                 break;
             case "threats":
                 Debug.logMessage(mod.getDamageTracker().getThreatStatus());
+                break;
+            case "lobby":
+                Debug.logMessage("Run lobby task");
+                mod.runUserTask(new LobbyTask());
+                break;
+            case "strategy":
+                Debug.logMessage("Run strategy example task");
+                mod.runUserTask(new ExampleStrategyTask());
                 break;
             case "shift":
                 int shiftType = 0;

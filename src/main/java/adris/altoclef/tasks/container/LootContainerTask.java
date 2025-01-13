@@ -141,6 +141,6 @@ public class LootContainerTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Looting a container";
+        return "Лутаем сундучару";
     }
 }

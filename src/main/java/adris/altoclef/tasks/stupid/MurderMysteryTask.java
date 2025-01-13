@@ -29,6 +29,7 @@ import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
 
+import static adris.altoclef.util.helpers.ItemHelper.clickCustomItem;
 import static adris.altoclef.util.helpers.StringHelper.removeMCFormatCodes;
 
 public class MurderMysteryTask extends Task {
@@ -103,20 +104,7 @@ public class MurderMysteryTask extends Task {
         _killerName = null;
         _killed = false;
     }
-    public boolean clickCustomItem(AltoClef mod, String... joinItems) {
-        for (String joinItemName : joinItems) {
-            Slot newGameSlot = getCustomItemSlot(mod, joinItemName);
-            if (newGameSlot != null) {
-                setDebugState("Новая игра");
-                mod.getSlotHandler().forceEquipSlot(newGameSlot);
-                mod.getInputControls().tryPress(Input.CLICK_RIGHT);
-                // reset roles
-                return true;
-                //return new ClickSlotTask(newGameSlot, 1);
-            }
-        }
-        return false;
-    }
+
     @Override
     protected Task onTick(AltoClef mod) {
         if (mod.getPlayer() != null && !isValidPlayerMM(mod.getPlayer())) {
@@ -375,59 +363,7 @@ public class MurderMysteryTask extends Task {
     }
 
 
-    public Slot getCustomItemSlot(AltoClef mod, String checkItemName){
 
-        List<ItemStack> invertoryItems = mod.getItemStorage().getItemStacksPlayerInventory(true); //mod.getPlayer().getInventory().get;
-        if (AltoClef.inGame() && mod.getPlayer()!=null && invertoryItems!=null) {
-            for (ItemStack item : invertoryItems){
-                if(item.getItem()!=null){
-
-                    String itemName = item.getItem().getName().getString().toLowerCase();
-                    if(!itemName.equals("воздух")){
-                        if(item.contains(DataComponentTypes.CUSTOM_NAME)) {
-                            String itemCustomName = removeMCFormatCodes(item.getName().getString().toLowerCase());
-                            if (itemCustomName.equals(checkItemName)){
-                                return mod.getItemStorage().getSlotsWithItemPlayerInventory(true, item.getItem()).get(0);
-                            }
-                            //return itemName+" (с названием " + itemCustomName+")";
-                        }
-
-                        //Debug.logMessage("ITEM CUSTOM NAME = "+itemCustomName);
-                    }
-
-
-                }
-            }
-
-        }
-        return null;
-    }
-
-    public boolean hasCustomItem(AltoClef mod, String checkItemName){
-
-        List<ItemStack> invertoryItems = mod.getItemStorage().getItemStacksPlayerInventory(true); //mod.getPlayer().getInventory().get;
-        if (AltoClef.inGame() && mod.getPlayer()!=null && invertoryItems!=null) {
-            for (ItemStack item : invertoryItems){
-                if(item.getItem()!=null){
-
-                    String itemName = item.getItem().getName().getString().toLowerCase();
-                    if(!itemName.equals("воздух")){
-                        if(item.contains(DataComponentTypes.CUSTOM_NAME)) {
-                            String itemCustomName = item.getName().getString().toLowerCase();
-                            return itemCustomName.contains(checkItemName);
-                            //return itemName+" (с названием " + itemCustomName+")";
-                        }
-
-                        //Debug.logMessage("ITEM CUSTOM NAME = "+itemCustomName);
-                    }
-
-
-                }
-            }
-
-        }
-        return false;
-    }
 
 
 

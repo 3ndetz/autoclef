@@ -156,6 +156,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
                     charged = useTime > 40;
                     if(!charged) {
                         setDebugState("charging crossbow...");
+                        LookHelper.tryAvoidingInteractable(mod);
                         mod.getInputControls().hold(Input.CLICK_RIGHT);
                         return null;
                     } else {
@@ -183,6 +184,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
         //}
         if (isBow) {
             if (!shooting || _shotTimer.elapsed()) { //(LookHelper.isLookingAt(mod, lookTarget) && !shooting) {
+                LookHelper.tryAvoidingInteractable(mod);
                 mod.getInputControls().hold(Input.CLICK_RIGHT);
                 shooting = true;
                 _shotTimer.reset();
@@ -215,6 +217,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
                 shot = true;
             } else if (projectileReady){
                 Debug.logMessage("SHOT");
+                LookHelper.tryAvoidingInteractable(mod);
                 mod.getInputControls().tryPress(Input.CLICK_RIGHT);
                 shot = true;
             } else {

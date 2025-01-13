@@ -5,6 +5,8 @@ import adris.altoclef.Debug;
 import adris.altoclef.trackers.threats.ThreatTable;
 import adris.altoclef.trackers.threats.WeaponThreat;
 import adris.altoclef.util.WoodType;
+import adris.altoclef.util.slots.Slot;
+import baritone.api.utils.input.Input;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.LeavesBlock;
@@ -25,6 +27,8 @@ import net.minecraft.util.DyeColor;
 
 import javax.tools.Tool;
 import java.util.*;
+
+import static adris.altoclef.util.helpers.StringHelper.removeMCFormatCodes;
 
 /**
  * Helper functions and definitions for useful groupings of items
@@ -527,6 +531,79 @@ public class ItemHelper {
             return null;
         }
     }
+
+    public static boolean clickCustomItem(AltoClef mod, String... joinItems) {
+        Slot newGameSlot = getCustomItemSlot(mod, joinItems);
+        if (newGameSlot != null) {
+            mod.getSlotHandler().forceEquipSlot(newGameSlot, true);
+            LookHelper.tryAvoidingInteractable(mod);
+            mod.getInputControls().tryPress(Input.CLICK_RIGHT);
+            // reset roles
+            return true;
+            //return new ClickSlotTask(newGameSlot, 1);
+        }
+
+        return false;
+    }
+
+    public static Slot getCustomItemSlot(AltoClef mod, String... checkItemName){
+
+        //List<ItemStack> invertoryItems = mod.getItemStorage().getItemStacksPlayerInventory(true); //mod.getPlayer().getInventory().get;
+        //List<Slot> containerItems = mod.getItemStorage().getSlotsWithItemContainer();
+        Iterable<Slot> slots = Slot.getCurrentScreenSlots();
+        if (AltoClef.inGame() && mod.getPlayer() != null && slots != null) {
+            for (Slot slot : slots){
+                ItemStack item = StorageHelper.getItemStackInSlot(slot);
+                if(item != null && item.getItem() != null){
+
+                    String itemName = item.getItem().getName().getString().toLowerCase();
+                    if(!itemName.equals("воздух")){
+                        if(item.contains(DataComponentTypes.CUSTOM_NAME)) {
+                            String itemCustomName = removeMCFormatCodes(item.getName().getString().toLowerCase());
+                            //Debug.logMessage("itemCustomName " + itemCustomName);
+                            if (Arrays.stream(checkItemName).anyMatch(str -> str.toLowerCase().equals(itemCustomName) || str.toLowerCase().contains(itemCustomName))) {
+                                return slot;  // mod.getItemStorage().getSlotsWithItemPlayerInventory(true, item.getItem()).get(0);
+                            }
+                            //return itemName+" (с названием " + itemCustomName+")";
+                        }
+
+                        //Debug.logMessage("ITEM CUSTOM NAME = "+itemCustomName);
+                    }
+
+
+                }
+            }
+
+        }
+        return null;
+    }
+
+    public static boolean hasCustomItem(AltoClef mod, String checkItemName){
+
+        List<ItemStack> invertoryItems = mod.getItemStorage().getItemStacksPlayerInventory(true); //mod.getPlayer().getInventory().get;
+        if (AltoClef.inGame() && mod.getPlayer()!=null && invertoryItems!=null) {
+            for (ItemStack item : invertoryItems){
+                if(item.getItem()!=null){
+
+                    String itemName = item.getItem().getName().getString().toLowerCase();
+                    if(!itemName.equals("воздух")){
+                        if(item.contains(DataComponentTypes.CUSTOM_NAME)) {
+                            String itemCustomName = item.getName().getString().toLowerCase();
+                            return itemCustomName.contains(checkItemName);
+                            //return itemName+" (с названием " + itemCustomName+")";
+                        }
+
+                        //Debug.logMessage("ITEM CUSTOM NAME = "+itemCustomName);
+                    }
+
+
+                }
+            }
+
+        }
+        return false;
+    }
+
 
     public static class ColorfulItems {
         public DyeColor color;

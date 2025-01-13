@@ -1,7 +1,6 @@
 package adris.altoclef.util.helpers;
 
 import adris.altoclef.AltoClef;
-import adris.altoclef.Debug;
 import adris.altoclef.util.slots.Slot;
 import baritone.api.BaritoneAPI;
 import baritone.api.utils.IPlayerContext;
@@ -489,7 +488,7 @@ public abstract class LookHelper {
      * @param playerPos Player's eye position
      * @return The closest point on the entity's hitbox
      */
-    public static Vec3d getClosestPointOnEntityHitbox(Vec3d playerPos, Box boundingBox) {
+    public static Vec3d getClosestPointOnBoundingBox(Vec3d playerPos, Box boundingBox) {
         // Get entity's bounding box
 
 
@@ -504,7 +503,7 @@ public abstract class LookHelper {
     public static Vec3d getClosestPointOnEntityHitbox(AltoClef mod, Entity entity) {
         // Get entity's bounding box
         Box boundingBox = entity.getBoundingBox();
-        return getClosestPointOnEntityHitbox(mod.getPlayer().getEyePos(), boundingBox);
+        return getClosestPointOnBoundingBox(mod.getPlayer().getEyePos(), boundingBox);
     }
     public static boolean canHitEntity(AltoClef mod, Entity entity, float range){
         Vec3d playerEyePos = mod.getPlayer().getEyePos();
@@ -516,6 +515,19 @@ public abstract class LookHelper {
     }
     public static boolean canHitEntity(AltoClef mod, Entity entity){
         return canHitEntity(mod, entity, mod.getModSettings().getEntityReachRange());
+    }
+
+    public static boolean canHitBlock(AltoClef mod, BlockPos blockPos, float range){
+        Vec3d playerEyePos = mod.getPlayer().getEyePos();
+        Box blockBoundingBox = new Box(blockPos);
+        Vec3d closestPoint = getClosestPointOnBoundingBox(mod.getPlayer().getEyePos(), blockBoundingBox);
+        double distance = playerEyePos.distanceTo(closestPoint);
+        boolean inRange = ((distance*distance) < (range*range));
+        boolean cleanLOS = LookHelper.cleanLineOfSight(closestPoint, distance);
+        return cleanLOS && inRange;
+    }
+    public static boolean canHitBlock(AltoClef mod, BlockPos blockPos){
+        return canHitBlock(mod, blockPos, mod.getModSettings().getEntityReachRange());
     }
     /**
      * Gets optimal aim position for targeting an entity

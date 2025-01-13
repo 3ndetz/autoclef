@@ -422,6 +422,39 @@ public class BlockTracker extends Tracker {
         }
     }
 
+    // Checks whether it would be WRONG to say "at pos the block is block"
+    // Returns true if wrong, false if correct OR undetermined/unsure.
+    public boolean blockIsValid(BlockPos pos) {
+        synchronized (_scanMutex) {
+            // We can't reach it, don't even try.
+            if (currentCache().blockUnreachable(pos)) {
+                return false;
+            }
+        }
+        // It might be OK to remove this. Will have to test.
+        if (!_mod.getChunkTracker().isChunkLoaded(pos)) {
+            //Debug.logInternal("(failed chunkcheck: " + new ChunkPos(pos) + ")");
+            //Debug.logStack();
+            return true;
+        }
+        // I'm bored
+        ClientWorld zaWarudo = MinecraftClient.getInstance().world;
+        // No world, therefore we don't assume block is invalid.
+        if (zaWarudo == null) {
+            return true;
+        }
+        try {
+            if (zaWarudo.isAir(pos)) {
+                return true;
+            }
+            return false;
+        } catch (NullPointerException e) {
+            // Probably out of chunk. This means we can't judge its state.
+            return true;
+        }
+    }
+
+
     /**
      * @param pos BlockPos to check for
      * @return Whether that block is considered unreachable

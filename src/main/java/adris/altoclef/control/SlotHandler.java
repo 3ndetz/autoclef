@@ -100,13 +100,14 @@ public class SlotHandler {
         }
     }
 
-    public boolean forceEquipItem(Item toEquip) {
+    public boolean forceEquipItem(Item toEquip, boolean currentSlotToItem) {
 
         // Already equipped
         if (StorageHelper.getItemStackInSlot(PlayerSlot.getEquipSlot()).getItem() == toEquip) return true;
 
         // Always equip to the second slot. First + last is occupied by baritone.
-        _mod.getPlayer().getInventory().selectedSlot = 1;
+        if (!currentSlotToItem)
+            _mod.getPlayer().getInventory().selectedSlot = 1;
 
         // If our item is in our cursor, simply move it to the hotbar.
         boolean inCursor = StorageHelper.getItemStackInSlot(CursorSlot.SLOT).getItem() == toEquip;
@@ -116,14 +117,21 @@ public class SlotHandler {
             for (Slot ItemSlots : itemSlots) {
                 int hotbar = 1;
                 //_mod.getPlayer().getInventory().swapSlotWithHotbar();
-                clickSlotForce(Objects.requireNonNull(ItemSlots), inCursor ? 0 : hotbar, inCursor ? SlotActionType.PICKUP : SlotActionType.SWAP);
-                //registerSlotAction();
+                // todo add hotbar swap
+                if (currentSlotToItem && ItemSlots.getInventorySlot() < 9 && ItemSlots.getInventorySlot() > -1) {
+                    _mod.getPlayer().getInventory().selectedSlot = ItemSlots.getInventorySlot();
+                }else {
+                    clickSlotForce(Objects.requireNonNull(ItemSlots), inCursor ? 0 : hotbar, inCursor ? SlotActionType.PICKUP : SlotActionType.SWAP);
+                    //registerSlotAction();
+                }
             }
             return true;
         }
         return false;
     }
-
+    public boolean forceEquipItem(Item toEquip){
+        return forceEquipItem(toEquip, false);
+    }
     public boolean forceDeequipHitTool() {
         return forceDeequip(stack -> stack.getItem() instanceof ToolItem);
     }
@@ -203,6 +211,13 @@ public class SlotHandler {
     public void forceEquipSlot(Slot slot) {
         Slot target = PlayerSlot.getEquipSlot();
         clickSlotForce(slot, target.getInventorySlot(), SlotActionType.SWAP);
+    }
+    public void forceEquipSlot(Slot slot, boolean swapHotbar) {
+        if (swapHotbar && slot.getInventorySlot() < 9 && slot.getInventorySlot() > -1) {
+            _mod.getPlayer().getInventory().selectedSlot = slot.getInventorySlot();
+        }else {
+            forceEquipSlot(slot);
+        }
     }
 
     public boolean forceEquipItem(Item[] matches, boolean unInterruptable) {

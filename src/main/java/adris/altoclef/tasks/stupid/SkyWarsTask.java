@@ -2,17 +2,20 @@ package adris.altoclef.tasks.stupid;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
+import adris.altoclef.butler.ButlerConfig;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.Subscription;
 import adris.altoclef.eventbus.events.BlockPlaceEvent;
 import adris.altoclef.tasks.DoToClosestBlockTask;
 import adris.altoclef.tasks.container.LootContainerTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
+import adris.altoclef.tasks.entity.ShiftEntityTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
 import adris.altoclef.tasks.misc.EquipArmorTask;
 import adris.altoclef.tasks.movement.*;
 import adris.altoclef.tasks.resources.GetBuildingMaterialsTask;
 import adris.altoclef.tasksystem.Task;
+import adris.altoclef.trackers.storage.ContainerType;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.*;
 import adris.altoclef.util.time.TimerGame;
@@ -22,6 +25,9 @@ import baritone.api.utils.input.Input;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.SleepingChatScreen;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -35,6 +41,8 @@ import net.minecraft.util.math.Vec3i;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import static adris.altoclef.util.helpers.ItemHelper.clickCustomItem;
 
 /**
  * SlotHandler 39 timer override изменил
@@ -148,10 +156,12 @@ public class SkyWarsTask extends Task {
             mod.getBehaviour().avoidBlockBreaking(this::avoidBlockBreak);
             mod.getBehaviour().avoidBlockPlacing(this::avoidBlockBreak);
         }
+        // block place fix
+        // removal untested
+//        _blockPlaceSubscription = EventBus.subscribe(BlockPlaceEvent.class, evt -> {
+//                OnBlockPlace(mod, evt.blockPos, evt.blockState);
+//            });
 
-        _blockPlaceSubscription = EventBus.subscribe(BlockPlaceEvent.class, evt -> {
-            OnBlockPlace(mod, evt.blockPos, evt.blockState);
-        });
         //Debug.logMessage("мдааа");
         //AddNearestPlayerToFriends(mod,10);
 
@@ -247,6 +257,15 @@ public class SkyWarsTask extends Task {
     @Override
     protected Task onTick(AltoClef mod) {
         if (mod.getFoodChain().isTryingToEat()) return null;
+        if (ButlerConfig.getInstance().autoJoin) {
+            if (ItemHelper.clickCustomItem(mod, "новая игра", "начать игру", "быстро играть (пкм)")) {
+                setDebugState("Проиграли, начинаем новую игру");
+                return null;
+
+                //reset();
+            }
+        }
+
         boolean alert = false;
 
         if (_thePitTask) { // vime mc thepit
@@ -285,8 +304,15 @@ public class SkyWarsTask extends Task {
         //if(shouldForce(mod, _lootTask)) {// || (_lootTask instanceof LootContainerTask lootTask && lootTask.isInChest())){
         //    return _lootTask;
         //}
-        if(_lootTask != null && _lootTask instanceof LootContainerTask lootTask && lootTask.isInChest() && shouldForce(mod, _lootTask)){
-            return _lootTask;
+        if(_lootTask != null && _lootTask instanceof LootContainerTask lootTask) {
+            if (lootTask.isInChest() && shouldForce(mod, _lootTask)) {
+                return _lootTask;
+            } else {
+                if (ContainerType.screenHandlerMatches(ContainerType.CHEST)) {
+                    StorageHelper.closeScreen();
+                    _lootTask = null;
+                }
+            }
         }
         _armorTask = autoArmor(mod);
         if (_armorTask != null){
@@ -350,25 +376,28 @@ public class SkyWarsTask extends Task {
             PlayerEntity player = (PlayerEntity) target.get();
             alert = mod.getPlayer().distanceTo(player) <= 10;
             if (alert) {
-                return new KillPlayerTask(player.getName().getString());
+                setDebugState("Уничтожить срочно");
+                return SWKillPlayerTask(player);
             }
             // Use ender pearl or bow at range
             if (LookHelper.cleanLineOfSight(player.getPos(), 100)) {
                 if (mod.getItemStorage().getItemCount(Items.ENDER_PEARL) > 2) {
+                    setDebugState("Кинуть пёрл");
                     return new ThrowEnderPearlSimpleProjectileTask(player.getBlockPos().add(0, -1, 0));
                 }
             }
             if (canUseRangedWeapon(mod) && ShootArrowSimpleProjectileTask.canUseRanged(mod,player)) {
+                setDebugState("Наказать дальним оружием");
                 return new ShootArrowSimpleProjectileTask(player);
             }
 
         }
 
         //!_buildBlocksCollectTimer.elapsed() ||
-        if ( minCost == Float.POSITIVE_INFINITY || minCost>150 || (non_reachable && !_structureMaterialsTask.isActive())) {
+        if ( minCost == Float.POSITIVE_INFINITY || minCost > 150 || (non_reachable && !_structureMaterialsTask.isActive())) {
             // Get building blocks
             int buildCount = mod.getItemStorage().getItemCount(ItemHelper.blocksToItems(buildableBlocks));
-            if (buildCount < 32 && (buildCount == 0 || _structureMaterialsTask != null)) {
+            if (buildCount < 32 && (_structureMaterialsTask != null)) {
                 setDebugState("Добыча ресурсов...");
 
                 //_structureMaterialsTask = new MineAndCollectTask(toItemTargets(ItemHelper.blocksToItems(buildableBlocks)), buildableBlocks, MiningRequirement.HAND);
@@ -380,17 +409,20 @@ public class SkyWarsTask extends Task {
         }
         _buildBlocksCollectTimer.reset();
         if(minCost != Float.POSITIVE_INFINITY) {
-            if (minCost == costTarget) {
-                return new KillPlayerTask(target.get().getName().getString());
+            if (minCost == costTarget && target.isPresent() && target.get() instanceof PlayerEntity player) {
+                setDebugState("Уничтожить");
+                return SWKillPlayerTask(player);
+                //return new KillPlayerTask(target.get().getName().getString());
             } else if (minCost == costDrop) {
                 return new PickupDroppedItemTask(toItemTargets(lootableItems(mod).toArray(new Item[0])), true);
             } else if (minCost == costContainer) {
                 setDebugState("Поиск ресурсов -> контейнеры: дорога");
                 _lastLootPos = closestCont.get();
                 //if(!shouldForce(mod, _lootTask)) {
-                boolean startLoot = closestCont.get().isWithinDistance(mod.getPlayer().getPos(), 3);
+                ;
+                boolean startLoot = LookHelper.canHitBlock(mod, closestCont.get());
                 if (!startLoot) {
-                    _lootTask = new GetToBlockTask(closestCont.get().up());
+                    _lootTask = new GetCloseToBlockTask(closestCont.get().up());
                 } else {
                     _lootTask = new LootContainerTask(closestCont.get(), lootableItems(mod));
                 }
@@ -409,6 +441,13 @@ public class SkyWarsTask extends Task {
         // Exploration
         //return _scanTask;
         return null;
+    }
+    public Task SWKillPlayerTask(PlayerEntity player){
+        if(player.isInvulnerable() || player.isInCreativeMode() || player.isSneaking()){
+            return new ShiftEntityTask(player, ShiftEntityTask.ShiftType.Forward);
+        } else {
+            return new KillPlayerTask(player.getName().getString());
+        }
     }
     private double getCurrentCalculatedHeuristic(AltoClef mod) {
         double result = Double.NEGATIVE_INFINITY;

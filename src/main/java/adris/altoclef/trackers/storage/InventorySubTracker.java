@@ -99,6 +99,23 @@ public class InventorySubTracker extends Tracker {
         }
         return result;
     }
+    /*
+    public List<Slot> getSlotsWithItems(boolean playerInventory, boolean containerInventory, String... itemsCustomNames) {
+        ensureUpdated();
+        List<Slot> result = new ArrayList<>();
+        ItemStack cursorStack = StorageHelper.getItemStackInCursorSlot();
+        for (String itemName : itemsCustomNames) {
+            if (playerInventory && cursorStack.getItem().equals(item))
+                result.add(CursorSlot.SLOT);
+            if (playerInventory)
+                result.addAll(_itemToSlotPlayer.getOrDefault(item, Collections.emptyList()));
+            if (containerInventory)
+                result.addAll(_itemToSlotContainer.getOrDefault(item, Collections.emptyList()));
+        }
+        return result;
+    }
+    */
+
 
     public List<ItemStack> getInventoryStacks(boolean includeCursor) {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
@@ -115,6 +132,7 @@ public class InventorySubTracker extends Tracker {
         result.addAll(inv.offHand);
         return result;
     }
+
 
     private List<Slot> getSlotsThatCanFit(HashMap<Item, List<Slot>> list, ItemStack item, boolean acceptPartial) {
         List<Slot> result = new ArrayList<>();

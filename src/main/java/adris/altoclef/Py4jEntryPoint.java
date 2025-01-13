@@ -233,12 +233,34 @@ public class Py4jEntryPoint {
     public void RunInnerCommand(String command){
         AltoClef.getCommandExecutor().execute(command); //@stop
     }
+
     public void CaptchaSolvedSend(String msg, double accuracy){
         if(AltoClef.inGame()) {
             Debug.logMessage("GOT CAPTCHA SOLVING! >"+msg+"< acc="+accuracy);
             _mod.getMessageSender().enqueueChat(msg, MessagePriority.ASAP);
         }
         //Object myPythonClass =  _mod.getGateway().getPythonServerEntryPoint(new Class[]{MyPythonClass.class});
+    }
+
+    public boolean attackPlayer(String playerName){
+        if(AltoClef.inGame()) {
+            return _mod.getDamageTracker().getThreatTable().pursue(playerName);
+        }
+        return false;
+    }
+
+    public boolean isAttacking(String playerName){
+        if(AltoClef.inGame()) {
+            return _mod.getDamageTracker().getThreatTable().shouldAttack(playerName);
+        }
+        return false;
+    }
+
+    public boolean isAvoiding(String playerName){
+        if(AltoClef.inGame()) {
+            return _mod.getDamageTracker().getThreatTable().shouldAvoid(playerName);
+        }
+        return false;
     }
 
     public void ExecuteCommand(String cmd){
@@ -375,6 +397,13 @@ public class Py4jEntryPoint {
             }
         }
         return tasks_list;
+    }
+    public String getThreatStatus() {
+        String threatStatus = _mod.getDamageTracker().getThreatStatus();
+        if (threatStatus != null) {
+            return threatStatus;
+        }
+        return "";
     }
 
     public Map<String, Map<String, String>> getPlayersInfo(){
