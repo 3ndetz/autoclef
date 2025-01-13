@@ -10,10 +10,8 @@ accessible   class   net/minecraft/client/world/ClientChunkManager$ClientChunkMa
 
 accessible   field   net/minecraft/client/network/AbstractClientPlayerEntity playerListEntry Lnet/minecraft/client/network/PlayerListEntry;
 
-accessible   method  net/minecraft/client/render/entity/EntityRenderDispatcher render (Lnet/minecraft/entity/Entity;DDDFLnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;ILnet/minecraft/client/render/entity/EntityRenderer;)V
-
-accessible   class   net/minecraft/client/texture/MapTextureManager$MapTexture
-accessible   field   net/minecraft/client/texture/MapTextureManager$MapTexture texture Lnet/minecraft/client/texture/NativeImageBackedTexture;
+accessible   class   net/minecraft/client/render/MapRenderer$MapTexture
+accessible   field   net/minecraft/client/render/MapRenderer$MapTexture texture Lnet/minecraft/client/texture/NativeImageBackedTexture;
 
 accessible   class   net/minecraft/client/gui/screen/ingame/BeaconScreen$EffectButtonWidget
 
