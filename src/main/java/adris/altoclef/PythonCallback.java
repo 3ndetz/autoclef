@@ -12,5 +12,6 @@ public interface PythonCallback {
     public void onKill(String s);
     public void onAutoclefEvent(String s);
     public void onDamage(float s);
+    public void onDamageConfirmed(String damaged, String attacker, float amount);
     public void onCaptchaSolveRequest(byte[] image_bytes);
 }

@@ -124,8 +124,13 @@ public class DamageTracker extends Tracker {
         return threatTable.toString();
     }
     public void onDamage(String name, float amount){
+        boolean self_damage;
         if(name.equals(_mod.getPlayer().getName().getString())){
             _mod.getInfoSender().onDamage(amount);
+            self_damage=true;
+        }
+        else{
+            self_damage=false;
         }
         if(amount>1&&name.equals(_lastAttackingPlayerName) && !_attackCheckTimer.elapsed()){
             Debug.logMessage("Урон по "+_lastAttackingPlayerName+" прошел!");
@@ -138,6 +143,7 @@ public class DamageTracker extends Tracker {
         String att_name = threatTable.getLastAttacker(name);
 
         if (att_name != null) {
+            _mod.getInfoSender().onDamageConfirmed(name, att_name, amount);
             Debug.logMessage("Получен урон игроком "+name+ " от "+att_name + ": " + amount);
         }
     }

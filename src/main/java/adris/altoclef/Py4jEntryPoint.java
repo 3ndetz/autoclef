@@ -232,7 +232,9 @@ public class Py4jEntryPoint {
         }
     }
     public void RunInnerCommand(String command){
-        AltoClef.getCommandExecutor().execute(command); //@stop
+        if(AltoClef.inGame()) {
+            AltoClef.getCommandExecutor().execute(command); //@stop
+        }
     }
 
     public void CaptchaSolvedSend(String msg, double accuracy){
@@ -325,6 +327,13 @@ public class Py4jEntryPoint {
             _cb.onDamage(amount);
         }
     }
+    public void onDamageConfirmed(String damaged, String attacker, float amount){
+        if (IsCallbackServerStarted()) {
+            _cb.onDamageConfirmed(damaged, attacker, amount);
+        }
+    }
+
+
     public Vec3d Nuller(){
         return null;
     }
