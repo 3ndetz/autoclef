@@ -159,7 +159,7 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
             return _wanderTask;
         }
 
-        setDebugState("Движение к цели-сущности");//"Going to entity"
+        setDebugState("Подтверждено движение");//"Going to entity"
         return null;
     }
 
@@ -178,6 +178,6 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
 
     @Override
     protected String toDebugString() {
-        return "Дистанция обнаружения сущности " + _entity.getType().getTranslationKey(); //"Approach entity "
+        return "Маршрут до " + _entity.getType().getTranslationKey(); //"Approach entity "
     }
 }

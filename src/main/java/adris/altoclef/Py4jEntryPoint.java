@@ -2,6 +2,7 @@ package adris.altoclef;
 
 import adris.altoclef.butler.WhisperChecker;
 import adris.altoclef.tasksystem.Task;
+import adris.altoclef.trackers.threats.PlayerThreat;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.LookHelper;
@@ -248,6 +249,12 @@ public class Py4jEntryPoint {
         }
         return false;
     }
+    public boolean avoidPlayer(String playerName){
+        if(AltoClef.inGame()) {
+            return _mod.getDamageTracker().getThreatTable().avoid(playerName);
+        }
+        return false;
+    }
 
     public boolean isAttacking(String playerName){
         if(AltoClef.inGame()) {
@@ -300,6 +307,11 @@ public class Py4jEntryPoint {
     public void onKill(String killed){
         if(IsCallbackServerStarted()) {
             _cb.onKill(killed);
+        }
+    }
+    public void onAutoclefEvent(String description){
+        if(IsCallbackServerStarted()) {
+            _cb.onAutoclefEvent(description);
         }
     }
     public void onCaptchaSolveRequest(byte[] image_bytes){
@@ -404,6 +416,72 @@ public class Py4jEntryPoint {
             return threatStatus;
         }
         return "";
+    }
+
+
+    public int compareThreatsByDistance(PlayerThreat a, PlayerThreat b, PlayerThreat c){
+        if (a != null && a.lastPos != null && a.lastRotationVec != null && b != null && b.lastPos != null && b.lastRotationVec != null && c != null && c.lastPos != null) {
+            double probA = c.lastPos.distanceTo(a.lastPos);
+            double probB = c.lastPos.distanceTo(b.lastPos);
+            return -Double.compare(probB, probA);
+        }
+        return 0;
+    }
+
+    public List<String> nearestPlayersInfo(int limit){
+        PlayerEntity self = _mod.getPlayer();
+        List<String> playersStrings = new ArrayList<>();
+        ArrayList<PlayerThreat> nearsetPlayerThreats = new ArrayList<>();
+        if (self != null && self.getName() != null) {
+            Vec3d selfPos = self.getPos();
+            if (selfPos != null) {
+                List<AbstractClientPlayerEntity> playerList = _mod.getDamageTracker().getPlayerList();
+                for (AbstractClientPlayerEntity player : playerList) {
+                    if (player != null && player.getName() != null) {
+                        PlayerThreat playerThreat = _mod.getDamageTracker().getThreatTable().getPlayerThreat(player.getName().getString());
+                        if (playerThreat != null) {
+                            nearsetPlayerThreats.add(playerThreat);
+                        }
+                    }
+                }
+                PlayerThreat selfThreat = _mod.getDamageTracker().getThreatTable().getPlayerThreat(self.getName().getString());
+                if (selfThreat != null) {
+                    // Sort attackers by looking probability
+                    nearsetPlayerThreats.sort((a, b) -> {
+                        //Entity entityA = _mod.getWorld().getEntityById(a);
+                        //Entity entityB = _mod.getWorld().getEntityById(b);
+                        //Entity damaged = _mod.getWorld().getEntityById(damagedEntityId);
+                        return compareThreatsByDistance(a, b, selfThreat);
+                    });
+                }
+            }
+        }
+        int count = 0;
+        for(PlayerThreat threat : nearsetPlayerThreats){
+            if(limit > 0){
+                count += 1;
+                playersStrings.add(
+                        // array order id
+                        _mod.getDamageTracker()
+                                .getThreatTable()
+                                .playerThreatInfo(threat, count));
+                limit--;
+            }else{
+                break;
+            }
+        }
+        return playersStrings;
+    }
+    public String nearestPlayersInfo(int limit, boolean _string){
+        List<String> nearestPlys = nearestPlayersInfo(limit);
+        if (!nearestPlys.isEmpty()) {
+            return "Nearest players info:\n\n"
+                    + String.join("\n", nearestPlayersInfo(limit)) +
+                    "\n\n---";
+        } else {
+            return "";
+        }
+
     }
 
     public Map<String, Map<String, String>> getPlayersInfo(){

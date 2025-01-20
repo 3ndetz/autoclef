@@ -21,6 +21,7 @@ public class ButlerConfig {
     public boolean autoStuckFix = false;
     public boolean debugChatParseResult = false;
     public boolean autoJoin = true;
+    public String multiplayer_password = "CHANGE_THIS_PASSWORD";
     /**
      * Servers have different messaging plugins that change the way messages are displayed.
      * Rather than attempt to implement all of them and introduce a big security risk,

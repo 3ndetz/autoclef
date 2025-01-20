@@ -7,6 +7,7 @@ import adris.altoclef.commandsystem.Arg;
 import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.commandsystem.Command;
 import adris.altoclef.commandsystem.CommandException;
+import adris.altoclef.util.helpers.ConfigHelper;
 
 public class SetSettingsCommand extends Command {
     public SetSettingsCommand() throws CommandException {
@@ -23,6 +24,14 @@ public class SetSettingsCommand extends Command {
             case "":
                 // None specified
                 Debug.logWarning("Please specify a SETTING");
+                break;
+            case "pass":
+                //String old_value_str = ButlerConfig.getInstance().multiplayer_password;
+                ButlerConfig.getInstance().multiplayer_password = new_value;
+                ConfigHelper.saveConfig("configs/butler.json", ButlerConfig.getInstance());
+                //mod.log("Set setting "+setting_name+" from "+old_value+" to "+new_value+"!");
+                ConfigHelper.reloadAllConfigs();
+                mod.log("Pass updated.");
                 break;
             case "autojoin":
                 old_value = ButlerConfig.getInstance().autoJoin;

@@ -4,11 +4,13 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.SneakEvent;
 import adris.altoclef.eventbus.events.multiplayer.TeleportEvent;
+import adris.altoclef.util.helpers.EntityHelper;
 import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
@@ -55,6 +57,116 @@ public class ThreatTable {
     }
     public int get(String name){
         return playerThreats.getOrDefault(name, new PlayerThreat(-1)).id;
+    }
+
+    public PlayerThreat getPlayerThreat(String name){
+        return playerThreats.getOrDefault(name, null);
+    }
+
+    public String playerThreatInfo(PlayerThreat threat, int id){
+        StringBuilder sb = new StringBuilder();
+        playerThreatInfo(threat, sb, id);
+        return sb.toString();
+    }
+    public void playerThreatInfo(PlayerThreat threat, StringBuilder sb){
+        playerThreatInfo(threat, sb, -1);
+    }
+    public void playerThreatInfo(PlayerThreat threat, StringBuilder sb, int id){
+        if (threat != null) {
+            String playerName = threat.name;
+            // Player header
+            sb.append(playerName);
+            if(id != -1) {
+                sb.append(": closest player #").append(id);
+            } else {
+                sb.append(": nearby player");
+            }
+            boolean is_self;
+            if (_mod.getPlayer() != null
+                    && _mod.getPlayer().getName() != null
+                    && playerName.equals(_mod.getPlayer().getName().getString()))
+            {
+                is_self = true;
+                sb.append("(IT IS YOU!)");
+            } else {
+                is_self = false;
+            }
+
+            // Health and combat status
+            sb.append("\n│ Health: ").append(String.format("%.0f/20", threat.lastHealth))
+                    .append(isInCombat(playerName) ? " 🗡️ IN COMBAT" : " ⚔ PEACEFUL")
+                    .append("\n");
+            if (!is_self) {
+                if (shouldAvoid(playerName)) {
+                    sb.append("│ We is avoiding him: 🚫 IS AVOIDING\n");
+                }
+                if (shouldAttack(playerName)) {
+                    sb.append("│ We will attack him if present: WILL KILL IF NEAR\n");
+                }
+            }
+
+
+            if(_mod.getPlayer() != null && _mod.getPlayer().getPos() != null && threat.lastPos != null)
+                sb.append("│ Distance: ")
+                        .append(String.format("%.0f blocks", threat.lastPos.distanceTo(_mod.getPlayer().getPos())))
+                        .append("\n");
+            // Damage information
+            //sb.append("│ Last Damage: ").append(String.format("%.1f", threat.lastDamageAmount))
+            //        .append(" (Total in combat: ").append(String.format("%.1f", threat.cumulativeDamage))
+            //        .append(")\n");
+
+            // Timers status
+            //sb.append("│ Timers:\n");
+            if(!threat.lastAttackTimer.elapsed())
+                sb.append("│ Last Attack ago: ").append(formatTimer(threat.lastAttackTimer)).append("s\n");
+            if(!threat.lastDamagedTimer.elapsed())
+                sb.append("│ Last Damaged ago: ").append(formatTimer(threat.lastDamagedTimer)).append("s\n");
+            if(!threat.combatEngagementTimer.elapsed())
+                sb.append("│ InCombat ago: ").append(formatTimer(threat.combatEngagementTimer)).append("s\n");
+            if(!threat.weaponThreat.equals(WeaponThreat.Harmless)) {
+                sb.append("│ HandWeapon class: ").append(threat.weaponThreat.toString()).append("\n");
+                if(threat.id != -1) {
+                    Entity entity = _mod.getWorld().getEntityById(threat.id);
+                    if (entity instanceof PlayerEntity player) {
+                        Item weapon = EntityHelper.getWeaponInHand(player);
+                        if (weapon != null && weapon.getName() != null) {
+                            sb.append("│ HandWeapon item: ").append(weapon.getName().getString()).append("\n");
+                        }
+                    }
+                }
+                //sb.append("│• Weapon item = ").append(threat).append("s\n");
+            }
+
+            // Recent attackers
+            List<Integer> recentAttackers = threat.getRecentAttackers();
+            if (!recentAttackers.isEmpty()) {
+                sb.append("│ Was recently attacked by players: ");
+                //for (Integer attackerId : recentAttackers) {
+                //    String attackerName = entityIdToName.get(attackerId);
+                //    if (attackerName != null) {
+                //        sb.append(attackerName).append(" ");
+                //    }
+                //}
+                // inline version of this upper
+                //sb.append(recentAttackers.stream().map(entityIdToName::get).collect(Collectors.joining(" ")));
+                //   //sb.append(recentAttackers.stream().map(entityIdToName::get).filter(Objects::nonNull).collect(Collectors.joining(" ")));
+                // with filtered nulls and used getOrDefault
+                //sb.append(recentAttackers.stream().map(e -> entityIdToName.getOrDefault(e, "null")).collect(Collectors.joining(" ")));
+                // filtered version of this with filtered nulls
+                sb.append(recentAttackers.stream().map(entityIdToName::get).filter(Objects::nonNull).collect(Collectors.joining(", ")));
+                sb.append("\n");
+            }
+            // Last attacker
+            if (threat.lastAttackerEntityId != -1) {
+                String lastAttackerName = entityIdToName.get(threat.lastAttackerEntityId);
+                if (lastAttackerName != null) {
+                    sb.append("│ Last attacked by player '").append(lastAttackerName).append("'\n");
+                            //.append(" (ID: ").append(threat.lastAttackerEntityId).append(")\n");
+                }
+            }
+            //closing
+            sb.append("└─").append("─".repeat(1)).append("─┘\n");
+        }
     }
     public void registerPlayer(int entityId, boolean updateData) {
         if (playerThreats.entrySet().stream().anyMatch(e -> e.getValue().id == entityId)){
@@ -210,9 +322,13 @@ public class ThreatTable {
             if(attackerThreat != null){
                 int attackerEntityId = attackerThreat.id;
                 if(attackerEntityId != -1) {
+                    //TODO
+                    //WARNING
+                    // WE WILL ATTACK EVERY PLAYER THAT ATTACKS SOMEONE OR WE
                     if (attackerThreat.name != null && !attackerThreat.name.isBlank()) {
                         pursue(attackerThreat.name);
                     }
+                    threat.combatEngagementTimer.reset();
                     threat.addDamageRecord(attackerEntityId, amount);
                     return attackerEntityId;
                 }
@@ -318,11 +434,23 @@ public class ThreatTable {
         return threat != null ? threat.lastHealth : 20.0f;
     }
 
+    public String getRelevantThreats(){
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, PlayerThreat> entry : playerThreats.entrySet()) {
+            String playerName = entry.getKey();
+            PlayerThreat threat = entry.getValue();
+            if (!threat.combatEngagementTimer.elapsed() || !threat.lastAttackTimer.elapsed() || !threat.lastDamagedTimer.elapsed()) {
+                sb.append(playerName).append(" ");
+            }
+        }
+        return sb.toString();
+    }
+
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
         // Table header
-        sb.append("=== Threat Table Status ===\n");
+        sb.append("=== Player Threat Table Status ===\n");
 
         // No players registered
         if (playerThreats.isEmpty()) {
@@ -332,58 +460,7 @@ public class ThreatTable {
 
         // Format each player's threat status
         for (Map.Entry<String, PlayerThreat> entry : playerThreats.entrySet()) {
-            String playerName = entry.getKey();
-            PlayerThreat threat = entry.getValue();
-
-            // Player header
-            sb.append("\n┌─ Player: ").append(playerName).append(" ─");
-            // Fill with dashes to make header uniform length
-            for (int i = 0; i < Math.max(0, 50 - playerName.length()); i++) sb.append("─");
-            sb.append("┐\n");
-
-            // Health and combat status
-            sb.append("│ Health: ").append(String.format("%.1f/20.0", threat.lastHealth))
-                    .append(isInCombat(playerName) ? " 🗡️ IN COMBAT" : " ⚔ PEACEFUL")
-                    .append("\n");
-
-            // Damage information
-            sb.append("│ Last Damage: ").append(String.format("%.1f", threat.lastDamageAmount))
-                    .append(" (Total in combat: ").append(String.format("%.1f", threat.cumulativeDamage))
-                    .append(")\n");
-
-            // Timers status
-            sb.append("│ Timers:\n");
-            sb.append("│   • Last Attack: ").append(formatTimer(threat.lastAttackTimer)).append("\n");
-            sb.append("│   • Last Damaged: ").append(formatTimer(threat.lastDamagedTimer)).append("\n");
-            sb.append("│   • Damaged: ").append(formatTimer(threat.damagedTimer)).append("\n");
-            sb.append("│   • Combat: ").append(formatTimer(threat.combatEngagementTimer)).append("\n");
-
-            // Recent attackers
-            List<Integer> recentAttackers = threat.getRecentAttackers();
-            if (!recentAttackers.isEmpty()) {
-                sb.append("│ Recent Attackers:\n");
-                for (Integer attackerId : recentAttackers) {
-                    String attackerName = entityIdToName.get(attackerId);
-                    if (attackerName != null) {
-                        sb.append("│   • ").append(attackerName)
-                                .append(" (ID: ").append(attackerId).append(")\n");
-                    }
-                }
-            }
-
-            // Last attacker
-            if (threat.lastAttackerEntityId != -1) {
-                String lastAttackerName = entityIdToName.get(threat.lastAttackerEntityId);
-                if (lastAttackerName != null) {
-                    sb.append("│ Last Attacker: ").append(lastAttackerName)
-                            .append(" (ID: ").append(threat.lastAttackerEntityId).append(")\n");
-                }
-            }
-
-            // Bottom border
-            sb.append("└");
-            for (int i = 0; i < 60; i++) sb.append("─");
-            sb.append("┘\n");
+            playerThreatInfo(entry.getValue(), sb);
         }
 
         return sb.toString();

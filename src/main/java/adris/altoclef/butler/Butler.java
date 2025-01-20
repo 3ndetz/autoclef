@@ -169,8 +169,15 @@ public class Butler {
                 _mod.runUserTask(new LobbyTask());
             } else if (msg.contains("Введите капчу с картинки в чат")) {
                 this.captchaActionsPerform();
-            } else if (msg.contains("Войдите в игру - !!! /login [пароль]")) { // for public HIDE!
-                _mod.getMessageSender().enqueueChat("/login PASSWORD", MessagePriority.TIMELY);
+            } else if (msg.contains("/login") ||
+                    (msg.contains("/l") && (msg.contains("пароль") || msg.contains("pass") ))
+            ) { // for public HIDE!
+                _mod.getMessageSender().enqueueChat("/login " +
+                        ButlerConfig.getInstance().multiplayer_password, MessagePriority.TIMELY);
+            } else if (msg.contains("/reg")) { // for public HIDE!
+                _mod.getMessageSender().enqueueChat("/register " +
+                        ButlerConfig.getInstance().multiplayer_password, MessagePriority.TIMELY);
+
             } else if (msg.contains("[SkyWars] Добро пожаловать!") || msg.contains("[SkyWars] Вы покинули игру")) {
                 Debug.logMessage("Мы в хабе!");
                 _mod.getCommandExecutor().execute("@stop");

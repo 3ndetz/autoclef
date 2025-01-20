@@ -23,6 +23,7 @@ public abstract class Task {
         parentChain.addTaskToChain(this);
         if (_first) {
             Debug.logInternal("Task START: " + this);
+            mod.getInfoSender().onAutoclefEvent("Task START: " + this.toString());
             _active = true;
             onStart(mod);
             _first = false;
@@ -78,6 +79,7 @@ public abstract class Task {
     public void stop(AltoClef mod, Task interruptTask) {
         if (!_active) return;
         Debug.logInternal("Task STOP: " + this + ", interrupted by " + interruptTask);
+        mod.getInfoSender().onAutoclefEvent("Task STOP: " + this + ", interrupted by " + interruptTask);
         if (!_first) {
             onStop(mod, interruptTask);
         }

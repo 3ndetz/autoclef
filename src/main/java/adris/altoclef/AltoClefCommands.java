@@ -1,6 +1,8 @@
 package adris.altoclef;
 
 import adris.altoclef.commands.*;
+import adris.altoclef.commands.multiplayer.AvoidCommand;
+import adris.altoclef.commands.multiplayer.PursueCommand;
 import adris.altoclef.commandsystem.CommandException;
 
 /**
@@ -11,6 +13,8 @@ public class AltoClefCommands {
     public AltoClefCommands() throws CommandException {
         // List commands here
         AltoClef.getCommandExecutor().registerNewCommand(
+                new PursueCommand(),
+                new AvoidCommand(),
                 new HelpCommand(),
                 new GetCommand(),
                 new FollowCommand(),

@@ -853,9 +853,11 @@ public abstract class LookHelper {
         //return dot > 0.95D;
     }
     public static double getLookingProbability(Vec3d eyeFrom, Vec3d eyeTo, Vec3d RotationFrom){
+        if(eyeFrom == null || eyeTo == null || RotationFrom == null){
+            return 0d;
+        }
         Vec3d toEntity = eyeTo.subtract(eyeFrom);
-        double dot = toEntity.normalize().dotProduct(RotationFrom);
-        return dot; //0.8 60 град, 0.9 30 град 0.95 15 град (точный взгляд
+        return toEntity.normalize().dotProduct(RotationFrom); //0.8 60 град, 0.9 30 град 0.95 15 град (точный взгляд
     }
 
     static class WindMouseState {

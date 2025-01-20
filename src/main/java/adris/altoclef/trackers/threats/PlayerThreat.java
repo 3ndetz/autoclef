@@ -32,6 +32,15 @@ public class PlayerThreat {
     public boolean sneak = false;
     public int sneakRate = 0;
     public final TimerReal shiftTimer = new TimerReal(3);
+    public String toString(){
+        return "Player{" +
+                "Entityid=" + id +
+                ", nick='" + name + '\'' +
+                ", health=" + lastHealth +
+                ", pos=" + lastPos +
+                ", hasWeapon=" + weaponThreat.toString() +
+                '}';
+    }
 
     // Add map to track potential attackers and their attack timers
     public final Map<Integer, TimerReal> potentialAttackers = new HashMap<>();
@@ -58,4 +67,14 @@ public class PlayerThreat {
         }
         return recent;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof PlayerThreat threat) {
+            return threat.id == this.id && this.name.equals(threat.name);
+        }
+        return super.equals(obj);
+    }
+
+
 }

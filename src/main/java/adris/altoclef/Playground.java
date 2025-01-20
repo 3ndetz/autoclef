@@ -471,10 +471,19 @@ public class Playground {
                     Debug.logWarning("No targets found.");
                 }
                 break;
+            case "nearestinfo":
+                Debug.logMessage(mod.getInfoSender().nearestPlayersInfo(5, true));
+                break;
+            case "chat":
+                mod.getMessageSender().sendChatInstant(argParser.getArgUnits()[1]);
+                break;
+            case "cmd":
+                mod.getMessageSender().sendCmdInstant(argParser.getArgUnits()[1]);
+                break;
             case "bow":
                 List<PlayerEntity> players = mod.getEntityTracker().getTrackedEntities(PlayerEntity.class);
 
-                if (players.size() == 0) {
+                if (players.isEmpty()) {
                     Debug.logWarning("No targets found.");
                     break;
                 }

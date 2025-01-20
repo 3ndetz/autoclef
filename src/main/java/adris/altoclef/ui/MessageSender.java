@@ -10,7 +10,10 @@ import java.util.BitSet;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.message.LastSeenMessageList;
+import net.minecraft.network.packet.c2s.play.ChatCommandSignedC2SPacket;
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
+import net.minecraft.network.packet.c2s.play.ClientCommandC2SPacket;
+import net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket;
 import net.minecraft.text.Text;
 
 import java.util.Comparator;
@@ -67,7 +70,14 @@ public class MessageSender {
     }
 
     private void sendChatUpdateTimers(String message) {
-        sendChatInstant(message);
+         if (message != null && !message.isBlank()) {
+             if (message.length() > 1 && message.startsWith("/")) {
+                 // remove "/" from the command
+                 sendCmdInstant(message.substring(1));
+             } else {
+                 sendChatInstant(message);
+             }
+         }
         _fastSendTimer.reset();
         _fastCount++;
         if (_fastCount >= FAST_LIMIT) {
@@ -81,13 +91,22 @@ public class MessageSender {
         }
     }
 
-    private void sendChatInstant(String message) {
+    public void sendChatInstant(String message) {
         if (MinecraftClient.getInstance().player == null) {
             Debug.logError("Failed to send chat message as no client loaded.");
             return;
         }
 
         MinecraftClient.getInstance().player.networkHandler.sendPacket(new ChatMessageC2SPacket(message, Instant.now(), 10, null, new LastSeenMessageList.Acknowledgment(0, new BitSet())));
+    }
+
+    public void sendCmdInstant(String message) {
+        if (MinecraftClient.getInstance().player == null) {
+            Debug.logError("Failed to send chat message as no client loaded.");
+            return;
+        }
+
+        MinecraftClient.getInstance().player.networkHandler.sendPacket(new CommandExecutionC2SPacket(message));
     }
 
     private static abstract class BaseMessage {
