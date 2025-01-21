@@ -12,6 +12,10 @@ import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.Rotation;
 
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.FutureTask;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
@@ -22,7 +26,9 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.Vec3d;
+import py4j.Py4JJavaServer;
 
 import static adris.altoclef.util.helpers.EntityHelper.getWeaponInHand;
 import static adris.altoclef.util.helpers.LookHelper.getLookingProbability;
@@ -30,12 +36,36 @@ import static adris.altoclef.util.helpers.LookHelper.getLookingProbability;
 public class Py4jEntryPoint {
     AltoClef _mod;
     PythonCallback _cb;
+    Executor _executor;
 
     public Py4jEntryPoint(AltoClef mod)
     {
         _mod = mod;
         resetValues();
+        // _executor = MinecraftClient.getInstance(); // network thread??
+        _executor = Util.getIoWorkerExecutor(); // for files writing // UNTESTED
+                //executeInNetworkThread
     }
+
+    private void executeInNetworkThread(Runnable task) {
+        _executor.execute(() -> {
+            if (AltoClef.inGame()) {
+                task.run();
+            }
+        });
+    }
+
+    private <T> T executeInNetworkThread(Callable<T> task) {
+        FutureTask<T> futureTask = new FutureTask<>(task);
+        _executor.execute(futureTask);
+        try {
+            return futureTask.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public void resetValues(){
         CentralGameInfoDict.put("server", "universal");
         CentralGameInfoDict.put("serverMode", "survival");
@@ -158,7 +188,7 @@ public class Py4jEntryPoint {
     public String getInfo(String key, String defolt){
         return CentralGameInfoDict.getOrDefault(key, defolt);
     }
-    public void InitPythonCallback(){
+    public void InitPythonCallback() {
         _cb = (PythonCallback) _mod.getGateway().getPythonServerEntryPoint(new Class[] {PythonCallback.class});
     }
     boolean callbackstarted = false;
@@ -185,10 +215,11 @@ public class Py4jEntryPoint {
     public void setState(String state){
         _state = state;
     }
-    public static boolean inGame(){
-        return AltoClef.inGame();
+    public boolean inGame(){
+        return Boolean.TRUE.equals(executeInNetworkThread(AltoClef::inGame));
     }
     public void onStrongChatMessage(WhisperChecker.MessageResult message){
+        executeInNetworkThread(() -> {
         if(IsCallbackServerStarted()) {
             Map<String,String> messageDict = new HashMap<>();
             //if()
@@ -206,35 +237,45 @@ public class Py4jEntryPoint {
             if(message.chat_type != null) messageDict.put("chat_type",message.chat_type);
             _cb.onVerifedChat(messageDict);
         }
+        });
     }
 
     public void onWeakChatMessage(String message){
-        if(IsCallbackServerStarted()) {
-            Map<String,String> messageDict = new HashMap<>();
-            //if()
-            messageDict.put("parse_type","unparsed");
-            messageDict.put("message_type","chat");
-            messageDict.put("msg",message);
-            _cb.onVerifedChat(messageDict);
-        }
+        executeInNetworkThread(() -> {
+            if (IsCallbackServerStarted()) {
+                Map<String, String> messageDict = new HashMap<>();
+                //if()
+                messageDict.put("parse_type", "unparsed");
+                messageDict.put("message_type", "chat");
+                messageDict.put("msg", message);
+                _cb.onVerifedChat(messageDict);
+            }
+        });
     }
     public void onCustomMessage(Map<String,String> messageDict){
-        if(IsCallbackServerStarted()) {
-            _cb.onVerifedChat(messageDict);
-        }
+        executeInNetworkThread(() -> {
+            if (IsCallbackServerStarted()) {
+                _cb.onVerifedChat(messageDict);
+            }
+        });
     }
     public void ChatMessage(String msg) {
-        if (msg != null) {
-            if (AltoClef.inGame() && !msg.isBlank()) {
-                _mod.getMessageSender().enqueueChat(msg, MessagePriority.ASAP);
-                //Object myPythonClass =  _mod.getGateway().getPythonServerEntryPoint(new Class[]{MyPythonClass.class});
+        executeInNetworkThread(() -> {
+            if (msg != null) {
+                if (AltoClef.inGame() && !msg.isBlank()) {
+                    _mod.getMessageSender().enqueueChat(msg, MessagePriority.ASAP);
+                    //Object myPythonClass =  _mod.getGateway().getPythonServerEntryPoint(new Class[]{MyPythonClass.class});
+                }
             }
-        }
+        });
     }
     public void RunInnerCommand(String command){
-        if(AltoClef.inGame()) {
-            AltoClef.getCommandExecutor().execute(command); //@stop
-        }
+        MinecraftClient.getInstance().execute(() -> {
+            if(AltoClef.inGame()) {
+                // execute in network thread
+                AltoClef.getCommandExecutor().execute(command); //@stop
+            };
+        });
     }
 
     public void CaptchaSolvedSend(String msg, double accuracy){
@@ -273,48 +314,60 @@ public class Py4jEntryPoint {
     }
 
     public void ExecuteCommand(String cmd){
-        _mod.getCommandExecutor().execute(cmd);
+        executeInNetworkThread(() -> {
+            if(AltoClef.inGame()) {
+                _mod.getCommandExecutor().execute(cmd);
+            }
+        });
     }
     public Map<String,String> CentralGameInfoDict = new HashMap<>();
     public void UpdateServerInfo(String field, String value){
-        if (!field.isBlank() && !value.isBlank()) {
-            if (CentralGameInfoDict.containsKey(field)) {
-                if (!CentralGameInfoDict.get(field).equals(value)) {
-                    Debug.logMessage("changed srv INFO f>" + field + ", v>" + value);
+        executeInNetworkThread(() -> {
+            if (!field.isBlank() && !value.isBlank()) {
+                if (CentralGameInfoDict.containsKey(field)) {
+                    if (!CentralGameInfoDict.get(field).equals(value)) {
+                        Debug.logMessage("changed srv INFO f>" + field + ", v>" + value);
+                        putInfo(field, value);
+                    }
+                } else {
+                    Debug.logMessage("added srv INFO f>" + field + ", v>" + value);//, dict="+CentralGameInfoDict.toString());
                     putInfo(field, value);
                 }
-            } else {
-                Debug.logMessage("added srv INFO f>" + field + ", v>" + value);//, dict="+CentralGameInfoDict.toString());
-                putInfo(field, value);
             }
-        }
+        });
     }
     void putInfo(String field, String value){
-        CentralGameInfoDict.put(field, value);
-        if(IsCallbackServerStarted()) {
-            _cb.onUpdateServerInfo(CentralGameInfoDict);
-        }
+        executeInNetworkThread(() -> {
+            CentralGameInfoDict.put(field, value);
+            if (IsCallbackServerStarted()) {
+                _cb.onUpdateServerInfo(CentralGameInfoDict);
+            }
+        });
     }
 
     public void onChatMessage(String msg){
+        executeInNetworkThread(() -> {
         if(IsCallbackServerStarted()) {
             _cb.onChatMessage(msg);
-        }
+        }});
     }
     public void onDeath(String killer){
+        executeInNetworkThread(() -> {
         if(IsCallbackServerStarted()) {
             _cb.onDeath(killer);
-        }
+        }});
     }
     public void onKill(String killed){
+        executeInNetworkThread(() -> {
         if(IsCallbackServerStarted()) {
             _cb.onKill(killed);
-        }
+        }});
     }
     public void onAutoclefEvent(String description){
-        if(IsCallbackServerStarted()) {
+        executeInNetworkThread(() -> {
+        if(IsCallbackServerStarted() && description != null && !description.isBlank()) {
             _cb.onAutoclefEvent(description);
-        }
+        }});
     }
     public void onCaptchaSolveRequest(byte[] image_bytes){
         if(IsCallbackServerStarted()) {
@@ -323,14 +376,17 @@ public class Py4jEntryPoint {
         }
     }
     public void onDamage(float amount){
-        if(IsCallbackServerStarted()) {
-            _cb.onDamage(amount);
-        }
+        executeInNetworkThread(() -> {
+            if (IsCallbackServerStarted()) {
+                _cb.onDamage(amount);
+            }
+        });
     }
     public void onDamageConfirmed(String damaged, String attacker, float amount){
+        executeInNetworkThread(() -> {
         if (IsCallbackServerStarted()) {
             _cb.onDamageConfirmed(damaged, attacker, amount);
-        }
+        }});
     }
 
 

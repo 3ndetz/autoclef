@@ -66,8 +66,15 @@ public class DoToClosestPositionTask extends AbstractDoToClosestObjectTask<Vec3d
         if (_targetEntities != null && mod.getEntityTracker().entityFound(_targetEntities)) {
             Optional<Entity> entity = mod.getEntityTracker().getClosestEntity(pos, _shouldInteractWith, _targetEntities);
             if (entity.isPresent()) {
+                // TODO UNTESTED
+                if(entity.get().getName() != null){
+                    setDebugState("Сущность: " + entity.get().getName().getString());
+                }
+
                 Vec3d targetPos = entity.get().getPos();
                 //return Optional.of(targetPos);
+            } else {
+                setDebugState("Сущность не в поле зрения");
             }
         }
         getOriginPos(mod);
