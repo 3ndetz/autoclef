@@ -120,7 +120,14 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
                 _progress.reset();
                 return onEntityInteract(mod, entity);
             } else if (!tooClose) {
-                setDebugState("Подтверждено обнаружение"); //TRS Approaching target
+                if (entity.getName() != null)
+                    // UNTESTED!
+                    if (mod.getEntityTracker().isEntityReachable(entity)){
+                            setDebugState("Approaching target '" + entity.getName().getString() + "'"); //TRS Approaching target
+                    } else {
+                        setDebugState("Cannot get to target '" + entity.getName().getString() + "'!");
+                    }
+
                 if (!_progress.check(mod)) {
                     _progress.reset();
                     Debug.logMessage("Маршрут до цели не подтвержден. Поиск другого в Яндекс.Картах...");

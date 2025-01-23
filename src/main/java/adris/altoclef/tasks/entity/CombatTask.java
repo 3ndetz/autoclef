@@ -15,10 +15,12 @@ import net.minecraft.world.RaycastContext;
 
 import java.util.Optional;
 
+import static adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask.canUseRanged;
+
 public class CombatTask extends Task {
 
-    private static final double MELEE_RANGE = 3.0;
-    private static final double BOW_RANGE = 15.0;
+    private static final double MELEE_RANGE = 7.0;
+    private static final double BOW_RANGE = 100.0;
     private static final double PREFERRED_BOW_RANGE = 10.0;
 
     private final Entity _target;
@@ -43,46 +45,16 @@ public class CombatTask extends Task {
         if (_target == null || _target.isRemoved() || !_target.isAlive()) {
             return null;
         }
-
-        boolean hasRangedWeapon = mod.getItemStorage().hasItem(Items.BOW) ||
-                mod.getItemStorage().hasItem(Items.CROSSBOW);
-        boolean hasMeleeWeapon = mod.getItemStorage().hasItem(Items.WOODEN_SWORD) ||
-                mod.getItemStorage().hasItem(Items.STONE_SWORD) ||
-                mod.getItemStorage().hasItem(Items.IRON_SWORD) ||
-                mod.getItemStorage().hasItem(Items.DIAMOND_SWORD) ||
-                mod.getItemStorage().hasItem(Items.NETHERITE_SWORD);
-
-        double sqDist = _target.squaredDistanceTo(mod.getPlayer());
-
-        // Check if we have line of sight to the target
-        Vec3d start = mod.getPlayer().getEyePos();
-        Vec3d end = _target.getEyePos();
-        boolean hasLineOfSight = mod.getWorld().raycast(new RaycastContext(
-                start,
-                end,
-                RaycastContext.ShapeType.COLLIDER,
-                RaycastContext.FluidHandling.NONE,
-                mod.getPlayer()
-        )).getType() == HitResult.Type.MISS;
-
+        double dist = _target.distanceTo(mod.getPlayer());
         // Decide combat strategy
-        boolean useRanged = hasRangedWeapon &&
-                hasLineOfSight &&
-                sqDist > MELEE_RANGE * MELEE_RANGE &&
-                sqDist < BOW_RANGE * BOW_RANGE;
-
-        // If we were using ranged, stick with it until we're forced into melee
-        if (_wasRanged && sqDist < BOW_RANGE * BOW_RANGE) {
-            useRanged = true;
-        }
+        boolean useRanged =  dist > MELEE_RANGE &&
+                dist < BOW_RANGE;
         _wasRanged = useRanged;
 
-        if (useRanged) {
+        if (useRanged && canUseRanged(mod, _target)) {
             return new ShootArrowSimpleProjectileTask(_target);
         } else {
-
             return new KillEntityTask(_target);
-
         }
 
 

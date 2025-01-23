@@ -30,7 +30,7 @@ import java.util.Optional;
  * Helper functions to interpret and change our player's look direction
  */
 public abstract class LookHelper {
-    static float DEFAULT_SMOOTH_LOOK_SPEED = 0.9f;
+    static float DEFAULT_SMOOTH_LOOK_SPEED = 1.0f;
     static float DEFAULT_DECELERATION_THRESHOLD = 25.0f;
     /**
      * Calculate the reachable rotation for a given target and side.
@@ -942,6 +942,7 @@ public abstract class LookHelper {
         long currentTime = System.currentTimeMillis();
         // Calculate time delta in seconds since last update
         double timeDelta = (currentTime - WindMouseState.lastUpdateTimeInternal) / 1000.0;
+        timeDelta *= WindMouseState.speed;
         WindMouseState.lastUpdateTimeInternal = currentTime;
         if (!WindMouseState.isRotating) return true;
 

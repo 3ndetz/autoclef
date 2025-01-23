@@ -63,6 +63,8 @@ public class ShiftEntityTask extends AbstractDoToEntityTask {
 
     @Override
     protected Task onEntityInteract(AltoClef mod, Entity entity) {
+        if(entity != null && entity.getName() != null)
+            setDebugState("target = "+entity.getName().getString());
         //mod.getInputControls().hold(Input.SNEAK);
         double yDiff = entity.getPos().getY() - mod.getPlayer().getPos().getY();
         boolean canShift = LookHelper.canHitEntity(mod, entity, (float) _interactDistance) && yDiff <= 1d;
@@ -167,6 +169,6 @@ public class ShiftEntityTask extends AbstractDoToEntityTask {
     }
     @Override
     protected String toDebugString() {
-        return "Shifting (type " + _shiftType.toString() + ")";
+        return "Doing stupid fun (pressing shift near " + _shiftType.toString() + " of target)";
     }
 }

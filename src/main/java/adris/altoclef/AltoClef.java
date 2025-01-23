@@ -61,6 +61,7 @@ public class AltoClef implements ModInitializer {
     private PlayerExtraController _extraController;
     // Task chains
     private UserTaskChain _userTaskChain;
+    public SupervisorTaskChain _supervisorTaskChain;
     private FoodChain _foodChain;
     private MobDefenseChain _mobDefenseChain;
     private DeathMenuChain _deathMenuChain;
@@ -123,6 +124,7 @@ public class AltoClef implements ModInitializer {
 
         // Task chains
         _userTaskChain = new UserTaskChain(_taskRunner);
+        _supervisorTaskChain = new SupervisorTaskChain(_taskRunner);
         _mobDefenseChain = new MobDefenseChain(_taskRunner);
         _deathMenuChain = new DeathMenuChain(_taskRunner);
 
@@ -239,6 +241,10 @@ public class AltoClef implements ModInitializer {
             System.out.println("Gateway Server started on port "+_gatewayServer.getPort()+". Listeting port: "+_gatewayServer.getListeningPort());
         }
         _py4jEntryPoint.InitPythonCallback();
+    }
+    public void stopPythonSender() {
+        System.out.println("Gateway STOP Initiated...");
+        _gatewayServer.shutdown();
     }
     //TODO untested and idk how to test
     public void reloadPythonSender() {
@@ -503,7 +509,12 @@ public class AltoClef implements ModInitializer {
     public void runUserTask(Task task, Runnable onFinish) {
         _userTaskChain.runTask(this, task, onFinish);
     }
-
+    public void runForcedTask(Task task, double time) {
+        _supervisorTaskChain.runTask(this, task, time);
+    }
+    public void runForcedTask(Task task) {
+        _supervisorTaskChain.runTask(this, task);
+    }
     /**
      * Cancel currently running user task
      */

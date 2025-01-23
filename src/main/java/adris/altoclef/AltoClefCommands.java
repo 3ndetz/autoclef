@@ -2,6 +2,8 @@ package adris.altoclef;
 
 import adris.altoclef.commands.*;
 import adris.altoclef.commands.multiplayer.AvoidCommand;
+import adris.altoclef.commands.multiplayer.CombatCommand;
+import adris.altoclef.commands.multiplayer.GestureCommand;
 import adris.altoclef.commands.multiplayer.PursueCommand;
 import adris.altoclef.commandsystem.CommandException;
 
@@ -13,6 +15,7 @@ public class AltoClefCommands {
     public AltoClefCommands() throws CommandException {
         // List commands here
         AltoClef.getCommandExecutor().registerNewCommand(
+                new GestureCommand(),
                 new PursueCommand(),
                 new AvoidCommand(),
                 new HelpCommand(),
@@ -36,6 +39,7 @@ public class AltoClefCommands {
                 new GamerCommand(),
                 new MarvionCommand(),
                 new PunkCommand(),
+                new CombatCommand(),
                 new HeroCommand(),
                 new SetGammaCommand(),
                 new ListCommand(),

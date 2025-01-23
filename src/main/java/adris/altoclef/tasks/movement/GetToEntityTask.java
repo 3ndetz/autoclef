@@ -15,7 +15,7 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
     private final MovementProgressChecker stuckCheck = new MovementProgressChecker();
     private final MovementProgressChecker _progress = new MovementProgressChecker();
     private final TimeoutWanderTask _wanderTask = new TimeoutWanderTask(5);
-    private final Entity _entity;
+    public final Entity _entity;
     private final double _closeEnoughDistance;
     Block[] annoyingBlocks = new Block[]{
             Blocks.VINE,
@@ -178,6 +178,14 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
 
     @Override
     protected String toDebugString() {
-        return "Маршрут до " + _entity.getType().getTranslationKey(); //"Approach entity "
+        String entity_str;
+        if(_entity != null)
+            if(_entity.getName() != null) {
+                entity_str = _entity.getName().getString();
+            } else {
+                entity_str = _entity.getType().getTranslationKey(); //"Approach entity "
+            }
+        else entity_str = "null";
+        return "Moving to entity " + entity_str;
     }
 }

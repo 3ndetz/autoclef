@@ -8,10 +8,13 @@ import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+
+import static adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask.checkRangedAttackTrajectory;
 
 public class ThrowEnderPearlSimpleProjectileTask extends Task {
 
@@ -87,6 +90,21 @@ public class ThrowEnderPearlSimpleProjectileTask extends Task {
         }
         return false;
     }
+    public boolean canEnderpearl(AltoClef mod){
+        // we have enderpearl?
+        if (mod.getItemStorage().hasItemInventoryOnly(Items.ENDER_PEARL)) {
+            return true;
+        }
+        return false;
+    }
+    public static boolean shouldEnderpearl(AltoClef mod, Entity target){
+        // we have enderpearl?
+        if (mod.getItemStorage().hasItemInventoryOnly(Items.ENDER_PEARL) && checkRangedAttackTrajectory(mod, target)) {
+            return true;
+        }
+        return false;
+    }
+
 
     @Override
     protected String toDebugString() {

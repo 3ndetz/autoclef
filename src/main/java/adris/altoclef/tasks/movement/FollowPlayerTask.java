@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public class FollowPlayerTask extends Task {
 
-    private final String _playerName;
+    public final String _playerName;
 
     public FollowPlayerTask(String playerName) {
         _playerName = playerName;
@@ -41,9 +41,13 @@ public class FollowPlayerTask extends Task {
         Optional<PlayerEntity> player = mod.getEntityTracker().getPlayerEntity(_playerName);
         if (player.isEmpty()) {
             // Go to last location
+            setDebugState("Player entity not found, going to his last position... (probably there is just NO this player, you can change target)");
             return new GetToBlockTask(new BlockPos((int) target.x, (int) target.y, (int) target.z), false);
         }
-        return new GetToEntityTask(player.get(), 2);
+        if (player.get().distanceTo(mod.getPlayer()) < 2.5) {
+            setDebugState("Target follow finished. Just staying and staring at a target...");
+        }
+        return new GetToEntityTask(player.get(), 2.5);
     }
 
     @Override

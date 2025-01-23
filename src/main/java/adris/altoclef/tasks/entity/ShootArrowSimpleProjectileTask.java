@@ -216,12 +216,12 @@ public class ShootArrowSimpleProjectileTask extends Task {
                 mod.getInputControls().release(Input.CLICK_RIGHT); // Release the arrow
                 shot = true;
             } else if (projectileReady){
-                Debug.logMessage("SHOT");
+                Debug.logMessage("Performed ranged weapon shot " + target.getName().getString());
                 LookHelper.tryAvoidingInteractable(mod);
                 mod.getInputControls().tryPress(Input.CLICK_RIGHT);
                 shot = true;
             } else {
-                Debug.logMessage("SHOT fdf");
+                //Debug.logMessage("SHOT fdf");
                 //mod.getInputControls().tryPress(Input.CLICK_RIGHT);
             }
 

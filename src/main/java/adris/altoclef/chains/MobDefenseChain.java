@@ -3,9 +3,12 @@ package adris.altoclef.chains;
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.control.KillAura;
+import adris.altoclef.tasks.entity.AbstractDoToEntityTask;
 import adris.altoclef.tasks.entity.KillEntitiesTask;
+import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.movement.*;
 import adris.altoclef.tasks.speedrun.DragonBreathTracker;
+import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.control.KillAura;
 import adris.altoclef.util.helpers.*;
@@ -35,10 +38,7 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
-import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Predicate;
 
 import static java.lang.Math.abs;
@@ -169,10 +169,27 @@ public class MobDefenseChain extends SingleTaskChain {
         doForceField(mod);
 
         Optional<Entity> avoidTarget = getAvoidTarget(mod);
+        // TODO UNTESTED
         if (avoidTarget.isPresent()){
             // TODO run away from players task
             //_runAwayTask = new RunAwayFromPositionTask(DANGER_KEEP_DISTANCE, avoidTarget.get().getBlockPos());
-            setTask(new RunAwayFromPositionTask(DANGER_KEEP_DISTANCE, avoidTarget.get().getBlockPos()));
+            setTask(new RunAwayFromEntitiesTask(avoidTarget.get(), DANGER_KEEP_DISTANCE, 1) {
+                @Override
+                protected boolean isEqual(Task other) {
+                    return other instanceof RunAwayFromEntitiesTask;
+                }
+
+                @Override
+                protected String toDebugString() {
+                    //return "Run away from " + avoidTarget.get().getName().getString();
+                    if(avoidTarget.get().getName() != null)
+                        return "Run away from " + avoidTarget.get().getName().getString();
+                    else
+                        return "Run away from " + avoidTarget.get().getType().toString();
+
+                }
+
+            });
             return 70;
         }
         // Tell baritone to avoid mobs if we're vulnurable.
@@ -277,7 +294,7 @@ public class MobDefenseChain extends SingleTaskChain {
         }
         Optional<Entity> toAttackPlayer = getAttackPlayer(mod);
         if (toAttackPlayer.isPresent() && toAttackPlayer.get() instanceof PlayerEntity player) {
-            setTask(new KillEntitiesTask(toAttack -> toAttack.equals(player), PlayerEntity.class));
+            setTask(new KillPlayerTask(player.getName().getString()));
             return 65;
         }
         if (mod.getModSettings().shouldDealWithAnnoyingHostiles()) {
@@ -436,9 +453,9 @@ public class MobDefenseChain extends SingleTaskChain {
                             String name = player.getName().getString();
                             if (!mod.getButler().isUserAuthorized(name) && mod.getBehaviour().shouldForceFieldPlayers()) {
                                 shouldForce = true;
-                            } else if (mod.getDamageTracker().getThreatTable().shouldAvoid(name) || mod.getDamageTracker().getThreatTable().shouldAttack(name)){
-                                shouldForce = true;
-                            }
+                            }// else if (mod.getDamageTracker().getThreatTable().shouldAvoid(name) || mod.getDamageTracker().getThreatTable().shouldAttack(name)){
+                                //shouldForce = true;
+                            //}
                         }
                     }
                     if (shouldForce) {
@@ -571,36 +588,67 @@ public class MobDefenseChain extends SingleTaskChain {
     }
 
     public Optional<Entity> getAvoidTarget(AltoClef mod) {
-        // Wither skeletons are dangerous because of the wither effect. Oof kinda obvious.
-        // If we merely force field them, we will run into them and get the wither effect which will kill us.
-        Optional<Entity> closestAvoidPlayer = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
-                entity -> mod.getDamageTracker().getThreatTable()
-                        .shouldAvoid(entity.getName().getString()),
-                PlayerEntity.class);
-        if (closestAvoidPlayer.isPresent()) {
-            double range = SAFE_KEEP_DISTANCE - 2;
-            if (closestAvoidPlayer.get().squaredDistanceTo(mod.getPlayer()) < range * range) {
-                return closestAvoidPlayer;
+        try {
+            synchronized (BaritoneHelper.MINECRAFT_LOCK) {
+                return mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
+                        entity -> {
+                            boolean threatAvoid;
+                            if (entity != null && entity.getName() != null) {
+                                double range = SAFE_KEEP_DISTANCE - 2;
+                                if (entity.distanceTo(mod.getPlayer()) > range)
+                                    return false;
+
+                                String playerName = entity.getName().getString();
+                                threatAvoid = mod.getDamageTracker().getThreatTable()
+                                        .shouldAvoid(playerName) && !mod.getDamageTracker().getThreatTable()
+                                        .shouldAttack(playerName);
+                                if (mod.getUserTaskChain().getCurrentTask() != null){
+                                    if(mod.getUserTaskChain().getCurrentTask() instanceof GetToEntityTask checkTask) {
+                                            //Debug.logMessage(testTask._entity.getName().getString());
+                                            if (Objects.equals(checkTask._entity.getName().getString(), playerName))
+                                                threatAvoid = false;
+
+                                    } else if (mod.getUserTaskChain().getCurrentTask() instanceof FollowPlayerTask checkTask) {
+                                        if (Objects.equals(checkTask._playerName, playerName))
+                                            threatAvoid = false;
+                                    } else if (mod.getUserTaskChain().getCurrentTask() instanceof KillPlayerTask checkTask) {
+                                        if (Objects.equals(checkTask._playerName, playerName))
+                                            threatAvoid = false;
+                                    }
+                                }
+                            } else {
+                                threatAvoid = false;
+                            }
+
+                            return threatAvoid;
+                        },
+                        PlayerEntity.class);
             }
+        } catch (Exception e) {
+            Debug.logWarning("Weird multithread exception. Will fix later." + e);//
         }
         return Optional.empty();
     }
 
     public Optional<Entity> getAttackPlayer(AltoClef mod) {
-        // Wither skeletons are dangerous because of the wither effect. Oof kinda obvious.
-        // If we merely force field them, we will run into them and get the wither effect which will kill us.
-        Optional<Entity> closestAvoidPlayer = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
-                entity -> mod.getDamageTracker().getThreatTable()
-                        .shouldAttack(entity.getName().getString()),
-                PlayerEntity.class);
-        if (closestAvoidPlayer.isPresent()) {
-            double range = DANGER_KEEP_DISTANCE - 2;
-            if (closestAvoidPlayer.get().squaredDistanceTo(mod.getPlayer()) < range * range) {
-                return closestAvoidPlayer;
+        try {
+            synchronized (BaritoneHelper.MINECRAFT_LOCK) {
+                // Wither skeletons are dangerous because of the wither effect. Oof kinda obvious.
+                // If we merely force field them, we will run into them and get the wither effect which will kill us.
+                return mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
+
+                        entity -> entity != null
+                                && entity.distanceTo(mod.getPlayer()) < DANGER_KEEP_DISTANCE
+                                && mod.getDamageTracker().getThreatTable()
+                                .shouldAttack(entity.getName().getString()),
+                        PlayerEntity.class);
             }
+        } catch (Exception e) {
+            Debug.logWarning("Weird multithread exception. Will fix later." + e);
         }
         return Optional.empty();
     }
+
 
 
     private Optional<Entity> getUniversallyDangerousMob(AltoClef mod) {
@@ -737,6 +785,6 @@ public class MobDefenseChain extends SingleTaskChain {
 
     @Override
     public String getName() {
-        return "Mob Defense";
+        return "Entity Threat Defense";
     }
 }

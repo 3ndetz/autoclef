@@ -22,8 +22,13 @@ public class UserTaskChain extends SingleTaskChain {
     public UserTaskChain(TaskRunner runner) {
         super(runner);
     }
-
-    private static String prettyPrintTimeDuration(double seconds) {
+    public double getTaskRunningTime(){
+        return _taskStopwatch.time();
+    }
+    public String getTaskRunningTimeString(){
+        return prettyPrintTimeDuration(_taskStopwatch.time());
+    }
+    public static String prettyPrintTimeDuration(double seconds) {
         int minutes = (int) (seconds / 60);
         int hours = minutes / 60;
         int days = hours / 24;
@@ -68,7 +73,7 @@ public class UserTaskChain extends SingleTaskChain {
 
     @Override
     public String getName() {
-        return "Кастомные задачи";
+        return "UserTaskChain";
     }
 
     public void runTask(AltoClef mod, Task task, Runnable onFinish) {

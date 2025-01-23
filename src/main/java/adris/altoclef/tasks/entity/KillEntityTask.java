@@ -39,8 +39,8 @@ public class KillEntityTask extends AbstractKillEntityTask {
     @Override
     protected String toDebugString() {
         if (_target instanceof PlayerEntity player && player.getName() != null){
-            return "Уничтожение " + _target.getName().getString();
+            return "Entering combat with: " + _target.getName().getString();
         }
-        return "Уничтожение " + _target.getType().getTranslationKey();
+        return "Entering combat with: " + _target.getType().getTranslationKey();
     }
 }

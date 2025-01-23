@@ -16,34 +16,12 @@ import net.minecraft.entity.player.PlayerEntity;
 public class IdleTask extends Task {
     @Override
     protected void onStart(AltoClef mod) {
-        Debug.logMessage("(EZZ: started)");
     }
 
     @Override
     protected Task onTick(AltoClef mod) {
         // Do nothing except maybe test code
         Playground.IDLE_TEST_TICK_FUNCTION(mod);
-        //DamageSource dmgs = mod.getPlayer().getRecentDamageSource();
-        ClientPlayerEntity bot = mod.getPlayer();
-        LivingEntity living = (LivingEntity) bot;
-
-        PlayerEntity srvply = (PlayerEntity) bot;
-        if(srvply.getAttacker() != null)
-            Debug.logMessage("УРААААААУ *****");
-        LivingEntity att = living.getAttacker();
-        Optional<LivingEntity> checkTracking = getEntityTarget(mod,"HyperMozgh");
-        LivingEntity TrackingEnt;
-        if (MinecraftClient.getInstance().player.getServer() != null)
-            Debug.logMessage("STRING SERVER"+MinecraftClient.getInstance().player.getServer().toString());
-        if(checkTracking.isPresent()) {
-            TrackingEnt = checkTracking.get();
-            LivingEntity attacked = TrackingEnt.getAttacking();
-            if (attacked != null) {
-                Debug.logMessage("Тракер атаковал " + attacked.toString());
-                if (attacked.getRecentDamageSource() != null && attacked.getRecentDamageSource().getSource() != null)
-                    Debug.logMessage("Тракер атаковал " + attacked.toString());
-            }
-        }
         return null;
     }
 
@@ -55,7 +33,6 @@ public class IdleTask extends Task {
     }
     @Override
     protected void onStop(AltoClef mod, Task interruptTask) {
-        Debug.logMessage("(EZZ: stopped)");
     }
 
     @Override

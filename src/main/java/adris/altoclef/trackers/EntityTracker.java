@@ -345,9 +345,17 @@ public class EntityTracker extends Tracker {
                 //noinspection ConstantConditions
                 if (entity == null || !entity.isAlive()) continue;
 
-                // Don't catalogue our own player.
-                if (type == PlayerEntity.class && entity.equals(_mod.getPlayer())) continue;
-
+                // TODO UNTESTED BLOCK!!!
+                if (entity instanceof PlayerEntity player) // type == PlayerEntity.class && entity.equals(_mod.getPlayer())) continue;
+                {
+                    // Don't catalogue our own player.
+                    if(entity.equals(_mod.getPlayer()))
+                        continue;
+                    if (player.getName() == null)
+                        continue;
+                    if (player.getName().getString().isBlank())
+                        continue;
+                }
                 if (!_entityMap.containsKey(type)) {
                     _entityMap.put(type, new ArrayList<>());
                 }

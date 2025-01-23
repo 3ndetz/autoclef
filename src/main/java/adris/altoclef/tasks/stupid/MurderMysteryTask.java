@@ -2,8 +2,6 @@ package adris.altoclef.tasks.stupid;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.butler.ButlerConfig;
-import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.events.DeathEvent;
 import adris.altoclef.tasks.entity.DoToClosestEntityTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.entity.ShiftEntityTask;
@@ -14,12 +12,7 @@ import adris.altoclef.trackers.threats.DamageTrackerStrategy;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.LookHelper;
-import adris.altoclef.util.slots.Slot;
 import adris.altoclef.util.time.TimerGame;
-import baritone.api.utils.input.Input;
-import jdk.jfr.Event;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -30,7 +23,6 @@ import net.minecraft.util.math.Vec3d;
 import java.util.*;
 
 import static adris.altoclef.util.helpers.ItemHelper.clickCustomItem;
-import static adris.altoclef.util.helpers.StringHelper.removeMCFormatCodes;
 
 public class MurderMysteryTask extends Task {
 
@@ -70,7 +62,7 @@ public class MurderMysteryTask extends Task {
         KILLER,
         DETECTIVE,
         INNOCENT,
-        UNKNOWN
+        UNDECIDED
     }
     public MurderMysteryTask(int role) {
         switch (role){
@@ -84,7 +76,7 @@ public class MurderMysteryTask extends Task {
                 _role = MurderRole.KILLER;
                 break;
             case -1:
-                _role = MurderRole.UNKNOWN;
+                _role = MurderRole.UNDECIDED;
                 break;
         }
     }
@@ -99,7 +91,7 @@ public class MurderMysteryTask extends Task {
         return true;
     }
     public void resetGameInfo(){
-        _role = MurderRole.UNKNOWN;
+        _role = MurderRole.UNDECIDED;
         _roles.clear();
         _killerName = null;
         _killed = false;

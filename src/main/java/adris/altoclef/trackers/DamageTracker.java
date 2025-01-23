@@ -143,7 +143,7 @@ public class DamageTracker extends Tracker {
         String att_name = threatTable.getLastAttacker(name);
 
         if (att_name != null) {
-            _mod.getInfoSender().onDamageConfirmed(name, att_name, amount);
+            //_mod.getInfoSender().onDamageConfirmed(name, att_name, amount);
             Debug.logMessage("Получен урон игроком "+name+ " от "+att_name + ": " + amount);
         }
     }

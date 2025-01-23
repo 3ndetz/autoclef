@@ -38,6 +38,10 @@ public class ThreatTable {
                     threat.sneakRate += 1;
                 }
                 if (threat.sneakRate > 7) {
+                    if (threat.name != null) {
+                        _mod.getInfoSender().onAutoclefEvent(threat.name
+                                + " is agressely shifting your back (likely a breed event). Avoiding...");
+                    }
                     threat.shouldAvoidTimer.reset();
                 }
 

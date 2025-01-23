@@ -180,6 +180,10 @@ public class Playground {
                 Debug.logMessage("PYTHON SENDER & CALLBACK RELOAD INITIATED");
                 mod.reloadPythonSender();
                 break;
+            case "cb_stop":
+                Debug.logMessage("PYTHON SENDER STOP!!!");
+                mod.stopPythonSender();
+                break;
             case "task_info":
                 Debug.logMessage("INGAME INFO DICT:\n"+mod.getInfoSender().getTaskChainString());
                 break;

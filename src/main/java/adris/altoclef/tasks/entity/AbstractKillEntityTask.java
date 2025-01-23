@@ -14,6 +14,7 @@ import adris.altoclef.util.slots.PlayerSlot;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.SwordItem;
@@ -99,6 +100,7 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
                 float hitProg = mod.getPlayer().getAttackCooldownProgress(0);
                 LookHelper.smoothLook(mod, entity);
                 boolean canPunk = hitProg >= 0.99;
+                setDebugState("ATTACKING");
                 if (entity instanceof LivingEntity) {
                     LivingEntity livingEnt = (LivingEntity) entity;
                     canPunk = canPunk && livingEnt.hurtTime <= 0;
@@ -109,10 +111,13 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
                             mod.getPlayer().getVelocity().getY() < 0 || mod.getPlayer().isTouchingWater()) {
                         //LookHelper.smoothLookAt(mod, entity.getEyePos());
                         mod.getControllerExtras().attack(entity);
+                        setDebugState("PERFORMING ATTACK");
+
                     }
                 }
             }
         } else {
+            setDebugState("Cannot hit, getting to entity");
             return new GetToEntityTask(entity);
             // working good
             //return new GetToBlockTask(entity.getBlockPos());

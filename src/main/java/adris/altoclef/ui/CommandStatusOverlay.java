@@ -54,7 +54,11 @@ public class CommandStatusOverlay {
                 dx += 8;//Do the same thing to list the tasks
                 dy += fontHeight + 2;
             } else {
-                renderer.draw(" [Система функционирует] " + info, dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+                // TODO ADD time
+                renderer.draw(" [Executing tasks for "
+                        + mod.getUserTaskChain().getTaskRunningTimeString() + "s] "
+                                + info,
+                        dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
                 dx += 8;//Do the same thing to list the tasks
                 dy += fontHeight + 2;
             }
