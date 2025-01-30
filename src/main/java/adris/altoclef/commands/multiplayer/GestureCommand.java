@@ -5,7 +5,6 @@ import adris.altoclef.commandsystem.Arg;
 import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.commandsystem.Command;
 import adris.altoclef.commandsystem.CommandException;
-import adris.altoclef.tasks.entity.CombatTask;
 import adris.altoclef.tasks.multiplayer.GestureTask;
 import net.minecraft.entity.Entity;
 
@@ -32,7 +31,7 @@ public class GestureCommand extends Command {
             return;
         }
         String gesture_str = parser.get(String.class);
-        GestureTask.Gesture gesture = GestureTask.Gesture.GoHere;;
+        GestureTask.Gesture gesture = GestureTask.Gesture.Hey;;
         if (gesture_str != null) {
             mod.log("Gesture: " + gesture_str);
             try {

@@ -5,6 +5,9 @@ import adris.altoclef.Debug;
 import adris.altoclef.Playground;
 import adris.altoclef.tasksystem.Task;
 import java.util.Optional;
+
+import adris.altoclef.util.helpers.LookHelper;
+import adris.altoclef.util.time.TimerGame;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
@@ -17,11 +20,32 @@ public class IdleTask extends Task {
     @Override
     protected void onStart(AltoClef mod) {
     }
+    public TimerGame _lookTimer = new TimerGame(3);
 
     @Override
     protected Task onTick(AltoClef mod) {
         // Do nothing except maybe test code
-        Playground.IDLE_TEST_TICK_FUNCTION(mod);
+        //Playground.IDLE_TEST_TICK_FUNCTION(mod);
+        // Look at closest player in 10 blocks if present
+        if ((_lookTimer.elapsed() || _lookTimer.getDuration() < 2f) && mod.getPlayer() != null) {
+            mod.getEntityTracker().getClosestEntity(PlayerEntity.class).ifPresent(player -> {
+                if (mod.getPlayer().distanceTo(player) < 20) {
+                    setDebugState("Staring at near player: " + player.getName().getString());
+                    LookHelper.smoothLookAt(mod, player);
+                    if (_lookTimer.elapsed())
+                        _lookTimer.reset();
+                }
+            });
+            mod.getEntityTracker().getClosestEntity(LivingEntity.class).ifPresent(living -> {
+                if (mod.getPlayer().distanceTo(living) < 10) {
+                    setDebugState("Staring at near entity: " + living.getType().getName().getString());
+                    LookHelper.smoothLookAt(mod, living);
+                    if (_lookTimer.elapsed())
+                        _lookTimer.reset();
+                }
+            });
+        }
+
         return null;
     }
 
@@ -48,6 +72,6 @@ public class IdleTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Idle";
+        return "NO TASKS: waiting for input action";
     }
 }

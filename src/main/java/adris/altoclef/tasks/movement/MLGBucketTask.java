@@ -143,18 +143,18 @@ public class MLGBucketTask extends Task {
             _movingTorwards = bestClutchPos.get().mutableCopy();
             if (!_movingTorwards.equals(oldMovingTorwards)) {
                 if (oldMovingTorwards == null)
-                    Debug.logMessage("(Активируем КЛАТЧ: " + _movingTorwards + ")"); //TRS NEW clutch target:
+                    Debug.logMessage("(MLG Bucket Clutch: " + _movingTorwards + ")"); //TRS NEW clutch target:
                 else
-                    Debug.logMessage("(Клатч изменен: " + _movingTorwards + ")"); //  chutch changed
+                    Debug.logMessage("(MLG Bucket pos change: " + _movingTorwards + ")"); //  chutch changed
             }
         } else if (oldMovingTorwards != null) {
-            Debug.logMessage("(КЛАТЧ съел клещ!)");// LOST clutch position!
+            Debug.logMessage("(LOST clutch pos!)");// LOST clutch position!
         }
         if (willLandOn.isPresent()) {
             handleJumpForLand(mod, willLandOn.get());
             return placeMLGBucketTask(mod, willLandOn.get());
         } else {
-            setDebugState("Выжидание момента..."); //Wait for it...
+            setDebugState("MLG Bucket Clutch: wait for it..."); //Wait for it...
             // We must trigger jump as soon as we enter a "climbable" object
             mod.getInputControls().release(Input.JUMP);
             return null;

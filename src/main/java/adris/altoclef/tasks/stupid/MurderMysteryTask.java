@@ -7,6 +7,7 @@ import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.entity.ShiftEntityTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
 import adris.altoclef.tasks.movement.*;
+import adris.altoclef.tasks.multiplayer.GestureTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.trackers.threats.DamageTrackerStrategy;
 import adris.altoclef.util.ItemTarget;
@@ -251,7 +252,7 @@ public class MurderMysteryTask extends Task {
                         //    return _runAwayTask;
                         default:
                             _chill_tactics = 0;
-                            return new ShiftEntityTask(entity);
+                            return new GestureTask(entity);
                             //return new SafeRandomShimmyTask();
                     }
 

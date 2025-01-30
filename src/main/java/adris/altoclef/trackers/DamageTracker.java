@@ -25,8 +25,10 @@ public class DamageTracker extends Tracker {
     private final HashMap<String, PlayerEntity> _playerMap = new HashMap<>();
     private final HashMap<String, Float> _prevPlayerHealth = new HashMap<>();
     private final TimerReal _recentDamageTimer = new TimerReal(0.05);
+    private final TimerReal _deathEventSpamTimer = new TimerReal(0.5);
     private List<AbstractClientPlayerEntity> _prevPlayerList = new ArrayList<>();
     public String _lastAttackingPlayerName = "undefined";
+    public String _lastKilled = "";
     private double _lastAttackingPlayerIsLookingProbability;
     private double _lastAttackingPlayerMyLookingProbability;
     public final TimerReal _attackCheckTimer = new TimerReal(0.7);
@@ -143,7 +145,7 @@ public class DamageTracker extends Tracker {
         String att_name = threatTable.getLastAttacker(name);
 
         if (att_name != null) {
-            //_mod.getInfoSender().onDamageConfirmed(name, att_name, amount);
+            _mod.getInfoSender().onDamageConfirmed(name, att_name, amount);
             Debug.logMessage("Получен урон игроком "+name+ " от "+att_name + ": " + amount);
         }
     }
@@ -203,7 +205,16 @@ public class DamageTracker extends Tracker {
             onClientKill(name);
         }
         if (!(killerName.equals("undefined") || killerName.equals("неизвестный"))) {
-            Debug.logMessage("Death: " + killerName + " killed " + name + ".");
+            // TODO now untested
+            if (_lastKilled.equals(name)) {
+                if (_deathEventSpamTimer.elapsed()) {
+                    _deathEventSpamTimer.reset();
+                    EventBus.publish(new DeathEvent(name, killerName));
+                }
+            } else {
+                EventBus.publish(new DeathEvent(name, killerName));
+            }
+            _lastKilled = name;
         }
         // Clear damage timer after death
         _playerDamageTimers.remove(name);

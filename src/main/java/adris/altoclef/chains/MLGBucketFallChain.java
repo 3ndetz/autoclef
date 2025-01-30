@@ -56,7 +56,7 @@ public class MLGBucketFallChain extends SingleTaskChain implements ITaskOverride
         }
         else if (isInHellHole(mod)){
 
-            if(mod.getItemStorage().hasItem(Items.ENDER_PEARL)) {
+            if(mod.getItemStorage().hasItem(Items.ENDER_PEARL) && mod.getPlayer() != null && _lastGroundBlockPos != null) {
                 if (_voidFallTimer.elapsed()) { // old (FallIter > 7) {
                     Optional<Entity> closestPlayer = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), PearlAllowablePlayer ->
                             this.pearlAllowable(mod, (PlayerEntity) PearlAllowablePlayer), PlayerEntity.class);//(mod.getPlayer().getPos(), PlayerEntity.class);

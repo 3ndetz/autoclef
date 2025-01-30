@@ -22,6 +22,7 @@ import baritone.Baritone;
 import baritone.altoclef.AltoClefSettings;
 import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
+import baritone.api.utils.Rotation;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.block.Blocks;
@@ -32,7 +33,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
-import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayDeque;
@@ -52,6 +52,17 @@ public class AltoClef implements ModInitializer {
     public static final String MOD_ID = "altoclef";
     // Static access to altoclef
     private static final Queue<Consumer<AltoClef>> _postInitQueue = new ArrayDeque<>();
+    public static Rotation getCameraRotationModifer(){
+        return _cameraRotationModifer;
+    }
+    public static void setCameraRotationModifer(Rotation rotation){
+        _cameraRotationModifer = rotation;
+    }
+    public static void resetCameraRotationModifer(){
+        _cameraRotationModifer = null;
+    }
+    public static Rotation _cameraRotationModifer = null;
+
 
     // Central Managers
     private static CommandExecutor _commandExecutor;

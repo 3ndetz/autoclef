@@ -51,7 +51,7 @@ public class SupervisorTaskChain extends SingleTaskChain {
     private BlockPos _lastGroundBlockPos;
     private final TimerGame _voidFallTimer = new TimerGame(0.25);
     private TimerGame GestureTimer = new TimerGame(3);
-
+    private boolean _active = true;
 
     public SupervisorTaskChain(TaskRunner runner) {
         super(runner);
@@ -61,7 +61,7 @@ public class SupervisorTaskChain extends SingleTaskChain {
     protected void onTaskFinish(AltoClef mod) {
         //_lastMLG = null;
         // UNTESTED
-        if (!mod.getUserTaskChain().isActive()) {
+        if (!mod.getUserTaskChain().isActive() && !this.isActive()) {
             // Stop.
             mod.getTaskRunner().disable();
             // Extra reset. Sometimes baritone is laggy and doesn't properly reset our press
@@ -119,7 +119,7 @@ public class SupervisorTaskChain extends SingleTaskChain {
         if (task != null) {
             Debug.logMessage("[SUDO] Задача поставлена: " + task.toString()); //TRS "User Task Set: "
         }
-        mod.getTaskRunner().enable();
+        //mod.getTaskRunner().enable();
         setTask(task);
         _taskTimer.setInterval(time);
         _taskTimer.reset();
@@ -140,8 +140,7 @@ public class SupervisorTaskChain extends SingleTaskChain {
 
     @Override
     public boolean isActive() {
-        // We're always checking for mlg.
-        return true;
+        return _active;
     }
 }
 

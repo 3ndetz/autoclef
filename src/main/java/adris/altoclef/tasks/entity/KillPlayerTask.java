@@ -1,6 +1,7 @@
 package adris.altoclef.tasks.entity;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.progresscheck.IProgressChecker;
@@ -22,9 +23,9 @@ public class KillPlayerTask extends AbstractKillEntityTask {
     public final String _playerName;
     private final double AUTO_RANGED_DISTANCE = 100;
     private final double AUTO_PEARL_DISTANCE = 100;
-    private final TimerGame _pearlTimer = new TimerGame(10);
-    private final TimerGame _bowTimer = new TimerGame(10);
-    private final TimerGame _rangedTimer = new TimerGame(10);
+    private TimerGame _pearlTimer = new TimerGame(10);
+    private TimerGame _bowTimer = new TimerGame(4);
+    private final TimerGame _rangedTimer = new TimerGame(2);
     private Task specialKillTask;
 
     private final IProgressChecker<Double> _distancePlayerCheck = new ProgressCheckerRetry<>(new LinearProgressChecker(5, -2), 3);
@@ -45,7 +46,7 @@ public class KillPlayerTask extends AbstractKillEntityTask {
             if (distSq < 10 * 10) {
                 _distancePlayerCheck.reset();
             } else {
-                // UNTESTED!!!
+                // TODO NOW UNTESTED!!!
                 if (specialKillTask != null && specialKillTask.isActive() && !specialKillTask.isFinished(mod) && !_rangedTimer.elapsed()) {
                     return specialKillTask;
                 } else {
@@ -53,24 +54,53 @@ public class KillPlayerTask extends AbstractKillEntityTask {
                 }
                 if (distSq < AUTO_RANGED_DISTANCE * AUTO_RANGED_DISTANCE) {
                     // shoot bow!
-                    if (canUseRanged(mod, player.get())) {
-                        if (_bowTimer.elapsed()) {
-                            _bowTimer.reset();
-                            _rangedTimer.reset();
-                            specialKillTask = new ShootArrowSimpleProjectileTask(player.get());
+                    boolean canBow = canUseRanged(mod, player.get());
+                    
+                    boolean canEnderpearl = (shouldEnderpearl(mod, player.get())
+                            && distSq < AUTO_PEARL_DISTANCE * AUTO_PEARL_DISTANCE);
+                    boolean canPerformAnyRangedTactics = (canBow || canEnderpearl)
+                            && _rangedTimer.elapsed();
+                    if (canPerformAnyRangedTactics) {
+                        boolean BOW_OR_ENDERPEARL = true; // switcher
+                        boolean bothRangedTacticsAvailable = canBow && canEnderpearl;
+                        //Debug.logMessage("DEBUG GDSFG 0 " + bothRangedTacticsAvailable);
+                        if (!bothRangedTacticsAvailable) {
+                            _bowTimer.setInterval(10);
+                            _pearlTimer.setInterval(10);
+                            if (canBow) {
+                                BOW_OR_ENDERPEARL = true;
+                            }
+                            if (canEnderpearl)
+                                BOW_OR_ENDERPEARL = false;
+                        } else {
+                            BOW_OR_ENDERPEARL = Math.random() < 0.7; // switcher
                         }
-                    } else if (distSq < AUTO_PEARL_DISTANCE * AUTO_PEARL_DISTANCE) {
-                        if (shouldEnderpearl(mod, player.get())){
+                        //Debug.logMessage("DEBUG GDSFG 1 " + BOW_OR_ENDERPEARL);
+                        if (BOW_OR_ENDERPEARL) {
+                            if (_bowTimer.elapsed()) {
+                                if (bothRangedTacticsAvailable) {
+                                    _bowTimer.setInterval(10);
+                                    _pearlTimer.setInterval(4);
+                                }
+                                _bowTimer.reset();
+                                _rangedTimer.reset();
+                                specialKillTask = new ShootArrowSimpleProjectileTask(player.get());
+                                return specialKillTask;
+                            }
+
+                        } else {
                             if (_pearlTimer.elapsed()) {
+                                if (bothRangedTacticsAvailable) {
+                                    _bowTimer.setInterval(5);
+                                    _pearlTimer.setInterval(10);
+                                }
                                 _pearlTimer.reset();
                                 _rangedTimer.reset();
                                 specialKillTask = new ThrowEnderPearlSimpleProjectileTask(player.get().getBlockPos());
+                                return specialKillTask;
                             }
                         }
                     }
-                }
-                if (specialKillTask != null) {
-                    return specialKillTask;
                 }
             }
             _distancePlayerCheck.setProgress(-1 * distSq);

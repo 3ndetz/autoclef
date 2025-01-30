@@ -1,134 +1,199 @@
 package adris.altoclef.tasks.multiplayer;
 
 import adris.altoclef.AltoClef;
-import adris.altoclef.tasks.entity.AbstractDoToEntityTask;
-import adris.altoclef.tasks.movement.GetCloseToBlockTask;
-import adris.altoclef.tasks.movement.GetToEntityTask;
+import adris.altoclef.Debug;
+import adris.altoclef.tasks.movement.SafeRandomShimmyTask;
 import adris.altoclef.tasksystem.Task;
-import adris.altoclef.util.helpers.ItemHelper;
+import adris.altoclef.ui.EpicCamera;
 import adris.altoclef.util.helpers.LookHelper;
-import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-
+import java.util.*;
+// TODO add docstring
+// TODO untested
 public class GestureTask extends Task {
 
     private Entity _target;
+    private Vec3d _targetPos;
     private int _phase = 0;
     private double _interactDistance = 2.5d;
     private double _shiftDistance = 0.7d;
     private double _stopDistance = 0.2d;
     private boolean _started = false;
+    private final boolean SIMPLE_GO_TO_TARGET = false;
     public enum Gesture {
-        LetsFight,
-        Easy,
+        Fight,
+        Disrespect,
         BrawlStars,
-        GoHere
-
+        Hey,
+        Cheer,
+        Sad,
+        Crazy,
+        Agree,
+        Disagree
     }
     public float _rotationIter = -179;
     public Gesture _gesture;
     private final TimerGame _shiftTimer = new TimerGame(0.15);
     public final TimerGame _gestureTimer = new TimerGame(3);
+
     public GestureTask(Entity target, Gesture type) {
         _target = target;
+        _targetPos = null;
         _gesture = type;
     }
+
+    public GestureTask(Vec3d position, Gesture type) {
+        _target = null;
+        _targetPos = position;
+        _gesture = type;
+    }
+
+    public Map<String, Gesture> getGestureMap() {
+        Map<String, Gesture> map = new HashMap<>();
+        map.put("Angry", Gesture.Fight);
+        map.put("Gloat", Gesture.Disrespect);
+        map.put("Smirk", Gesture.BrawlStars);
+        return map;
+    }
+
+    public Gesture gestureFromString(String gestureString) {
+        Gesture gesture;
+        try {
+            gesture = Gesture.valueOf(gestureString);
+        } catch (IllegalArgumentException e) {
+            gesture = getGestureMap().getOrDefault(gestureString, Gesture.Hey);
+        }
+        return gesture;
+    }
+
+    public GestureTask(AltoClef mod, String playerName, String gestureString) {
+        Optional<PlayerEntity> player = mod.getEntityTracker().getPlayerEntity(playerName);
+        if (player.isEmpty()) {
+            Debug.logMessage("Player not found");
+            _target = null;
+            _targetPos = null;
+        } else {
+            _target = player.get();
+            _targetPos = null;
+        }
+        _gesture = gestureFromString(gestureString);
+    }
+
     public GestureTask(Entity target) {
         this(target, Gesture.values()[new Random().nextInt(Gesture.values().length-1)]); // random
     }
-    protected Optional<Entity> getEntityTarget(AltoClef mod) {
-        return Optional.of(_target);
-    }
 
+    protected Vec3d getTargetPos(AltoClef mod) {
+        if (_target != null) {
+            return _target.getEyePos();
+        }
+        return _targetPos;
+    }
 
     @Override
     protected Task onTick(AltoClef mod) {
-        Entity entity = _target;
+        Vec3d lookTarget = getTargetPos(mod);
 
-
-        if(_gestureTimer.elapsed()){
+        if(_gestureTimer.elapsed()) {
             _gestureTimer.reset();
         }
-        if (!_started)
-            _started = true;
-        if(entity != null && entity.getName() != null)
-            setDebugState("target = "+entity.getName().getString());
-        else {
+        if (!_started) _started = true;
+
+        if(lookTarget == null) {
+
             return null;
         }
-        //mod.getInputControls().hold(Input.SNEAK);
-        double yDiff = entity.getPos().getY() - mod.getPlayer().getPos().getY();
-        boolean tooClose;
-        boolean shifting = !( _gesture.equals(Gesture.LetsFight) || _gesture.equals(Gesture.BrawlStars) );;
+        Rotation lookAtCamera = LookHelper.getLookRotation(mod, lookTarget);
+        mod.getBehaviour().setCameraRotationModifer(lookAtCamera);
+        double yDiff = lookTarget.getY() - mod.getPlayer().getPos().getY();
+        boolean tooClose = mod.getPlayer().getPos().distanceTo(lookTarget) < _stopDistance;
+        boolean shifting = !(_gesture.equals(Gesture.Fight) || _gesture.equals(Gesture.BrawlStars) || _gesture.equals(Gesture.Disagree) || _gesture.equals(Gesture.Agree));
+        //boolean inShiftRange = mod.getPlayer().getPos().distanceTo(lookTarget) <= _shiftDistance; 
         double yBorder = 0.9f;
-        boolean moveLeftRight = _gesture.equals(Gesture.LetsFight);
-        boolean swingHand = !( _gesture.equals(Gesture.BrawlStars) || _gesture.equals(Gesture.Easy) );
-        if (_gesture.equals(Gesture.GoHere) || _gesture.equals(Gesture.LetsFight)) {
-            // look at entity then look down, like "come on you"
-            if (_phase == 0) {
-                LookHelper.smoothLook(mod, entity);
-            } else {
-                // look down
-                Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 20);
-                LookHelper.smoothLook(mod, newRot, 0.3f);
-            }
+        boolean moveLeftRight = _gesture.equals(Gesture.Fight);
+        boolean swingHand = !(_gesture.equals(Gesture.BrawlStars) || _gesture.equals(Gesture.Disrespect)
+                || (_gesture.equals(Gesture.Agree) || _gesture.equals(Gesture.Disagree)));
 
-        } else if (_gesture.equals(Gesture.BrawlStars)) {
-            // just spin around player itslef
-            // 1. get changing rotation
-            Rotation newRot = new Rotation(_rotationIter, 20);
-            // pitch 90 is down, 0 is straignt, -90 is up
-            // yaw -179 <-> +179
+        // Handle different gesture types and looking
+        if (_gesture.equals(Gesture.Agree)) {
             if (_phase == 0) {
-                _rotationIter += 70;
+                Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 20);
+                LookHelper.smoothLook(mod, newRot, 0.2f);
             } else {
-                _rotationIter += 40;
+                LookHelper.smoothLookAt(mod, lookTarget, 0.2f);
             }
-            // rotation need to be from -179 to 179
-            if (_rotationIter>=179){
+        } else if (_gesture.equals(Gesture.Disagree)) {
+            if (_phase == 0) {
+                Rotation newRot = new Rotation(50, mod.getPlayer().getPitch());
+                LookHelper.smoothLook(mod, newRot, 0.1f);
+            } else {
+                LookHelper.smoothLookAt(mod, lookTarget, 0.3f);
+            }
+        } else if (_gesture.equals(Gesture.Hey) || _gesture.equals(Gesture.Fight)) {
+            if (_shiftTimer.getDuration() < 0.1d) {
+                Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 20);
+                LookHelper.smoothLook(mod, newRot);
+            } else {
+                LookHelper.smoothLookAt(mod, lookTarget, 0.3f);
+            }
+        } else if (_gesture.equals(Gesture.BrawlStars)) {
+            Rotation newRot = new Rotation(_rotationIter, 20);
+            if (_phase == 0) {
+                _rotationIter += 40;
+            } else {
+                _rotationIter += 20;
+            }
+            if (_rotationIter>=179) {
                 _rotationIter = _rotationIter - 360 + 1;
             }
             LookHelper.smoothLook(mod, newRot);
-        } else if (_gesture.equals(Gesture.Easy)) {
-            // turn player's back the target
-            Vec3d playerPos = mod.getPlayer().getPos();
-            Vec3d targetPos = entity.getPos();
-            Vec3d diff = targetPos.subtract(playerPos);
-            Vec3d back = new Vec3d(-diff.getZ(), diff.getY(), -diff.getX());
-            Vec3d lookPos = playerPos.add(back);
-            LookHelper.smoothLook(mod, lookPos);
+        } else if (_gesture.equals(Gesture.Disrespect)) {
+            Rotation lookAt = LookHelper.getLookRotation(mod, lookTarget);
+            float newRotYaw = lookAt.getYaw() + 180;
+            if (newRotYaw>=179f) {
+                newRotYaw = newRotYaw - 360f + 1f;
+            }
+            LookHelper.smoothLook(mod, new Rotation(newRotYaw, lookAt.getPitch()), 0.3f);
+        } else if (_gesture.equals(Gesture.Cheer)) {
+            Rotation newRot = new Rotation(mod.getPlayer().getYaw(), -40);
+            LookHelper.smoothLook(mod, newRot, 0.3f);
+        } else if (_gesture.equals(Gesture.Sad)) {
+            Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 60);
+            LookHelper.smoothLook(mod, newRot, 0.3f);
+        } else if (_gesture.equals(Gesture.Crazy)) {
+            LookHelper.randomOrientation(mod);
         }
-        // Debug.logMessage("_phase" + _phase);
-        //Debug.logMessage("ydiff" + yDiff);
-        //Debug.logMessage("shifting " + shifting + " " + _phase);
-        if (yDiff >= yBorder && !_gesture.equals(Gesture.LetsFight)) {
+
+        // Handle jumping and actions
+        if (_gesture.equals(Gesture.Cheer) || yDiff >= yBorder && !_gesture.equals(Gesture.Fight)) {
             mod.getInputControls().tryPress(Input.JUMP);
             mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.JUMP, true);
+        } else {
+            mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.JUMP, false);
         }
+
         if (swingHand) {
-            if (_phase == 0){
+            if (_phase == 0) {
                 mod.getInputControls().tryPress(Input.CLICK_LEFT);
             }
         }
+
         if (shifting) {
             if (_phase == 0) {
-                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SNEAK, true);
+                mod.getInputControls().hold(Input.SNEAK);
+                //mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SNEAK, true);
             } else {
-                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SNEAK, false);
+                mod.getInputControls().release(Input.SNEAK);
+                //mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SNEAK, false);
             }
-
         } else {
-            mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SNEAK, false);
-
+            mod.getInputControls().release(Input.SNEAK);
         }
 
         if (moveLeftRight) {
@@ -140,10 +205,32 @@ public class GestureTask extends Task {
                 mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_RIGHT, true);
             }
         } else {
-            mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_RIGHT, false);
             mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_LEFT, false);
+            mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_RIGHT, false);
         }
-        if (_shiftTimer.elapsed()){
+        // we can show gesture to target that is line of sight no matter of distance
+        // if not in line of sight in needs to be a baritone get to pos task, TODO
+        if (SIMPLE_GO_TO_TARGET) {
+            if (tooClose) {
+                if (mod.getPlayer().forwardSpeed > 0.05) {
+                    mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, true);
+                } else {
+                    mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, false);
+                }
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SPRINT, false);
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, false);
+            } else if (!mod.getPlayer().getPos().isInRange(lookTarget, _interactDistance)) {
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, false);
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SPRINT, true);
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, true);
+            } else {
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_FORWARD, false);
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.MOVE_BACK, false);
+                mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.SPRINT, false);
+            }
+        }
+
+        if (_shiftTimer.elapsed()) {
             if (_phase > 0) {
                 _phase = 0;
             } else {
@@ -152,38 +239,38 @@ public class GestureTask extends Task {
             _shiftTimer.reset();
         }
 
+        if (_gesture.equals(Gesture.Sad)) {
+            return new SafeRandomShimmyTask();
+        }
+
         return null;
     }
 
     @Override
     public boolean isFinished(AltoClef mod) {
-        return (getEntityTarget(mod).isEmpty() || (_started && _gestureTimer.elapsed()));
+        Vec3d target = getTargetPos(mod);
+        return target == null || (_started && _gestureTimer.elapsed());
     }
 
-    /**
-     * @param mod
-     */
     @Override
     protected void onStart(AltoClef mod) {
-
+        mod.getBehaviour().push();
+        EpicCamera.getInstance().freezeCam(5);
     }
 
-    /**
-     * @param mod
-     * @param interruptTask
-     */
     @Override
     protected void onStop(AltoClef mod, Task interruptTask) {
         mod.getClientBaritone().getInputOverrideHandler().clearAllKeys();
+        mod.getInputControls().release(Input.SNEAK);
+        mod.getBehaviour().pop();
+        EpicCamera.getInstance().forceStopFreezing();
     }
 
-    /**
-     * @param other
-     * @return
-     */
     @Override
     protected boolean isEqual(Task other) {
-        return other instanceof GestureTask task && Objects.equals(task._target, _target);
+        if (!(other instanceof GestureTask task)) return false;
+        if (_target != null) return task._target != null && task._target.equals(_target);
+        return task._targetPos != null && task._targetPos.equals(_targetPos);
     }
 
     @Override
@@ -191,6 +278,8 @@ public class GestureTask extends Task {
         String target_str;
         if (_target != null && _target.getName() != null) {
             target_str = _target.getName().getString();
+        } else if (_targetPos != null) {
+            target_str = String.format("(%.1f, %.1f, %.1f)", _targetPos.x, _targetPos.y, _targetPos.z);
         } else {
             target_str = "(unreachable)";
         }

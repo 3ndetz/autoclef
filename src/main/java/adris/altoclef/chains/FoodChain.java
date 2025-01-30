@@ -1,6 +1,7 @@
 package adris.altoclef.chains;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.Settings;
 import adris.altoclef.tasks.resources.CollectFoodTask;
 import adris.altoclef.tasks.speedrun.DragonBreathTracker;
@@ -117,12 +118,18 @@ public class FoodChain extends SingleTaskChain {
             - We're very low on health and are even slightly hungry
         - We're kind of hungry and have food that fits perfectly
          */
+        //Debug.logMessage("test fdf2" + !mod.getMLGBucketChain().doneMLG()
+        //        + mod.getMLGBucketChain().isFallingOhNo(mod)
+        //        + mod.getPlayer().isBlocking() + shouldStop + KillAuraHelper.IsInBattle());
+        // TODO FIX HERE IS BLOCKING BULLSHIT // fixed? removed KillAuraHelper.IsInBattle()
+        // TODO untested
         // We're in danger, don't eat now!!
         if (!mod.getMLGBucketChain().doneMLG() || mod.getMLGBucketChain().isFallingOhNo(mod) ||
-                mod.getPlayer().isBlocking() || shouldStop || KillAuraHelper.IsInBattle()) {
+                mod.getPlayer().isBlocking() || shouldStop) {
             stopEat(mod);
             return Float.NEGATIVE_INFINITY;
         }
+
         Pair<Integer, Optional<Item>> calculation = calculateFood(mod);
         int _cachedFoodScore = calculation.getLeft();
         _cachedPerfectFood = calculation.getRight();
@@ -146,7 +153,8 @@ public class FoodChain extends SingleTaskChain {
         }
 
         // Check if we should consume combat items
-        if (KillAuraHelper.IsInBattle()) {
+        // TODO fix this
+        if (false && KillAuraHelper.IsInBattle()) {
             ItemStack combatFood = null;
             for (ItemStack stack : mod.getItemStorage().getItemStacksPlayerInventory(true)) {
                 if (isCombatOrBuffFood(stack)) {
@@ -214,7 +222,7 @@ public class FoodChain extends SingleTaskChain {
         assert player != null;
         int foodLevel = player.getHungerManager().getFoodLevel();
         float health = player.getHealth();
-
+        // TODO FIX FOOD CHAIN!!! NOW ITS  NEVER working =(((
         if (health <= 10 && foodLevel <= 19) {
             return true;
         }

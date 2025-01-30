@@ -9,13 +9,11 @@ import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.slots.PlayerSlot;
-import adris.altoclef.util.slots.Slot;
 import adris.altoclef.util.time.TimerGame;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
@@ -36,6 +34,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
     private boolean shot = false;
     private boolean failed = false;
     private Item _rangedItem = Items.BOW;
+    private boolean _highAng = false;
     private final TimerGame _shotTimer = new TimerGame(0.7);
 
     public ShootArrowSimpleProjectileTask(Entity target) {
@@ -45,16 +44,28 @@ public class ShootArrowSimpleProjectileTask extends Task {
     @Override
     protected void onStart(AltoClef mod) {
         shooting = false;
+        mod.getBehaviour().push();
+
     }
 
-    private static Rotation calculateThrowLook(AltoClef mod, Entity target) {
+    public static boolean shouldUseHighAngRanged(Entity target) {
+        return !LookHelper.cleanLineOfSight(target.getEyePos(),100);
+    }
+
+    public static Rotation calculateThrowLook(AltoClef mod, Entity target) {
+        return calculateThrowLook(mod, target, shouldUseHighAngRanged(target));
+    }
+
+
+    public static Rotation calculateThrowLook(AltoClef mod, Entity target, boolean highAng) {
+
         // Velocity based on bow charge.
         float velocity = (mod.getPlayer().getItemUseTime() - mod.getPlayer().getItemUseTimeLeft()) / 20f;
         velocity = (velocity * velocity + velocity * 2) / 3;
         if (velocity > 1) velocity = 1;
         //boolean highAng = false;
         //boolean highAng = shouldUseHighAngle(mod, target);
-        boolean highAng = !LookHelper.cleanLineOfSight(target.getEyePos(),100);
+
         //shouldUseHighAngle
         //if(!LookHelper.cleanLineOfSight(target.getEyePos(),100)) highAng = true;
         double velMult;
@@ -88,6 +99,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
         float pitch = mod.getPlayer().getPitch();
 
         if (highAng){ //режим артиллерии
+
             velocitySq = velocitySq*0.7f; //скорость снаряда сильно падает когда он вверху, учитываем это
             pitch = (float) -Math.toDegrees(Math.atan2((velocitySq + Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))),(g * hDistance)));}
         else{
@@ -130,7 +142,8 @@ public class ShootArrowSimpleProjectileTask extends Task {
         if(useTime <= 1){
             //LookHelper.smoothLookAt(mod, target);
         }else {
-            Rotation lookTarget = calculateThrowLook(mod, target);
+            _highAng = shouldUseHighAngRanged(target);
+            Rotation lookTarget = calculateThrowLook(mod, target, _highAng);
             LookHelper.smoothLook(mod, lookTarget);
         }
 
@@ -226,6 +239,11 @@ public class ShootArrowSimpleProjectileTask extends Task {
             }
 
         }
+        if (_highAng){
+            mod.getBehaviour().setCameraRotationModifer(LookHelper.getLookRotation(mod, target.getPos()).getPitch());
+        } else {
+            mod.getBehaviour().resetCameraPitchModifer();
+        }
         setDebugState("Charging?");
         return null;
     }
@@ -307,6 +325,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
     @Override
     protected void onStop(AltoClef mod, Task interruptTask) {
         mod.getInputControls().release(Input.CLICK_RIGHT);
+        mod.getBehaviour().pop();
     }
 
     @Override
@@ -324,6 +343,10 @@ public class ShootArrowSimpleProjectileTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Shooting at " + target.getType().getName().getString() + " using "+ _rangedItem.getName().getString();
+        if(_highAng){
+            return "Shooting at " + target.getType().getName().getString() + " using " + _rangedItem.getName().getString() + " at UPPER (high angle, artillery) trajectory";
+        } else {
+            return "Shooting at " + target.getType().getName().getString() + " using " + _rangedItem.getName().getString();
+        }
     }
 }

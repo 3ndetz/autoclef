@@ -511,4 +511,19 @@ public interface WorldHelper {
         // https://minecraft.fandom.com/wiki/Daylight_cycle
         return 12542 <= time && time <= 23992;
     }
+    // TODO untested
+    static BlockPos getNearestGroundPos(AltoClef mod, Vec3d pos) {
+        BlockPos start = toBlockPos(pos);
+        // Search up to 5 blocks down
+
+        for (int y = -2; y <= 5; y++) {
+            BlockPos check = start.down(y);
+            BlockPos below = check.down();
+            //Debug.logMessage("DEBUG WORLDHELPER" + isSolid(mod, below) + " " + below.toShortString() );
+            if (isSolid(mod, below)) {
+                return below;
+            }
+        }
+        return null;
+    }
 }

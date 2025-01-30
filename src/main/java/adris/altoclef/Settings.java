@@ -266,7 +266,7 @@ public class Settings implements IFailableConfigFile {
      * Username>" to follow you when not doing anything. Or "goto <Home base coords>" to return to home base when the
      * bot finishes its work.
      */
-    private String idleCommand = "";
+    private String idleCommand = "idle";
 
 
     /**

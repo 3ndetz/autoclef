@@ -28,11 +28,14 @@ public class FollowPlayerTask extends Task {
 
         if (lastPos.isEmpty()) {
             setDebugState("No player found/detected. Doing nothing until player loads into render distance.");
+            // WHAT THE F...???
+            // FPS DROPPING HERE TO 0000000
+            // WHYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY ?
             return null;
         }
         Vec3d target = lastPos.get();
 
-        if (target.isInRange(mod.getPlayer().getPos(), 1) && !mod.getEntityTracker().isPlayerLoaded(_playerName)) {
+        if (target.isInRange(mod.getPlayer().getPos(), 10) && !mod.getEntityTracker().isPlayerLoaded(_playerName)) {
             mod.logWarning("Failed to get to player \"" + _playerName + "\". We moved to where we last saw them but now have no idea where they are.");
             stop(mod);
             return null;
@@ -42,12 +45,15 @@ public class FollowPlayerTask extends Task {
         if (player.isEmpty()) {
             // Go to last location
             setDebugState("Player entity not found, going to his last position... (probably there is just NO this player, you can change target)");
-            return new GetToBlockTask(new BlockPos((int) target.x, (int) target.y, (int) target.z), false);
+            return new GetCloseToBlockTask(new BlockPos((int) target.x, (int) target.y, (int) target.z));
         }
-        if (player.get().distanceTo(mod.getPlayer()) < 2.5) {
+        double ENOUGH_DIST = 2;
+        if (player.get().distanceTo(mod.getPlayer()) < ENOUGH_DIST) {
             setDebugState("Target follow finished. Just staying and staring at a target...");
+            return null;
         }
-        return new GetToEntityTask(player.get(), 2.5);
+        setDebugState("Trying to approach target...");
+        return new GetToEntityTask(player.get(), ENOUGH_DIST);
     }
 
     @Override

@@ -105,6 +105,7 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
             if (tooClose && result != null && result.getType() == HitResult.Type.ENTITY && !result.getEntity().isPlayer()) {
                 //setDebugState("Maintaining distance");
                 if (!mod.getClientBaritone().getCustomGoalProcess().isActive()) {
+                    setDebugState("Maintaining distance");
                     mod.getClientBaritone().getCustomGoalProcess().setGoalAndPath(new GoalRunAway(maintainDistance, entity.getBlockPos()));
                 }
             }
@@ -140,6 +141,8 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
         if (!mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
             return null;
         }
+        setDebugState("Cannot get to target since it is not exists! Just TRY to find by random wandering but chance is 0%");
+        //Debug.logMessage(" fgsdgdf");
         return new TimeoutWanderTask();
     }
 

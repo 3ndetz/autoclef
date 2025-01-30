@@ -24,7 +24,7 @@ public abstract class KillAuraHelper {
     static long _lastRequestTime = -1;
     public static float YawSpeed = 1;
     public static float PitchSpeed = 1;
-    private static final TimerGame _inPvpAction = new TimerGame(0);
+    private static final TimerGame _inPvpAction = new TimerGame(1);
     private static final TimerGame _CooldownFor18 = new TimerGame(0.07);
     public static boolean ElapsedPvpCD(){
         return _CooldownFor18.elapsed();
@@ -46,7 +46,6 @@ public abstract class KillAuraHelper {
         }
     }
     public static boolean IsInBattle(){
-        _inPvpAction.setInterval(1);
         return _inPvpAction.elapsed();
     }
     public static boolean TimerStart(float initialYaww)

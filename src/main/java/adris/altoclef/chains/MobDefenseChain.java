@@ -173,7 +173,7 @@ public class MobDefenseChain extends SingleTaskChain {
         if (avoidTarget.isPresent()){
             // TODO run away from players task
             //_runAwayTask = new RunAwayFromPositionTask(DANGER_KEEP_DISTANCE, avoidTarget.get().getBlockPos());
-            setTask(new RunAwayFromEntitiesTask(avoidTarget.get(), DANGER_KEEP_DISTANCE, 1) {
+            setTask(new RunAwayFromEntitiesTask(avoidTarget.get(), SAFE_KEEP_DISTANCE, 1) {
                 @Override
                 protected boolean isEqual(Task other) {
                     return other instanceof RunAwayFromEntitiesTask;
@@ -589,33 +589,36 @@ public class MobDefenseChain extends SingleTaskChain {
 
     public Optional<Entity> getAvoidTarget(AltoClef mod) {
         try {
-            synchronized (BaritoneHelper.MINECRAFT_LOCK) {
+
                 return mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
                         entity -> {
                             boolean threatAvoid;
                             if (entity != null && entity.getName() != null) {
-                                double range = SAFE_KEEP_DISTANCE - 2;
-                                if (entity.distanceTo(mod.getPlayer()) > range)
+                                if (entity.distanceTo(mod.getPlayer()) > SAFE_KEEP_DISTANCE)
                                     return false;
 
                                 String playerName = entity.getName().getString();
                                 threatAvoid = mod.getDamageTracker().getThreatTable()
                                         .shouldAvoid(playerName) && !mod.getDamageTracker().getThreatTable()
                                         .shouldAttack(playerName);
-                                if (mod.getUserTaskChain().getCurrentTask() != null){
-                                    if(mod.getUserTaskChain().getCurrentTask() instanceof GetToEntityTask checkTask) {
-                                            //Debug.logMessage(testTask._entity.getName().getString());
-                                            if (Objects.equals(checkTask._entity.getName().getString(), playerName))
-                                                threatAvoid = false;
-
-                                    } else if (mod.getUserTaskChain().getCurrentTask() instanceof FollowPlayerTask checkTask) {
-                                        if (Objects.equals(checkTask._playerName, playerName))
-                                            threatAvoid = false;
-                                    } else if (mod.getUserTaskChain().getCurrentTask() instanceof KillPlayerTask checkTask) {
-                                        if (Objects.equals(checkTask._playerName, playerName))
-                                            threatAvoid = false;
-                                    }
+                                if (_targetEntity instanceof PlayerEntity player) {
+                                    if (Objects.equals(player.getName().getString(), playerName))
+                                        threatAvoid = false;
                                 }
+                                //if (mod.getUserTaskChain().getCurrentTask() != null){
+                                //    if(mod.getUserTaskChain().getCurrentTask() instanceof GetToEntityTask checkTask) {
+                                //            //Debug.logMessage(testTask._entity.getName().getString());
+                                //            if (Objects.equals(checkTask._entity.getName().getString(), playerName))
+                                //                threatAvoid = false;
+//
+                                //    } else if (mod.getUserTaskChain().getCurrentTask() instanceof FollowPlayerTask checkTask) {
+                                //        if (Objects.equals(checkTask._playerName, playerName))
+                                //            threatAvoid = false;
+                                //    } else if (mod.getUserTaskChain().getCurrentTask() instanceof KillPlayerTask checkTask) {
+                                //        if (Objects.equals(checkTask._playerName, playerName))
+                                //            threatAvoid = false;
+                                //    }
+                                //}
                             } else {
                                 threatAvoid = false;
                             }
@@ -623,7 +626,7 @@ public class MobDefenseChain extends SingleTaskChain {
                             return threatAvoid;
                         },
                         PlayerEntity.class);
-            }
+
         } catch (Exception e) {
             Debug.logWarning("Weird multithread exception. Will fix later." + e);//
         }
@@ -632,7 +635,7 @@ public class MobDefenseChain extends SingleTaskChain {
 
     public Optional<Entity> getAttackPlayer(AltoClef mod) {
         try {
-            synchronized (BaritoneHelper.MINECRAFT_LOCK) {
+
                 // Wither skeletons are dangerous because of the wither effect. Oof kinda obvious.
                 // If we merely force field them, we will run into them and get the wither effect which will kill us.
                 return mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
@@ -642,7 +645,7 @@ public class MobDefenseChain extends SingleTaskChain {
                                 && mod.getDamageTracker().getThreatTable()
                                 .shouldAttack(entity.getName().getString()),
                         PlayerEntity.class);
-            }
+
         } catch (Exception e) {
             Debug.logWarning("Weird multithread exception. Will fix later." + e);
         }

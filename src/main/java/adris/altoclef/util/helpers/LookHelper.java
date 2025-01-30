@@ -557,7 +557,7 @@ public abstract class LookHelper {
      *
      * @param mod The mod to set the orientation for.
      */
-    public static void randomOrientation(AltoClef mod) {
+    public static void randomOrientation(AltoClef mod, float speed) {
         // Generate random rotation angles
         float randomRotationX = (float) (Math.random() * 360f);
         float randomRotationY = -90 + (float) (Math.random() * 180f);
@@ -567,9 +567,11 @@ public abstract class LookHelper {
 
         // Set the mod to look at the rotation
         //lookAt(mod, r);
-        smoothLook(mod, r);
+        smoothLook(mod, r, speed);
     }
-
+    public static void randomOrientation (AltoClef mod) {
+        randomOrientation(mod, DEFAULT_SMOOTH_LOOK_SPEED);
+    }
     /**
      * Checks if the given rotation is close to the current look rotation.
      *
@@ -917,6 +919,10 @@ public abstract class LookHelper {
     public static void smoothLook(AltoClef mod, Entity entity) {
         Rotation targetRot = getLookRotation(mod, getClosestPointOnEntityHitbox(mod, entity));
         smoothLookInternal(mod, targetRot, entity, DEFAULT_SMOOTH_LOOK_SPEED);
+    }
+    public static void smoothLook(AltoClef mod, Entity entity, float speed) {
+        Rotation targetRot = getLookRotation(mod, getClosestPointOnEntityHitbox(mod, entity));
+        smoothLookInternal(mod, targetRot, entity, speed);
     }
     public static void smoothLook(AltoClef mod, Vec3d pos) {
         Rotation targetRot = getLookRotation(mod, pos);

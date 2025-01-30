@@ -5,6 +5,7 @@ import adris.altoclef.util.slots.Slot;
 import baritone.altoclef.AltoClefSettings;
 import baritone.api.Settings;
 import baritone.api.utils.RayTraceUtils;
+import baritone.api.utils.Rotation;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
@@ -205,6 +206,23 @@ public class BotBehaviour {
         current().applyState();
     }
 
+    public void setCameraRotationModifer(Rotation rotation) {
+        current().cameraRotationModifer = rotation;
+        current().applyState();
+    }
+    public void setCameraRotationModifer(float pitch) {
+        current().cameraRotationModifer = new Rotation(-500, pitch);
+        current().applyState();
+    }
+    public void setCameraRotationModifer(float yaw, boolean isYaw) {
+        current().cameraRotationModifer = new Rotation(yaw, -500);
+        current().applyState();
+    }
+    public void resetCameraPitchModifer() {
+        current().cameraRotationModifer = null;
+        current().applyState();
+    }
+
     public void setBlockBreakAdditionalPenalty(double penalty) {
         current().blockBreakAdditionalPenalty = penalty;
         current().applyState();
@@ -276,7 +294,7 @@ public class BotBehaviour {
         //public boolean preferredStairs;
         public double blockPlacePenalty;
         public double blockBreakAdditionalPenalty;
-
+        public Rotation cameraRotationModifer = null;
         // Alto Clef params
         public boolean exclusivelyMineLogs;
         public boolean forceFieldPlayers;
@@ -423,6 +441,7 @@ public class BotBehaviour {
 
             // Minecraft
             MinecraftClient.getInstance().options.pauseOnLostFocus = pauseOnLostFocus;
+            AltoClef.setCameraRotationModifer(cameraRotationModifer);
         }
     }
 }

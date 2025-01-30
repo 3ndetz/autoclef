@@ -4,10 +4,13 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.TaskCatalogue;
 import adris.altoclef.tasks.InteractWithBlockTask;
+import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ItemHelper;
+import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.StorageHelper;
+import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.slots.Slot;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -25,6 +28,7 @@ public class PlaceSignTask extends Task {
 
     private final BlockPos _target;
     private final String _message;
+    private Direction _dir = Direction.UP;
 
     private boolean _finished;
 
@@ -32,12 +36,17 @@ public class PlaceSignTask extends Task {
         _target = pos;
         _message = message;
     }
+    public PlaceSignTask(BlockPos pos, Direction dir, String message) {
+        _target = pos;
+        _dir = dir;
+        _message = message;
+    }
 
     public PlaceSignTask(String message) {
         this(null, message);
     }
 
-    private static boolean isSign(Block block) {
+    public static boolean isSign(Block block) {
         for (Block check : ItemHelper.WOOD_SIGNS_ALL) {
             if (check == block) return true;
         }
@@ -69,11 +78,16 @@ public class PlaceSignTask extends Task {
             assert MinecraftClient.getInstance().world != null;
             BlockState b = MinecraftClient.getInstance().world.getBlockState(_target);
 
+
             if (!isSign(b.getBlock()) && !b.isAir() && b.getBlock() != Blocks.WATER && b.getBlock() != Blocks.LAVA) {
                 return new DestroyBlockTask(_target);
             }
 
-            return new InteractWithBlockTask(new ItemTarget("sign", 1), Direction.UP, _target.down(), true);
+            BlockPos baseBlockPos = _target.add(_dir.getOpposite().getVector());
+            if (LookHelper.cleanLineOfSight(WorldHelper.toVec3d(_target), 5))
+                return new InteractWithBlockTask(new ItemTarget("sign", 1), _dir, baseBlockPos, true);
+            else
+                return new GetCloseToBlockTask(_target);  // TODO NOW UNTESTED
         }
     }
 

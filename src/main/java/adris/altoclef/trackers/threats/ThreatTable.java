@@ -40,7 +40,7 @@ public class ThreatTable {
                 if (threat.sneakRate > 7) {
                     if (threat.name != null) {
                         _mod.getInfoSender().onAutoclefEvent(threat.name
-                                + " is agressely shifting your back (likely a breed event). Avoiding...");
+                                + " is agressely shifting your back (likely an adult action). Avoiding...");
                     }
                     threat.shouldAvoidTimer.reset();
                 }
@@ -311,30 +311,36 @@ public class ThreatTable {
         String damagedName = entityIdToName.get(damagedEntityId);
         if (damagedName != null) {
             PlayerThreat threat = playerThreats.get(damagedName);
+            if (threat != null && threat.id != -1 && threat.name != null) {
+                threat.lastDamageAmount = amount;
+                threat.combatEngagementTimer.reset();
+                // Update cumulative damage only if in combat
+                if (!threat.combatEngagementTimer.elapsed()) {
+                    threat.cumulativeDamage += amount;
+                } else {
+                    // Reset cumulative damage if starting new combat
+                    threat.cumulativeDamage = amount;
+                }
 
-            threat.lastDamageAmount = amount;
-            threat.combatEngagementTimer.reset();
-            // Update cumulative damage only if in combat
-            if (!threat.combatEngagementTimer.elapsed()) {
-                threat.cumulativeDamage += amount;
-            } else {
-                // Reset cumulative damage if starting new combat
-                threat.cumulativeDamage = amount;
-            }
-
-            PlayerThreat attackerThreat = getLastAttacker(damagedName, true);
-            if(attackerThreat != null){
-                int attackerEntityId = attackerThreat.id;
-                if(attackerEntityId != -1) {
-                    //TODO
-                    //WARNING
-                    // WE WILL ATTACK EVERY PLAYER THAT ATTACKS SOMEONE OR WE
-                    if (attackerThreat.name != null && !attackerThreat.name.isBlank()) {
-                        pursue(attackerThreat.name);
+                PlayerThreat attackerThreat = getLastAttacker(damagedName, true);
+                if (attackerThreat != null) {
+                    int attackerEntityId = attackerThreat.id;
+                    if (attackerEntityId != -1) {
+                        //TODO
+                        //WARNING
+                        // WE FIRE ATTACK EVERY PLAYER THAT ATTACKS SOMEONE OR WE
+                        if (attackerThreat.name != null && !attackerThreat.name.isBlank() && threat.name != null && !threat.name.isBlank()) {
+                            // if it's we
+                            if (_mod.getPlayer() != null && _mod.getPlayer().getName() != null
+                                    && threat.name.equals(_mod.getPlayer().getName().getString()))
+                                pursue(attackerThreat.name);
+                            //TODO move to damageTracker
+                            //TODO agry when allies damaged (allies -> is authorized in butler && getDoverieLevel)
+                        }
+                        threat.combatEngagementTimer.reset();
+                        threat.addDamageRecord(attackerEntityId, amount);
+                        return attackerEntityId;
                     }
-                    threat.combatEngagementTimer.reset();
-                    threat.addDamageRecord(attackerEntityId, amount);
-                    return attackerEntityId;
                 }
             }
         }

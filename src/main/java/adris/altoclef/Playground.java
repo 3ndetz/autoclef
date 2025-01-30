@@ -8,6 +8,7 @@ import adris.altoclef.tasks.CraftGenericManuallyTask;
 import adris.altoclef.tasks.construction.PlaceBlockNearbyTask;
 import adris.altoclef.tasks.construction.PlaceSignTask;
 import adris.altoclef.tasks.construction.PlaceStructureBlockTask;
+import adris.altoclef.tasks.construction.compound.ConstructGraveTask;
 import adris.altoclef.tasks.construction.compound.ConstructIronGolemTask;
 import adris.altoclef.tasks.construction.compound.ConstructNetherPortalObsidianTask;
 import adris.altoclef.tasks.container.SmeltInFurnaceTask;
@@ -30,13 +31,7 @@ import adris.altoclef.tasks.resources.TradeWithPiglinsTask;
 import adris.altoclef.tasks.speedrun.KillEnderDragonTask;
 import adris.altoclef.tasks.speedrun.KillEnderDragonWithBedsTask;
 import adris.altoclef.tasks.speedrun.WaitForDragonAndPearlTask;
-import adris.altoclef.tasks.stupid.BeeMovieTask;
-import adris.altoclef.tasks.stupid.KitPVPTask;
-import adris.altoclef.tasks.stupid.MurderMysteryTask;
-import adris.altoclef.tasks.stupid.ReplaceBlocksTask;
-import adris.altoclef.tasks.stupid.SCP173Task;
-import adris.altoclef.tasks.stupid.SkyWarsTask;
-import adris.altoclef.tasks.stupid.TerminatorTask;
+import adris.altoclef.tasks.stupid.*;
 import adris.altoclef.util.*;
 import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.MapItemHelper;
@@ -483,6 +478,12 @@ public class Playground {
                 break;
             case "cmd":
                 mod.getMessageSender().sendCmdInstant(argParser.getArgUnits()[1]);
+                break;
+            case "mega":
+                mod.runUserTask(new BattleRoyaleTask());
+                break;
+            case "grave":
+                mod.runUserTask(new ConstructGraveTask("Here lies a test."));
                 break;
             case "bow":
                 List<PlayerEntity> players = mod.getEntityTracker().getTrackedEntities(PlayerEntity.class);

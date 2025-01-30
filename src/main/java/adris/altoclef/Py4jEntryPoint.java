@@ -1,6 +1,7 @@
 package adris.altoclef;
 
 import adris.altoclef.butler.WhisperChecker;
+import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.trackers.threats.PlayerThreat;
 import adris.altoclef.ui.MessagePriority;
@@ -27,6 +28,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import py4j.Py4JJavaServer;
 
@@ -43,7 +45,7 @@ public class Py4jEntryPoint {
         _mod = mod;
         resetValues();
         // _executor = MinecraftClient.getInstance(); // network thread??
-        _executor = Util.getIoWorkerExecutor(); // for files writing // UNTESTED
+        _executor = Util.getMainWorkerExecutor(); // for files writing // UNTESTED
                 //executeInNetworkThread
     }
 
@@ -172,6 +174,15 @@ public class Py4jEntryPoint {
             }else{
                 return "ничего";
             }
+    }
+
+    public PlayerEntity getEntity(String playerName) {
+        if (AltoClef.inGame() && _mod.getPlayer()!=null) {
+            Optional<PlayerEntity> player = _mod.getEntityTracker().getPlayerEntity(playerName);
+            return player.orElse(null);
+        }else{
+            return null;
+        }
     }
     public String getInfo(){
         String result = "";
