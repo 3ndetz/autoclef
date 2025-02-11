@@ -1,10 +1,7 @@
 package adris.altoclef;
 
 import adris.altoclef.commands.*;
-import adris.altoclef.commands.multiplayer.AvoidCommand;
-import adris.altoclef.commands.multiplayer.CombatCommand;
-import adris.altoclef.commands.multiplayer.GestureCommand;
-import adris.altoclef.commands.multiplayer.PursueCommand;
+import adris.altoclef.commands.multiplayer.*;
 import adris.altoclef.commandsystem.CommandException;
 
 /**
@@ -15,6 +12,12 @@ public class AltoClefCommands {
     public AltoClefCommands() throws CommandException {
         // List commands here
         AltoClef.getCommandExecutor().registerNewCommand(
+                new BuildCommand(),
+                new GameCommand(),
+                new ShiftCommand(),
+                new GraveCommand(),
+                new SignCommand(),
+                new TimeoutCommand(),
                 new GestureCommand(),
                 new PursueCommand(),
                 new AvoidCommand(),

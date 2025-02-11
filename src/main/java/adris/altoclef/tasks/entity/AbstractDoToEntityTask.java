@@ -131,7 +131,7 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
 
                 if (!_progress.check(mod)) {
                     _progress.reset();
-                    Debug.logMessage("Маршрут до цели не подтвержден. Поиск другого в Яндекс.Картах...");
+                    Debug.logMessage("Path to entity is unconfirmed...");
                     mod.getEntityTracker().requestEntityUnreachable(entity);
                 }
                 // Move to target

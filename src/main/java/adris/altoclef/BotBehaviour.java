@@ -13,6 +13,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.RaycastContext;
 
 import java.util.*;
@@ -53,6 +54,10 @@ public class BotBehaviour {
     public DamageTrackerStrategy getDamageTrackerStrategy() {
         return current().damageTrackerStrategy;
     }
+
+    public List<Predicate<BlockPos>> toAvoidBreakingExtra = new ArrayList<>();
+    public List<Predicate<BlockPos>> toAvoidPlacingExtra = new ArrayList<>();
+
 
     /// Parameters
 
@@ -122,6 +127,26 @@ public class BotBehaviour {
 
     public void avoidBlockPlacing(Predicate<BlockPos> pred) {
         current().toAvoidPlacing.add(pred);
+        current().applyState();
+    }
+
+    public void avoidBlockBreakingExtra(Predicate<BlockPos> pred) {
+        toAvoidBreakingExtra.clear();
+        toAvoidBreakingExtra.add(pred);
+        current().applyState();
+    }
+    public void resetAvoidBlockBreakingExtra(){
+        toAvoidBreakingExtra.clear();
+        current().applyState();
+    }
+
+    public void avoidBlockPlacingExtra(Predicate<BlockPos> pred) {
+        toAvoidPlacingExtra.clear();
+        toAvoidPlacingExtra.add(pred);
+        current().applyState();
+    }
+    public void resetAvoidBlockPlacingExtra(){
+        toAvoidPlacingExtra.clear();
         current().applyState();
     }
 
@@ -218,8 +243,17 @@ public class BotBehaviour {
         current().cameraRotationModifer = new Rotation(yaw, -500);
         current().applyState();
     }
-    public void resetCameraPitchModifer() {
+    public void resetCameraRotationModifer() {
         current().cameraRotationModifer = null;
+        current().applyState();
+    }
+
+    public void setCameraPositionModifer(Vec3d pos) {
+        current().cameraPositionModifer = pos;
+        current().applyState();
+    }
+    public void resetCameraPositionModifer() {
+        current().cameraPositionModifer = null;
         current().applyState();
     }
 
@@ -295,6 +329,7 @@ public class BotBehaviour {
         public double blockPlacePenalty;
         public double blockBreakAdditionalPenalty;
         public Rotation cameraRotationModifer = null;
+        public Vec3d cameraPositionModifer = null;
         // Alto Clef params
         public boolean exclusivelyMineLogs;
         public boolean forceFieldPlayers;
@@ -411,10 +446,12 @@ public class BotBehaviour {
                 synchronized (sa.getPlaceMutex()) {
                     sa.getBreakAvoiders().clear();
                     sa.getBreakAvoiders().addAll(toAvoidBreaking);
+                    sa.getBreakAvoiders().addAll(toAvoidBreakingExtra);
                     sa.getBlocksToAvoidBreaking().clear();
                     sa.getBlocksToAvoidBreaking().addAll(blocksToAvoidBreaking);
                     sa.getPlaceAvoiders().clear();
                     sa.getPlaceAvoiders().addAll(toAvoidPlacing);
+                    sa.getPlaceAvoiders().addAll(toAvoidPlacingExtra);
                     sa.getProtectedItems().clear();
                     sa.getProtectedItems().addAll(protectedItems);
                     synchronized (sa.getPropertiesMutex()) {
@@ -442,6 +479,7 @@ public class BotBehaviour {
             // Minecraft
             MinecraftClient.getInstance().options.pauseOnLostFocus = pauseOnLostFocus;
             AltoClef.setCameraRotationModifer(cameraRotationModifer);
+            AltoClef.setCameraPositionModifer(cameraPositionModifer);
         }
     }
 }

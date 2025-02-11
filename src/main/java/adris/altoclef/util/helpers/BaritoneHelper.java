@@ -1,5 +1,6 @@
 package adris.altoclef.util.helpers;
 
+import adris.altoclef.AltoClef;
 import baritone.api.pathing.goals.GoalBlock;
 import net.minecraft.util.math.Vec3d;
 
@@ -23,4 +24,18 @@ public class BaritoneHelper {
         double zDiff = zTarget - zStart;
         return GoalBlock.calculate(xDiff, yDiff < 0 ? yDiff + 1 : yDiff, zDiff);
     }
+
+    public static double ticksToSeconds(double ticks) {
+        return ticks / 20.0;
+    }
+
+    public static String getHeuristicString(AltoClef mod) {
+        double heuristic = mod.getCurrentBaritoneHeuristic();
+        if (heuristic<Double.POSITIVE_INFINITY) {
+            return String.format("following path (%.0fs remains)", ticksToSeconds(heuristic));
+        } else {
+            return "UNREACHABLE PATH! CHANGE TASK NOW!";
+        }
+    }
+
 }

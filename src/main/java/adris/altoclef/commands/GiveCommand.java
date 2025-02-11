@@ -29,7 +29,7 @@ public class GiveCommand extends Command {
                 return;
             }
         }
-        String item = parser.get(String.class);
+        String item = parser.get(String.class).toLowerCase();
         int count = parser.get(Integer.class);
         ItemTarget target = null;
         if (TaskCatalogue.taskExists(item)) {

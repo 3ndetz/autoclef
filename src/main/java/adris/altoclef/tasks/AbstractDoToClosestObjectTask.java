@@ -46,7 +46,15 @@ public abstract class AbstractDoToClosestObjectTask<T> extends Task {
         return _wasWandering;
     }
 
-    private double getCurrentCalculatedHeuristic(AltoClef mod) {
+    public static double getCurrentBaritoneHeuristic(AltoClef mod) {
+        if (mod.getClientBaritone() != null && mod.getClientBaritone().getPathingBehavior() != null){
+            Optional<Double> ticksRemainingOp = mod.getClientBaritone().getPathingBehavior().ticksRemainingInSegment();
+            return ticksRemainingOp.orElse(Double.POSITIVE_INFINITY);
+        }
+        return Double.POSITIVE_INFINITY;
+    }
+
+    public double getCurrentCalculatedHeuristic(AltoClef mod) {
         Optional<Double> ticksRemainingOp = mod.getClientBaritone().getPathingBehavior().ticksRemainingInSegment();
         return ticksRemainingOp.orElse(Double.POSITIVE_INFINITY);
     }

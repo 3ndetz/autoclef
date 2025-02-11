@@ -14,15 +14,37 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.*;
-// TODO add docstring
-// TODO untested
+
+import static adris.altoclef.util.helpers.LookHelper.toVec3d;
+
+/**
+ * A task for performing various gestures and emotes in-game.
+ * Handles different types of gestures by controlling player movement, rotation, and actions.
+ * 
+ * Gestures include:
+ * - Fight: Combat stance with side strafing
+ * - Disrespect: Turning back to target
+ * - BrawlStars: Spinning animation
+ * - Hey: Simple greeting wave
+ * - Cheer: Celebratory jump and wave
+ * - Sad: Looking down with slow movement
+ * - Crazy: Random head movements
+ * - Agree: Nodding head up and down
+ * - Disagree: Shaking head left and right
+ * 
+ * Can target either:
+ * - A specific entity (like a player)
+ * - A position in the world
+ * - Random gesture if no target specified
+ * 
+ * Gesture timing and animations are controlled by phase system and timers
+ */
 public class GestureTask extends Task {
 
     private Entity _target;
     private Vec3d _targetPos;
     private int _phase = 0;
     private double _interactDistance = 2.5d;
-    private double _shiftDistance = 0.7d;
     private double _stopDistance = 0.2d;
     private boolean _started = false;
     private final boolean SIMPLE_GO_TO_TARGET = false;
@@ -105,12 +127,30 @@ public class GestureTask extends Task {
         }
         if (!_started) _started = true;
 
-        if(lookTarget == null) {
-
+        if(lookTarget == null || mod.getPlayer() == null || mod.getPlayer().getPos() == null) {
+            setDebugState("NULL TARGET / SELF");
             return null;
         }
         Rotation lookAtCamera = LookHelper.getLookRotation(mod, lookTarget);
-        mod.getBehaviour().setCameraRotationModifer(lookAtCamera);
+        Vec3d targetVector = lookTarget.subtract(mod.getPlayer().getPos()).normalize();
+        if (LookHelper.cleanLineOfSight(lookTarget, 100d)) {
+            // set camera from target if we see target, to show us from target
+            mod.getBehaviour().setCameraPositionModifer(
+                    lookTarget.add(targetVector.multiply(1)));
+            //
+            lookAtCamera = LookHelper.getLookRotation(mod, lookTarget);
+
+            mod.getBehaviour().setCameraRotationModifer(new Rotation(
+                    LookHelper.normalizeAngle(lookAtCamera.getYaw() + 180),
+                    0)
+            );
+        } else {
+            mod.getBehaviour().setCameraPositionModifer(
+                    mod.getPlayer().getEyePos()
+                            .add(targetVector.multiply(-1)));
+            //
+            mod.getBehaviour().setCameraRotationModifer(lookAtCamera);
+        }
         double yDiff = lookTarget.getY() - mod.getPlayer().getPos().getY();
         boolean tooClose = mod.getPlayer().getPos().distanceTo(lookTarget) < _stopDistance;
         boolean shifting = !(_gesture.equals(Gesture.Fight) || _gesture.equals(Gesture.BrawlStars) || _gesture.equals(Gesture.Disagree) || _gesture.equals(Gesture.Agree));
@@ -121,7 +161,9 @@ public class GestureTask extends Task {
                 || (_gesture.equals(Gesture.Agree) || _gesture.equals(Gesture.Disagree)));
 
         // Handle different gesture types and looking
-        if (_gesture.equals(Gesture.Agree)) {
+        if (_gesture.equals(Gesture.Hey)) {
+            LookHelper.smoothLookAt(mod, lookTarget, 0.1f);
+        } else if (_gesture.equals(Gesture.Agree)) {
             if (_phase == 0) {
                 Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 20);
                 LookHelper.smoothLook(mod, newRot, 0.2f);
@@ -135,43 +177,51 @@ public class GestureTask extends Task {
             } else {
                 LookHelper.smoothLookAt(mod, lookTarget, 0.3f);
             }
-        } else if (_gesture.equals(Gesture.Hey) || _gesture.equals(Gesture.Fight)) {
+        } else if (_gesture.equals(Gesture.Fight)) {
             if (_shiftTimer.getDuration() < 0.1d) {
-                Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 20);
-                LookHelper.smoothLook(mod, newRot);
+                Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 40);
+                LookHelper.smoothLook(mod, newRot, (float) _shiftTimer.getDuration()*4);
             } else {
-                LookHelper.smoothLookAt(mod, lookTarget, 0.3f);
+                LookHelper.smoothLookAt(mod, lookTarget, 0.2f);
             }
         } else if (_gesture.equals(Gesture.BrawlStars)) {
-            Rotation newRot = new Rotation(_rotationIter, 20);
-            if (_phase == 0) {
-                _rotationIter += 40;
-            } else {
-                _rotationIter += 20;
-            }
-            if (_rotationIter>=179) {
-                _rotationIter = _rotationIter - 360 + 1;
-            }
-            LookHelper.smoothLook(mod, newRot);
+            // TODO UNTESTED
+            mod.getInputControls().hold(Input.SPRINT);
+            mod.getInputControls().hold(Input.MOVE_FORWARD);
+            LookHelper.smoothLookAt(mod, mod.getPlayer().getEyePos().add(
+                    LookHelper.toVec3d(LookHelper.getLookRotation().add(
+                            new Rotation(90, 0)
+                    )).normalize().multiply(5)
+                    ).multiply(1,0,1).add(
+                    new Vec3d(0, lookTarget.getY(), 0)
+                    ),
+                    0.25f);
+            // OLD WORKING
+            // Rotation newRot = new Rotation(_rotationIter, 20);
+            // if (_phase == 0) {
+            //     _rotationIter += 40;
+            // } else {
+            //     _rotationIter += 20;
+            // }
+            // _rotationIter = LookHelper.normalizeAngle(_rotationIter);
+            // LookHelper.smoothLook(mod, newRot);
         } else if (_gesture.equals(Gesture.Disrespect)) {
             Rotation lookAt = LookHelper.getLookRotation(mod, lookTarget);
             float newRotYaw = lookAt.getYaw() + 180;
-            if (newRotYaw>=179f) {
-                newRotYaw = newRotYaw - 360f + 1f;
-            }
+            newRotYaw = LookHelper.normalizeAngle(newRotYaw);  // TODO untested
             LookHelper.smoothLook(mod, new Rotation(newRotYaw, lookAt.getPitch()), 0.3f);
         } else if (_gesture.equals(Gesture.Cheer)) {
             Rotation newRot = new Rotation(mod.getPlayer().getYaw(), -40);
             LookHelper.smoothLook(mod, newRot, 0.3f);
         } else if (_gesture.equals(Gesture.Sad)) {
-            Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 60);
-            LookHelper.smoothLook(mod, newRot, 0.3f);
+            LookHelper.smoothLookAt(mod, 
+            lookTarget.add(0, -yDiff-10, 0), 0.05f);
         } else if (_gesture.equals(Gesture.Crazy)) {
             LookHelper.randomOrientation(mod);
         }
 
         // Handle jumping and actions
-        if (_gesture.equals(Gesture.Cheer) || yDiff >= yBorder && !_gesture.equals(Gesture.Fight)) {
+        if (_gesture.equals(Gesture.Cheer)) {  //actually lets remove jumping when height, not need maybe  // || yDiff >= yBorder && !_gesture.equals(Gesture.Fight)) {
             mod.getInputControls().tryPress(Input.JUMP);
             mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.JUMP, true);
         } else {
@@ -181,6 +231,7 @@ public class GestureTask extends Task {
         if (swingHand) {
             if (_phase == 0) {
                 mod.getInputControls().tryPress(Input.CLICK_LEFT);
+                mod.getInputControls().release(Input.CLICK_LEFT);
             }
         }
 
@@ -255,15 +306,18 @@ public class GestureTask extends Task {
     @Override
     protected void onStart(AltoClef mod) {
         mod.getBehaviour().push();
-        EpicCamera.getInstance().freezeCam(5);
+        //EpicCamera.getInstance().freezeCam(5);
     }
 
     @Override
     protected void onStop(AltoClef mod, Task interruptTask) {
         mod.getClientBaritone().getInputOverrideHandler().clearAllKeys();
         mod.getInputControls().release(Input.SNEAK);
+        mod.getInputControls().release(Input.MOVE_FORWARD);
+        mod.getInputControls().release(Input.SPRINT);
+        //mod.getInputControls().release(Input.CLICK_LEFT);
         mod.getBehaviour().pop();
-        EpicCamera.getInstance().forceStopFreezing();
+        //EpicCamera.getInstance().forceStopFreezing();
     }
 
     @Override

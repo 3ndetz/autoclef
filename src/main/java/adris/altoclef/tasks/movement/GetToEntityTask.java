@@ -4,6 +4,7 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.tasksystem.ITaskRequiresGrounded;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.baritone.GoalFollowEntity;
+import adris.altoclef.util.helpers.BaritoneHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.progresscheck.MovementProgressChecker;
 import baritone.api.utils.input.Input;
@@ -158,8 +159,8 @@ public class GetToEntityTask extends Task implements ITaskRequiresGrounded {
         if (!_progress.check(mod)) {
             return _wanderTask;
         }
-
-        setDebugState("Подтверждено движение");//"Going to entity"
+        setDebugState("Going to entity: " + BaritoneHelper.getHeuristicString(mod));
+        // TRS "Going to entity"
         return null;
     }
 

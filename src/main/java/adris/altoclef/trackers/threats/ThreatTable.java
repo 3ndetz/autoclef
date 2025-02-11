@@ -1,6 +1,7 @@
 package adris.altoclef.trackers.threats;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.SneakEvent;
 import adris.altoclef.eventbus.events.multiplayer.TeleportEvent;
@@ -37,12 +38,16 @@ public class ThreatTable {
                     threat.shiftTimer.reset();
                     threat.sneakRate += 1;
                 }
-                if (threat.sneakRate > 7) {
+                if (threat.sneakRate > 5) {
                     if (threat.name != null) {
+                        if (threat.sneakRate == 6)
+                            Debug.logMessage("[SHIFT ALERT] " + threat.name + " performs aggresively shifting!");
+                        avoid(threat.name);
+                        //threat.shouldAvoidTimer.reset();
                         _mod.getInfoSender().onAutoclefEvent(threat.name
-                                + " is agressely shifting your back (likely an adult action). Avoiding...");
+                                + " is agressive shifting (likely an adult 18+ action). Avoiding...");
                     }
-                    threat.shouldAvoidTimer.reset();
+
                 }
 
                 //Debug.logMessage("[SNEAK debug]Sneak detected: " + player.getName().getString()
@@ -192,7 +197,14 @@ public class ThreatTable {
     public void registerPlayer(int entityId) {
         registerPlayer(entityId, false);
     }
-
+    public void recordRangedAttack(int attackerEntityId){
+        registerPlayer(attackerEntityId);
+        String attackerName = entityIdToName.get(attackerEntityId);
+        if (attackerName != null){
+            PlayerThreat threat = playerThreats.get(attackerName);
+            threat.lastShootTimer.reset();
+        }
+    }
     public void recordAttackAnimation(int attackerEntityId) {
         registerPlayer(attackerEntityId);
         String attackerName = entityIdToName.get(attackerEntityId);
@@ -359,7 +371,10 @@ public class ThreatTable {
                 entityIdToName.remove(threat.id);
             }
             if (threat.sneak != entity.isSneaking()){
-                EventBus.publish(new SneakEvent(entity, entity.isSneaking()));
+                // TODO UNTESTED
+                // we don't need to see self-sneak event
+                if (threat.name != null && _mod.getPlayer() != null && _mod.getPlayer().getName() != null && !threat.name.equals(_mod.getPlayer().getName().getString()))
+                    EventBus.publish(new SneakEvent(entity, entity.isSneaking()));
                 threat.sneak = entity.isSneaking();
             }
             if (threat.sneakRate > 0 && threat.shiftTimer.elapsed()) {
@@ -400,9 +415,23 @@ public class ThreatTable {
         PlayerThreat threat = playerThreats.get(playerName);
         return threat != null && (!threat.shouldKillTimer.elapsed());
     }
+    public boolean isSelfThreat(PlayerThreat threat) {
+        return threat.name != null && Objects.equals(AltoClef.getSelfName(), threat.name);
+    }
+
+    public boolean forget(String playerName) {
+        PlayerThreat threat = playerThreats.get(playerName);
+        if (threat != null && !isSelfThreat(threat)) {
+            threat.shouldAvoidTimer.forceElapse();
+            threat.shouldKillTimer.forceElapse();
+            return true;
+        }
+        return false;
+    }
+
     public boolean avoid(String playerName) {
         PlayerThreat threat = playerThreats.get(playerName);
-        if (threat != null) {
+        if (threat != null && !isSelfThreat(threat)) {
             threat.shouldAvoidTimer.reset();
             return true;
         }
@@ -410,7 +439,7 @@ public class ThreatTable {
     }
     public boolean pursue(String playerName) {
         PlayerThreat threat = playerThreats.get(playerName);
-        if (threat != null) {
+        if (threat != null && !isSelfThreat(threat)) {
             threat.shouldKillTimer.reset();
             return true;
         }

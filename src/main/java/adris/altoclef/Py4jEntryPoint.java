@@ -2,12 +2,17 @@ package adris.altoclef;
 
 import adris.altoclef.butler.WhisperChecker;
 import adris.altoclef.tasks.movement.GetCloseToBlockTask;
+import adris.altoclef.tasks.movement.IdleTask;
+import adris.altoclef.tasks.multiplayer.GestureTask;
+import adris.altoclef.tasks.speedrun.WaitForDragonAndPearlTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.trackers.threats.PlayerThreat;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.util.ItemTarget;
+import adris.altoclef.util.agent.AgentState;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.WorldHelper;
+import adris.altoclef.util.agent.Pipeline;
 import baritone.api.pathing.calc.IPath;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.Rotation;
@@ -30,6 +35,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import py4j.Py4JException;
 import py4j.Py4JJavaServer;
 
 import static adris.altoclef.util.helpers.EntityHelper.getWeaponInHand;
@@ -50,22 +56,39 @@ public class Py4jEntryPoint {
     }
 
     private void executeInNetworkThread(Runnable task) {
-        _executor.execute(() -> {
-            if (AltoClef.inGame()) {
-                task.run();
-            }
-        });
+        try {
+            _executor.execute(() -> {
+                try {
+                    if (AltoClef.inGame()) {
+                        task.run();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private <T> T executeInNetworkThread(Callable<T> task) {
-        FutureTask<T> futureTask = new FutureTask<>(task);
-        _executor.execute(futureTask);
         try {
-            return futureTask.get();
-        } catch (InterruptedException | ExecutionException e) {
+            FutureTask<T> futureTask = new FutureTask<>(task);
+            try {
+                _executor.execute(futureTask);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            try {
+                return futureTask.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+                return null;
+            }
+        } catch (Exception e) {
             e.printStackTrace();
-            return null;
         }
+        return null;
     }
 
     public void resetValues(){
@@ -104,33 +127,84 @@ public class Py4jEntryPoint {
     //    result_dict.put("held_item",getHeldItem());
     //    return result_dict;
     //}
+    public boolean hasActiveTask() {
+        // _mod.getUserTaskChain().isRunningIdleTask() IS A PIECE OF ....
+        // ALMOST ALWAYS idle, no only when mob chain attack active WHAT A STUPIDNESS
+        //TODO untested NOW
+        if (!(AltoClef.inGame() && _mod.getPlayer() !=null && _mod.getWorld() != null))
+            return false;
+        Task task = _mod.getCurrentTask();
+        return !( task instanceof IdleTask || task instanceof GestureTask //idle and gesture
+                || task instanceof WaitForDragonAndPearlTask // wait tasks
+                // parse from strings
+                || (task._debugState != null && !task._debugState.isBlank() &&
+                        task._debugState.toLowerCase().contains("wait")) );
 
+        //boolean checkActiveTask = (AltoClef.inGame() && _mod.getPlayer() !=null && _mod.getWorld() != null)
+        //        && !_mod.getUserTaskChain().isRunningIdleTask();
+        //Debug.logMessage("hasActiveTask = " + checkActiveTask +
+        //        ", isRunningIdleTask = " + _mod.getUserTaskChain().isRunningIdleTask());
+        //return checkActiveTask;
+    }
+    public String getPipelineDescription(){
+        return Objects.requireNonNullElse(AltoClef._pipeline, Pipeline.None).getDescription();
+    }
     public String getTaskChainString (){
 
-        String tasks_string = "Ничего не происходит";
+        StringBuilder tasks_string = null;
+
         try {
             if (_mod.getTaskRunner().getCurrentTaskChain() != null) {
+                String chain_name = _mod.getTaskRunner().getCurrentTaskChain().getName();
                 List<Task> tasks = _mod.getTaskRunner().getCurrentTaskChain().getTasks();
-                if (tasks.size() > 0) {
-                    tasks_string = "";
+                if (tasks != null && !tasks.isEmpty() && chain_name != null) {
+                    tasks_string = new StringBuilder("Current Baritone executor task list (");
+                    tasks_string.append(chain_name);
+                    tasks_string.append(" task chain)\n");
                     int i = 0;
                     for (Task task : tasks) {
                         //tasks_string += (i+1)+") "+task.toString();
                         if(i==0){
-                            tasks_string += "Главная задача: ";
+                            tasks_string.append("1. Main task: ");
+                            tasks_string.append(task.toString());
+                        } else if (i == 1){
+                            tasks_string.append("1.1. Subtasks: ");
+                            tasks_string.append(task.toString());
+
                         } else {
-                            tasks_string += "- ".repeat(i+1);
+                            // tasks_string.append(" ->\n").append("1.".repeat(i + 1)).append(" ");
+                            tasks_string.append(" ->\n").append("1.1." + (i - 2)).append(". ");
+                            String task_info = task.toString();
+                            int MAX_TASK_INFO_LENGTH = 200;
+                            // limit task_string to not more than 200 letters
+                            if (task_info.length() < MAX_TASK_INFO_LENGTH) {
+                                tasks_string.append(task_info);
+                            } else {
+                                tasks_string.append(task_info, 0, MAX_TASK_INFO_LENGTH - 5);
+                                tasks_string.append("...");
+                            }
+
                         }
-                        tasks_string += task.toString();
-                        if(i<tasks.size()-1){tasks_string+="\n";}
+
+                        ;
+                        if (i < tasks.size() - 1) {
+                            // divider
+                            //if (!(i==0 || i==1))
+                                tasks_string.append("\n");
+
+                            //else
+                            //    tasks_string += " -> ";
+                        }
                         i++;
                     }
                 }
 
             }
-        }catch (Exception e) {tasks_string = "Ошибка при получении списка игровых подзадач! Скрипт сломался!";}
-
-        return tasks_string;
+        }catch (Exception e) {
+            tasks_string = new StringBuilder("Error when getting tasks! Something is broken!");}
+        if (tasks_string == null)
+            tasks_string = new StringBuilder("No tasks. Time to add new!");
+        return "Description of current game pipeline that is selected: " + getPipelineDescription() + "Current game tasks: " + tasks_string.toString();
     }
 
     public String getGroundBlock (){
@@ -175,7 +249,6 @@ public class Py4jEntryPoint {
                 return "ничего";
             }
     }
-
     public PlayerEntity getEntity(String playerName) {
         if (AltoClef.inGame() && _mod.getPlayer()!=null) {
             Optional<PlayerEntity> player = _mod.getEntityTracker().getPlayerEntity(playerName);
@@ -203,29 +276,54 @@ public class Py4jEntryPoint {
         _cb = (PythonCallback) _mod.getGateway().getPythonServerEntryPoint(new Class[] {PythonCallback.class});
     }
     boolean callbackstarted = false;
+    public boolean getCallbackServerStatusFast(){
+        return callbackstarted;
+    }
     public boolean IsCallbackServerStarted(){
         boolean result = false;
         try {
             _cb.isStarted();
             result = true;
-        }catch (Exception e) {}
+        } catch (Py4JException e) {
+            //e.printStackTrace();
+            // don't print, it's normal if there's errors, it just cant connect
+        } catch (Exception e) {
+            // unknown error but we won't all pipeline to crash
+            e.printStackTrace();
+        }
         callbackstarted = result;
         return result;
     }
     public PythonCallback get_cb(){
         return _cb;
     }
-    String _state = "starting";
+    AgentState _state = new AgentState();
     public String saayHellooo(String name) {
         return "Hello, " + name + "!" + Items.SOUL_SAND.getName().getString();
     }
 
-    public String getState(){
+    public AgentState getState(){
         return _state;
     }
-    public void setState(String state){
+    public void setEmotionalState(String state){
+        _state.emotionalState = state;
+    }
+    public void setFocusPlayerName(String name){
+        _state.focusPlayerName = name;
+    }
+    /*
+     * DO NOT USE IT FROM PYTHON! NOT WORKED!!!
+     * We approve implicit state field definition like this from Python part:
+     * ```python
+     * state = mc.getState()
+     * state.emotionalState = "angry"
+     * mc.setState(state)
+     * ```
+     */
+    public void setState(AgentState state){
         _state = state;
     }
+
     public boolean inGame(){
         return Boolean.TRUE.equals(executeInNetworkThread(AltoClef::inGame));
     }
@@ -252,16 +350,20 @@ public class Py4jEntryPoint {
     }
 
     public void onWeakChatMessage(String message){
-        executeInNetworkThread(() -> {
-            if (IsCallbackServerStarted()) {
-                Map<String, String> messageDict = new HashMap<>();
-                //if()
-                messageDict.put("parse_type", "unparsed");
-                messageDict.put("message_type", "chat");
-                messageDict.put("msg", message);
-                _cb.onVerifedChat(messageDict);
-            }
-        });
+        try {
+            executeInNetworkThread(() -> {
+                if (IsCallbackServerStarted()) {
+                    Map<String, String> messageDict = new HashMap<>();
+                    //if()
+                    messageDict.put("parse_type", "unparsed");
+                    messageDict.put("message_type", "chat");
+                    messageDict.put("msg", message);
+                    _cb.onVerifedChat(messageDict);
+                }
+            });
+        } catch (Exception e) {
+            Debug.logInternal("onWeakChatMessage error: " + e.getMessage());
+        }
     }
     public void onCustomMessage(Map<String,String> messageDict){
         executeInNetworkThread(() -> {
@@ -375,15 +477,28 @@ public class Py4jEntryPoint {
         }});
     }
     public void onAutoclefEvent(String description){
-        executeInNetworkThread(() -> {
-        if(IsCallbackServerStarted() && description != null && !description.isBlank()) {
-            _cb.onAutoclefEvent(description);
-        }});
+        // TODO untested
+        // removed execution in network thread
+        //[19:52:28] [Worker-Main-43/ERROR] (Minecraft) Caught exception in thread Thread[#340,Worker-Main-43,10,main]
+        // py4j.Py4JException: Error while obtaining a new communication channel
+        //executeInNetworkThread(() -> {
+        try {
+            if (IsCallbackServerStarted() && description != null && !description.isBlank()) {
+                _cb.onAutoclefEvent(description);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        //});
     }
     public void onCaptchaSolveRequest(byte[] image_bytes){
-        if(IsCallbackServerStarted()) {
-            Debug.logMessage("SENDING TO CALLBACK!");
-            _cb.onCaptchaSolveRequest(image_bytes);
+        try {
+            if(IsCallbackServerStarted()) {
+                Debug.logMessage("SENDING TO CALLBACK!");
+                _cb.onCaptchaSolveRequest(image_bytes);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
     public void onDamage(float amount){
@@ -508,7 +623,7 @@ public class Py4jEntryPoint {
         PlayerEntity self = _mod.getPlayer();
         List<String> playersStrings = new ArrayList<>();
         ArrayList<PlayerThreat> nearsetPlayerThreats = new ArrayList<>();
-        if (self != null && self.getName() != null) {
+        if (self != null && self.getName() != null && _mod.getWorld() != null) {
             Vec3d selfPos = self.getPos();
             if (selfPos != null) {
                 List<AbstractClientPlayerEntity> playerList = _mod.getDamageTracker().getPlayerList();

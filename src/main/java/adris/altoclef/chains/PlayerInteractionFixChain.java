@@ -74,7 +74,7 @@ public class PlayerInteractionFixChain extends TaskChain {
                         boolean isAllowedToManage = (!mod.getClientBaritone().getPathingBehavior().isPathing() ||
                                 bestToolSlot.get().getInventorySlot() >= 9) && !mod.getFoodChain().isTryingToEat();
                         if (isAllowedToManage) {
-                            Debug.logMessage("Более полезная вещь найдена, использование!.");//"Found better tool in inventory, equipping."
+                            Debug.logInternal("[Fix Chain] Found better tool in inventory, equipping.");
                             ItemStack bestToolItemStack = StorageHelper.getItemStackInSlot(bestToolSlot.get());
                             Item bestToolItem = bestToolItemStack.getItem();
                             mod.getSlotHandler().forceEquipItem(bestToolItem);

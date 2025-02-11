@@ -17,6 +17,7 @@ public class PlayerThreat {
     public double combatTime = 10;
     public double damagedTime = 0.4;
     public final TimerReal lastAttackTimer = new TimerReal(damagedTime);
+    public final TimerReal lastShootTimer = new TimerReal(1);
     public final TimerReal lastDamagedTimer = new TimerReal(damagedTime);
     public final TimerReal damagedTimer = new TimerReal(damagedTime);
     public final TimerReal combatEngagementTimer = new TimerReal(combatTime);

@@ -48,8 +48,9 @@ public class MessageSender {
         if (canSendMessage()) {
             if (!_whisperQueue.isEmpty()) {
                 BaseMessage msg = _whisperQueue.poll();
-                assert msg != null;
-                sendChatUpdateTimers(msg.getChatInput());
+                //assert msg != null;
+                if (msg != null)
+                    sendChatUpdateTimers(msg.getChatInput());
             }
         }
     }
@@ -70,25 +71,30 @@ public class MessageSender {
     }
 
     private void sendChatUpdateTimers(String message) {
-         if (message != null && !message.isBlank()) {
+         if (message != null && !message.isBlank() && MinecraftClient.getInstance() != null && MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().world != null) {
+             // TODO ADD KICK-RESTRICTED SYMBOLS CLEAR
+             // auto kick reason: недопустимые символы в чате
+             // этот параграф даже в чате не написать
+             message = message.replace("§", "");
              if (message.length() > 1 && message.startsWith("/")) {
                  // remove "/" from the command
                  sendCmdInstant(message.substring(1));
              } else {
                  sendChatInstant(message);
              }
+
+             _fastSendTimer.reset();
+             _fastCount++;
+             if (_fastCount >= FAST_LIMIT) {
+                 _bigSendTimer.reset();
+                 _fastCount = 0;
+                 _slowCount++;
+                 if (_slowCount >= SLOW_LIMIT) {
+                     _bigBigSendTimer.reset();
+                     _slowCount = 0;
+                 }
+             }
          }
-        _fastSendTimer.reset();
-        _fastCount++;
-        if (_fastCount >= FAST_LIMIT) {
-            _bigSendTimer.reset();
-            _fastCount = 0;
-            _slowCount++;
-            if (_slowCount >= SLOW_LIMIT) {
-                _bigBigSendTimer.reset();
-                _slowCount = 0;
-            }
-        }
     }
 
     public void sendChatInstant(String message) {

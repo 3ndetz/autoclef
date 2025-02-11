@@ -242,7 +242,7 @@ public class ShootArrowSimpleProjectileTask extends Task {
         if (_highAng){
             mod.getBehaviour().setCameraRotationModifer(LookHelper.getLookRotation(mod, target.getPos()).getPitch());
         } else {
-            mod.getBehaviour().resetCameraPitchModifer();
+            mod.getBehaviour().resetCameraRotationModifer();
         }
         setDebugState("Charging?");
         return null;

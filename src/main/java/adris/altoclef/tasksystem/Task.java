@@ -8,8 +8,8 @@ import java.util.function.Predicate;
 
 public abstract class Task {
 
-    private String _oldDebugState = "";
-    private String _debugState = "";
+    public String _oldDebugState = "";
+    public String _debugState = "";
 
     private Task _sub = null;
 
@@ -79,7 +79,11 @@ public abstract class Task {
     public void stop(AltoClef mod, Task interruptTask) {
         if (!_active) return;
         Debug.logInternal("Task STOP: " + this + ", interrupted by " + interruptTask);
-        mod.getInfoSender().onAutoclefEvent("Task STOP: " + this + ", interrupted by " + interruptTask);
+        try {
+            mod.getInfoSender().onAutoclefEvent("Task STOP: " + this + ", interrupted by " + interruptTask);
+        } catch (Exception e) {
+            Debug.logInternal("Failed to send task stop event: " + e);
+        }
         if (!_first) {
             onStop(mod, interruptTask);
         }

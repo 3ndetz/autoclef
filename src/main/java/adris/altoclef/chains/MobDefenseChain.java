@@ -3,16 +3,15 @@ package adris.altoclef.chains;
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.control.KillAura;
-import adris.altoclef.tasks.entity.AbstractDoToEntityTask;
 import adris.altoclef.tasks.entity.KillEntitiesTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.movement.*;
 import adris.altoclef.tasks.speedrun.DragonBreathTracker;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
-import adris.altoclef.control.KillAura;
 import adris.altoclef.util.helpers.*;
 import adris.altoclef.util.baritone.CachedProjectile;
+import adris.altoclef.util.progresscheck.MovementProgressChecker;
 import adris.altoclef.util.slots.PlayerSlot;
 import adris.altoclef.util.slots.Slot;
 import adris.altoclef.util.time.TimerGame;
@@ -57,6 +56,8 @@ public class MobDefenseChain extends SingleTaskChain {
     private boolean _wasPuttingOutFire = false;
     private CustomBaritoneGoalTask _runAwayTask;
     private Rotation _suggestedProjectileRotation;
+    public TimerGame _preProjectileTimer = new TimerGame(0.3);
+    public TimerGame _projectileTimer = new TimerGame(0.7);
 
     private float _cachedLastPriority;
 
@@ -170,27 +171,21 @@ public class MobDefenseChain extends SingleTaskChain {
 
         Optional<Entity> avoidTarget = getAvoidTarget(mod);
         // TODO UNTESTED
-        if (avoidTarget.isPresent()){
-            // TODO run away from players task
+        // THIS SHIT NOW NOT WORK IDK WHY!!! WORKS BEFORE!!!!!!!!!!!!
+        if (avoidTarget.isPresent()) {
+            // run away from players task
+
+            // older: works good but dont says the avoid target and name
             //_runAwayTask = new RunAwayFromPositionTask(DANGER_KEEP_DISTANCE, avoidTarget.get().getBlockPos());
-            setTask(new RunAwayFromEntitiesTask(avoidTarget.get(), SAFE_KEEP_DISTANCE, 1) {
-                @Override
-                protected boolean isEqual(Task other) {
-                    return other instanceof RunAwayFromEntitiesTask;
-                }
-
-                @Override
-                protected String toDebugString() {
-                    //return "Run away from " + avoidTarget.get().getName().getString();
-                    if(avoidTarget.get().getName() != null)
-                        return "Run away from " + avoidTarget.get().getName().getString();
-                    else
-                        return "Run away from " + avoidTarget.get().getType().toString();
-
-                }
-
-            });
-            return 70;
+            // TODO UNTESTED
+            ///*
+            // DOING NOTHING IN SOME CASES!!! (after 3-5 minutes of running away from avoiding target)
+            // JUST STAYS NEAR THREAT AND DO NOTHING =(((( and cancels all the tasks, like somewhere is something like
+            //return null =((
+            //_runAwayTask = ;
+             //*/
+            setTask(new RunAwayFromPlayersTask(avoidTarget.get(), SAFE_KEEP_DISTANCE + 5));
+            return 55;
         }
         // Tell baritone to avoid mobs if we're vulnurable.
         // Costly.
@@ -209,6 +204,7 @@ public class MobDefenseChain extends SingleTaskChain {
         Item offhandItem = StorageHelper.getItemStackInSlot(offhandSlot).getItem();
         // Run away from creepers
         CreeperEntity blowingUp = getClosestFusingCreeper(mod);
+        boolean projectileIsClose = isProjectileClose(mod);
         if (blowingUp != null) {
             if (!mod.getFoodChain().needsToEat() && (mod.getItemStorage().hasItem(Items.SHIELD) ||
                     mod.getItemStorage().hasItemInOffhand(Items.SHIELD)) &&
@@ -232,12 +228,12 @@ public class MobDefenseChain extends SingleTaskChain {
                 return 50 + blowingUp.getClientFuseTime(1) * 50;
             }
         } else {
-            if (!isProjectileClose(mod)) {
+            if (!projectileIsClose) {
                 stopShielding(mod);
             }
         }
         // Block projectiles with shield
-        if (!mod.getFoodChain().needsToEat() && mod.getModSettings().isDodgeProjectiles() && isProjectileClose(mod) &&
+        if (!mod.getFoodChain().needsToEat() && mod.getModSettings().isDodgeProjectiles() && projectileIsClose &&
                 (mod.getItemStorage().hasItem(Items.SHIELD) || mod.getItemStorage().hasItemInOffhand(Items.SHIELD)) &&
                 !mod.getEntityTracker().entityFound(PotionEntity.class) && _runAwayTask == null
                 && !mod.getPlayer().getItemCooldownManager().isCoolingDown(offhandItem)
@@ -254,7 +250,7 @@ public class MobDefenseChain extends SingleTaskChain {
             }
         }
         // Dodge projectiles
-        //if (!mod.getFoodChain().isTryingToEat() && mod.getModSettings().isDodgeProjectiles() && isProjectileClose(mod)) {
+        //if (!mod.getFoodChain().isTryingToEat() && mod.getModSettings().isDodgeProjectiles() && projectileIsClose) {
         //    _doingFunkyStuff = true;
         //    //Debug.logMessage("DODGING");
         //    _runAwayTask = null;
@@ -263,8 +259,10 @@ public class MobDefenseChain extends SingleTaskChain {
         //}
         // Dodge projectiles
         if (mod.getPlayer().getHealth() <= 20 || _runAwayTask != null || mod.getEntityTracker().entityFound(PotionEntity.class) ||
-                (!mod.getItemStorage().hasItem(Items.SHIELD) && !mod.getItemStorage().hasItemInOffhand(Items.SHIELD))) {
-            if (!mod.getFoodChain().needsToEat() && mod.getModSettings().isDodgeProjectiles() && isProjectileClose(mod)) {
+                (!mod.getItemStorage().hasItem(Items.SHIELD) && !mod.getItemStorage().hasItemInOffhand(Items.SHIELD)))
+        {
+            if (!mod.getFoodChain().needsToEat() && mod.getModSettings().isDodgeProjectiles() && projectileIsClose)
+            {
                 _doingFunkyStuff = true;
                 //Debug.logMessage("DODGING");
 
@@ -390,6 +388,90 @@ public class MobDefenseChain extends SingleTaskChain {
         _runAwayTask = null;
         return 0;
     }
+    public void onPlayerItemUse(AltoClef mod, Entity entity, boolean sticked) {
+        if (entity instanceof PlayerEntity player && mod.getPlayer() != null) {
+            double prob = LookHelper.getLookingProbability(player, mod.getPlayer());
+
+            if (prob > 0.75) {
+
+                Rotation targetRotation = LookHelper.getLookRotation(mod, player.getPos());
+
+                //if (_preProjectileTimer.elapsed()) {
+                //    Debug.logMessage("[DEFENSE CHAIN] Detected projectile launcher: sticked = " + sticked + " prob = " + prob);
+                //    _preProjectileTimer.reset();
+                //} else {
+                //    if (_preProjectileTimer.getDuration() > 0.2) {
+                        float invertedYaw = (targetRotation.getYaw() - 90) % 360;
+                        if (invertedYaw < 0) invertedYaw += 360;
+                        _suggestedProjectileRotation = new Rotation(invertedYaw, 0f);
+                        _projectileTimer.reset();
+                        Debug.logMessage("DODGING!");
+                //    }
+                //}
+
+            }
+        }
+        //if (sticked) return;
+        //if (arrowEntity instanceof PersistentProjectileEntity arrow) {
+        //    _suggestedProjectileRotation = LookHelper.getAimAt(mod, arrow.getPos());
+        //}
+    }
+    public void onProjectileLaunched(AltoClef mod, ProjectileEntity arrowEntity, boolean sticked){
+        Debug.logMessage("[DEFENSE CHAIN] Detected projectile: "
+                + arrowEntity.getName().getString()
+                + " sticked = " + sticked);
+        // TODO untested
+        mod.getEntityTracker().addProjectile(arrowEntity);
+
+        //if (sticked) return;
+        //if (arrowEntity instanceof PersistentProjectileEntity arrow) {
+        //    _suggestedProjectileRotation = LookHelper.getAimAt(mod, arrow.getPos());
+        //}
+    }
+    public static class RunAwayFromPlayersTask extends RunAwayFromEntitiesTask {
+        public boolean _finished = false;
+        public RunAwayFromPlayersTask(Entity toRunAwayFrom, double distanceToRun) {
+            super(toRunAwayFrom, distanceToRun, true, 0.1);
+            // More lenient progress checker
+            _checker = new MovementProgressChecker();
+        }
+        @Override
+        public Task onTick(AltoClef mod) {
+            if (_runAwaySupplier != null) {
+                if(_runAwaySupplier.distanceTo(mod.getPlayer()) >= _distanceToRun) {
+                    _finished = true;
+
+                } else {
+                    _finished = false;
+                    return super.onTick(mod);
+                }
+            }
+            setDebugState("NO RUNAWAY TARGET / MAYBE BUG");
+            return null;
+
+        }
+
+        @Override
+        public boolean isFinished(AltoClef mod) {
+            return super.isFinished(mod) || _finished;
+        }
+        @Override
+        protected boolean isEqual(Task other) {
+            return other instanceof RunAwayFromPlayersTask task && task._runAwaySupplier == _runAwaySupplier;
+        }
+
+        @Override
+        protected String toDebugString() {
+            //return "Run away from " + avoidTarget.get().getName().getString();
+            if (_runAwaySupplier != null)
+                if(_runAwaySupplier.getName() != null)
+                    return "Run away from " + _runAwaySupplier.getName().getString();
+                else
+                    return "Run away from " + _runAwaySupplier.getType().toString();
+            else
+                return "Run away from players (NO TARGET)";
+        }
+    }
 
     private BlockPos isInsideFireAndOnFire(AltoClef mod) {
         boolean onFire = mod.getPlayer().isOnFire();
@@ -500,6 +582,9 @@ public class MobDefenseChain extends SingleTaskChain {
     }
 
     private boolean isProjectileClose(AltoClef mod) {
+        if (!_projectileTimer.elapsed()) {
+            return true;
+        }
         List<CachedProjectile> projectiles = mod.getEntityTracker().getProjectiles();
         try {
             synchronized (BaritoneHelper.MINECRAFT_LOCK) {
@@ -560,18 +645,20 @@ public class MobDefenseChain extends SingleTaskChain {
 
                                 if (_runAwayTask == null && mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
                                     mod.getClientBaritone().getPathingBehavior().requestPause();
+                                    //Debug.logMessage("[DEBUG] ARROW !!");
+                                    /*
                                     if (projectile.projectileType instanceof ProjectileEntity projectileEntity) {
-
                                         Entity owner = projectileEntity.getOwner();
-                                        if (owner != null) {
+                                        if (owner != null && owner.getName() != null) {
                                             //LookHelper.lookAt(mod, owner.getEyePos());
-
+                                            // this never happens...
+                                            Debug.logMessage("[DEBUG ARROW] Owner of this arrow is" + owner.getName().getString());
                                             return true;
                                         }
                                         //LookHelper.lookAt(mod, projectile.position);
                                         return true;
                                     }
-
+                                    */
                                     //LookHelper.lookAt(mod, projectile.position);
                                     return true;
                                 }
@@ -589,22 +676,24 @@ public class MobDefenseChain extends SingleTaskChain {
 
     public Optional<Entity> getAvoidTarget(AltoClef mod) {
         try {
-
                 return mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
                         entity -> {
+                            if (entity == null)
+                                return false;
+                            if (mod.getPlayer() != null
+                                    && entity.distanceTo(mod.getPlayer()) > SAFE_KEEP_DISTANCE)
+                                return false;
+                            // avoid even if its target!
+                            if (_targetEntity != null && entity == _targetEntity)
+                                return false;
                             boolean threatAvoid;
-                            if (entity != null && entity.getName() != null) {
-                                if (entity.distanceTo(mod.getPlayer()) > SAFE_KEEP_DISTANCE)
-                                    return false;
+                            if (entity.getName() != null) {
+
 
                                 String playerName = entity.getName().getString();
                                 threatAvoid = mod.getDamageTracker().getThreatTable()
                                         .shouldAvoid(playerName) && !mod.getDamageTracker().getThreatTable()
                                         .shouldAttack(playerName);
-                                if (_targetEntity instanceof PlayerEntity player) {
-                                    if (Objects.equals(player.getName().getString(), playerName))
-                                        threatAvoid = false;
-                                }
                                 //if (mod.getUserTaskChain().getCurrentTask() != null){
                                 //    if(mod.getUserTaskChain().getCurrentTask() instanceof GetToEntityTask checkTask) {
                                 //            //Debug.logMessage(testTask._entity.getName().getString());
@@ -640,7 +729,7 @@ public class MobDefenseChain extends SingleTaskChain {
                 // If we merely force field them, we will run into them and get the wither effect which will kill us.
                 return mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
 
-                        entity -> entity != null
+                        entity -> entity != null // && entity != _targetEntity  // kill even if it's target!
                                 && entity.distanceTo(mod.getPlayer()) < DANGER_KEEP_DISTANCE
                                 && mod.getDamageTracker().getThreatTable()
                                 .shouldAttack(entity.getName().getString()),

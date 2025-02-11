@@ -108,7 +108,7 @@ public class SupervisorTaskChain extends SingleTaskChain {
             if (getCurrentTask().isFinished(mod) || _taskTimer.elapsed()){
                 setTask(null);
             } else {
-                return 70f;
+                return 51f;
             }
         }
         return Float.NEGATIVE_INFINITY;

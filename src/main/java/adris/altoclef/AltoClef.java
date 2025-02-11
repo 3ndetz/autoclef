@@ -8,6 +8,8 @@ import adris.altoclef.control.PlayerExtraController;
 import adris.altoclef.control.SlotHandler;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.*;
+import adris.altoclef.eventbus.events.multiplayer.ItemUseEvent;
+import adris.altoclef.eventbus.events.multiplayer.ProjectileEvent;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.trackers.*;
@@ -16,6 +18,7 @@ import adris.altoclef.trackers.storage.ItemStorageTracker;
 import adris.altoclef.ui.CommandStatusOverlay;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.ui.MessageSender;
+import adris.altoclef.util.agent.Pipeline;
 import adris.altoclef.util.helpers.InputHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import baritone.Baritone;
@@ -33,12 +36,10 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.util.math.Vec3d;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.function.Consumer;
 import py4j.GatewayServer;
 
@@ -62,7 +63,16 @@ public class AltoClef implements ModInitializer {
         _cameraRotationModifer = null;
     }
     public static Rotation _cameraRotationModifer = null;
-
+    public static Vec3d getCameraPositionModifer(){
+        return _cameraPositionModifer;
+    }
+    public static void setCameraPositionModifer(Vec3d pos){
+        _cameraPositionModifer = pos;
+    }
+    public static void resetCameraPositionModifer(){
+        _cameraPositionModifer = null;
+    }
+    public static Vec3d _cameraPositionModifer = null;
 
     // Central Managers
     private static CommandExecutor _commandExecutor;
@@ -77,6 +87,8 @@ public class AltoClef implements ModInitializer {
     private MobDefenseChain _mobDefenseChain;
     private DeathMenuChain _deathMenuChain;
     private MLGBucketFallChain _mlgBucketChain;
+    public PlayerInteractionFixChain _playerInteractionFixChain;
+    public WorldSurvivalChain _worldSurvivalChain;
     // Trackers
     private ItemStorageTracker _storageTracker;
     private ContainerSubTracker _containerSubTracker;
@@ -97,12 +109,56 @@ public class AltoClef implements ModInitializer {
     private Butler _butler;
     private static GatewayServer _gatewayServer;
     private static Py4jEntryPoint _py4jEntryPoint;
-
+    public static Pipeline _pipeline = Pipeline.None;
     // Are we in game (playing in a server/world)
     public static boolean inGame() {
         return MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().getNetworkHandler() != null;
     }
+    // TODO UNTESTED MAY CAUSE ERRORS
+    // NEED TO WORK IN MENUS!
+    public static String getSelfName(){
+        // Сначала проверяем клиент
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null) return "";
 
+        // Проверяем сессию
+        if (client.getSession() != null) {
+            return client.getSession().getUsername();
+        }
+
+        // Проверяем профиль
+        if (client.getGameProfile() != null) {
+            return client.getGameProfile().getName();
+        }
+
+        // Проверяем загруженного игрока
+        if (client.player != null) {
+            return client.player.getName().getString();
+        }
+
+        return "";
+    }
+    public double getCurrentBaritoneHeuristic() {
+        if (getClientBaritone() != null && getClientBaritone().getPathingBehavior() != null){
+            Optional<Double> ticksRemainingOp = getClientBaritone().getPathingBehavior().ticksRemainingInSegment();
+            return ticksRemainingOp.orElse(Double.POSITIVE_INFINITY);
+        }
+        return Double.POSITIVE_INFINITY;
+    }
+    public static boolean isManualInputFound(){
+        //may be unstable, not tested, new
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null) return false;
+        if (client.isWindowFocused()) {
+            return true;
+            // Human input detected.
+            //Debug.logInternal("[IdleTask] Window is focused, resuming.");
+        } else {
+            return false;
+            // No human input – window is unfocused.
+            //Debug.logInternal("[IdleTask] Window is unfocused, pausing.");
+        }
+    }
     /**
      * Executes commands (ex. `@get`/`@gamer`)
      */
@@ -139,9 +195,9 @@ public class AltoClef implements ModInitializer {
         _mobDefenseChain = new MobDefenseChain(_taskRunner);
         _deathMenuChain = new DeathMenuChain(_taskRunner);
 
-        new PlayerInteractionFixChain(_taskRunner);
+        _playerInteractionFixChain = new PlayerInteractionFixChain(_taskRunner);
         _mlgBucketChain = new MLGBucketFallChain(_taskRunner);
-        new WorldSurvivalChain(_taskRunner);
+        _worldSurvivalChain = new WorldSurvivalChain(_taskRunner);
         _foodChain = new FoodChain(_taskRunner);
 
         // Trackers
@@ -243,7 +299,30 @@ public class AltoClef implements ModInitializer {
         // External mod initialization
         runEnqueuedPostInits();
         DamageEventHandler.registerDamagePacketReceiver(this);
+
+        // Add block place tracking for survival chain
+        EventBus.subscribe(BlockPlaceEvent.class, evt -> {
+                _worldSurvivalChain.onBlockPlaced(this, evt.blockPos, evt.blockState);
+        });
+        EventBus.subscribe(BlockBrokenEvent.class, evt -> {
+                _worldSurvivalChain.onBlockBroken(this, evt.blockPos, evt.blockState, evt.player);
+        });
+
+        EventBus.subscribe(ItemUseEvent.class, evt -> {
+            getMobDefenseChain().onPlayerItemUse(this, evt.entity, evt.released);
+        });
+        EventBus.subscribe(ProjectileEvent.class, evt -> {
+            getMobDefenseChain().onProjectileLaunched(this, evt.entity, evt.sticked);
+        });
+
     }
+    public void timelyDisableBlockBreaking(double timeoutSeconds){
+        getClientBaritoneSettings().allowBreak.value = false;
+    }
+    public void timelyDisableBlockPlacing(double timeoutSeconds){
+        getClientBaritoneSettings().allowPlace.value = false;
+    }
+
     public void initializePythonSender() {
         _py4jEntryPoint = new Py4jEntryPoint(this);
         _gatewayServer = new GatewayServer(_py4jEntryPoint);
@@ -315,8 +394,11 @@ public class AltoClef implements ModInitializer {
         getClientBaritoneSettings().overshootTraverse.value = false;
         getClientBaritoneSettings().allowOvershootDiagonalDescend.value = true;
         getClientBaritoneSettings().allowInventory.value = true;
-        getClientBaritoneSettings().allowParkour.value = false;
-        getClientBaritoneSettings().allowParkourAscend.value = false;
+        // TODO VERY DANGEROUS!
+        // TODO DANGER PARKOUR BARITONE
+        // OFF MARKED ON ISSUES
+        getClientBaritoneSettings().allowParkour.value = true; // was false
+        getClientBaritoneSettings().allowParkourAscend.value = true; // was false
         getClientBaritoneSettings().allowParkourPlace.value = false;
         getClientBaritoneSettings().allowDiagonalDescend.value = false;
         getClientBaritoneSettings().allowDiagonalAscend.value = false;
@@ -374,6 +456,22 @@ public class AltoClef implements ModInitializer {
      */
     public UserTaskChain getUserTaskChain() {
         return _userTaskChain;
+    }
+
+
+    /**
+     * Get current task depending on taskChains
+     */
+    public Task getCurrentTask() {
+        //if (getUserTaskChain() != null && getUserTaskChain().isActive() && getUserTaskChain().getCurrentTask() != null) {
+        //    return getUserTaskChain().getCurrentTask();
+        //}
+        if (getTaskRunner() != null && getTaskRunner().getCurrentTaskChain() != null && getTaskRunner().getCurrentTaskChain().isActive()) {
+            if ( getTaskRunner().getCurrentTaskChain() instanceof SingleTaskChain chain
+                && chain.getCurrentTask() != null)
+                return chain.getCurrentTask();
+        }
+        return null;
     }
 
     /**
@@ -506,22 +604,36 @@ public class AltoClef implements ModInitializer {
         return _inputControls;
     }
 
+    // For timeout command handling
+    private boolean _isTimeoutTask = false;
+    private static double DEFAULT_TIMEOUT_SECONDS = 30;
+
+    public void setTimeoutTaskFlag(boolean isTimeout) {
+        _isTimeoutTask = isTimeout;
+    }
+
     /**
      * Run a user task
      */
     public void runUserTask(Task task) {
-        runUserTask(task, () -> {
-        });
+        runUserTask(task, () -> {});
     }
 
     /**
      * Run a user task
      */
     public void runUserTask(Task task, Runnable onFinish) {
-        _userTaskChain.runTask(this, task, onFinish);
+        if (_isTimeoutTask) {
+            // If this is a timeout task, wrap it in a forced task
+            _supervisorTaskChain.runTask(this, task, DEFAULT_TIMEOUT_SECONDS);
+            _isTimeoutTask = false; // Reset flag
+        } else {
+            // Normal execution
+            _userTaskChain.runTask(this, task, onFinish);
+        }
     }
     public void runForcedTask(Task task, double time) {
-        _supervisorTaskChain.runTask(this, task, time);
+            _supervisorTaskChain.runTask(this, task, time);
     }
     public void runForcedTask(Task task) {
         _supervisorTaskChain.runTask(this, task);

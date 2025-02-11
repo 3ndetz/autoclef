@@ -1,12 +1,12 @@
 package adris.altoclef.ui;
 
+import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.time.TimerReal;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import baritone.api.utils.Rotation;
-import java.util.LinkedList;
-import java.util.Queue;
 
 /*
  * EpicCamera approach:
@@ -53,6 +53,7 @@ public class EpicCamera {
 
     // Camera behavior
     private static final float SMOOTH_FACTOR = 0.12f;
+    private static final float PITCH_INFLUENCE = 0.8f; // How much pitch affects position
 
     // Current state
     private Vec3d lastPos = Vec3d.ZERO;
@@ -62,30 +63,6 @@ public class EpicCamera {
     private float targetRadius = BASE_BACK;
     public TimerReal _lastPosTimer = new TimerReal(2);
     private long lastUpdateTime = System.currentTimeMillis();
-
-    // Keyframe smoothing configuration
-    private static final int MAX_KEYFRAMES = 20;
-    private static final double KEYFRAME_LIFETIME_MS = 1000.0; // How long keyframes stay in history
-
-    private static class CameraKeyframe {
-        final Vec3d position;
-        final float yaw;
-        final float pitch;
-        final long timestamp;
-
-        CameraKeyframe(Vec3d position, float yaw, float pitch) {
-            this.position = position;
-            this.yaw = yaw;
-            this.pitch = pitch;
-            this.timestamp = System.currentTimeMillis();
-        }
-
-        double getAge() {
-            return (System.currentTimeMillis() - timestamp) / KEYFRAME_LIFETIME_MS;
-        }
-    }
-
-    private final Queue<CameraKeyframe> keyframes = new LinkedList<>();
 
     private EpicCamera() {}
 
@@ -110,7 +87,7 @@ public class EpicCamera {
         );
     }
 
-    public CameraUpdate getUpdate(Entity focusedEntity, float tickDelta, Rotation modifierRotation) {
+    public CameraUpdate getUpdate(Entity focusedEntity, float tickDelta, Rotation modifierRotation, Vec3d modfierPos) {
         if (focusedEntity == null) {
             reset();
             return null;
@@ -136,11 +113,14 @@ public class EpicCamera {
             if (modifierRotation.getYaw() != -500) yaw = modifierRotation.getYaw();
             if (modifierRotation.getPitch() != -500) pitch = modifierRotation.getPitch();
         }
-
+        if (modfierPos != null) {
+            headPos = modfierPos;
+        }
         // Smooth orbit radius
         orbitRadius = MathHelper.lerp(smoothFactor, orbitRadius, targetRadius);
 
         // Calculate orbital position
+        float pitchRad = (float) Math.toRadians(pitch);
         float yawRad = (float) Math.toRadians(yaw + 180);
 
         // Forward/backward position correction
@@ -161,7 +141,7 @@ public class EpicCamera {
         //else { // Looking down
         //    // Interpolate from -1 (at pitch 0) to -0.5 (at pitch 90)
         //    xFactor = -1.0f + (pitchFactor * 0.5f);
-        // }
+        //}
 
         // Apply the forward/back offset
         float xOffset = orbitRadius * xFactor;
@@ -187,85 +167,76 @@ public class EpicCamera {
             Math.sin(yawRad) * BASE_RIGHT
         );
 
+
+
+
+
         // Combine all offsets
         Vec3d targetPos;
         if (_lastPosTimer.elapsed() || lastPos == null || lastPos == Vec3d.ZERO) {
-            targetPos = headPos.add(orbitPos).add(rightOffset);
+            targetPos = headPos.add(orbitPos).add(rightOffset); // WORKING NORMAL
+            //Vec3d forwardFacing = LookHelper.toVec3d(new Rotation(yaw, pitch)).normalize();
+            //Vec3d rightRotVector = LookHelper.toVec3d(new Rotation(yaw, pitch)).normalize().offset();
+            //targetPos = headPos.add(rightRotVector.multiply(1)); // .add(forwardFacing.multiply(-2));  // .add(rightOffset);
+            //Vec3d forwardFacing = LookHelper.toVec3d(new Rotation(yaw, pitch)).normalize();
+            //Vec3d faceRight = forwardFacing.crossProduct(new Vec3d(0, 1, 0));
+            // TODO find easisest solution to get Y offset
+            // TODO find easist solution to easy get Right offset
+            //targetPos = headPos.add(forwardFacing.multiply(-2)).add(rightOffset);
+        // just stupid physics offset
+        //headPos.offset(Direction.UP, 1).offset(Direction.SOUTH, 1).offset(Direction.EAST, 0.5);
+            // but needs to be like that...
+            //targetPos = getRelativePosition(headPos, pitch, yaw, new Vec3d(-0.5,0.5,-2));
         } else {
             yaw = lastYaw;
             pitch = lastPitch;
             targetPos = lastPos;
         }
 
-        // Clean up old keyframes
-        while (!keyframes.isEmpty() && keyframes.peek().getAge() > 1.0) {
-            keyframes.poll();
+        // Initialize or apply smooth transitions
+        if (lastPos == Vec3d.ZERO) {
+            lastPos = targetPos;
+            lastYaw = yaw;
+            lastPitch = pitch;
+            return new CameraUpdate(targetPos, yaw, pitch);
         }
 
-        // Add new keyframe if not frozen
-        if (!_lastPosTimer.elapsed()) {
-            // If frozen, use last stored position
-            if (!keyframes.isEmpty()) {
-                CameraKeyframe lastFrame = ((LinkedList<CameraKeyframe>)keyframes).getLast();
-                return new CameraUpdate(lastFrame.position, lastFrame.yaw, lastFrame.pitch);
-            }
-        } else {
-            // Add new keyframe
-            if (keyframes.size() >= MAX_KEYFRAMES) {
-                keyframes.poll();
-            }
-            keyframes.offer(new CameraKeyframe(targetPos, yaw, pitch));
-        }
+        // Smooth position
+        Vec3d smoothedPos = new Vec3d(
+            MathHelper.lerp(smoothFactor, lastPos.x, targetPos.x),
+            MathHelper.lerp(smoothFactor, lastPos.y, targetPos.y),
+            MathHelper.lerp(smoothFactor, lastPos.z, targetPos.z)
+        );
 
-        // Calculate smoothed position and rotation from keyframes
-        if (!keyframes.isEmpty()) {
-            Vec3d smoothedPos = targetPos;
-            float smoothedYaw = yaw;
-            float smoothedPitch = pitch;
-            
-            double totalWeight = 0;
-            Vec3d weightedPos = Vec3d.ZERO;
-            double weightedYaw = 0;
-            double weightedPitch = 0;
+        // Smooth rotation
+        float deltaYaw = yaw - lastYaw;
+        while (deltaYaw > 180.0f) deltaYaw -= 360.0f;
+        while (deltaYaw < -180.0f) deltaYaw += 360.0f;
 
-            for (CameraKeyframe frame : keyframes) {
-                double age = frame.getAge();
-                double weight = 1.0 - age;
-                if (weight <= 0) continue;
+        float smoothedYaw = lastYaw + deltaYaw * smoothFactor;
+        float smoothedPitch = MathHelper.lerp(smoothFactor, lastPitch, pitch);
 
-                totalWeight += weight;
-                weightedPos = weightedPos.add(frame.position.multiply(weight));
-                
-                // Handle yaw wrapping
-                double yawDiff = frame.yaw - yaw;
-                while (yawDiff > 180.0) yawDiff -= 360.0;
-                while (yawDiff < -180.0) yawDiff += 360.0;
-                
-                weightedYaw += (yaw + yawDiff) * weight;
-                weightedPitch += frame.pitch * weight;
-            }
+        // Update state
+        lastPos = smoothedPos;
+        lastYaw = smoothedYaw;
+        lastPitch = smoothedPitch;
 
-            if (totalWeight > 0) {
-                smoothedPos = weightedPos.multiply(1.0 / totalWeight);
-                smoothedYaw = (float)(weightedYaw / totalWeight);
-                smoothedPitch = (float)(weightedPitch / totalWeight);
-            }
-
-            // Update last positions for old smoothing system compatibility
-            lastPos = smoothedPos;
-            lastYaw = smoothedYaw;
-            lastPitch = smoothedPitch;
-
-            return new CameraUpdate(smoothedPos, smoothedYaw, smoothedPitch);
-        }
-
-        // Fallback to direct position if no keyframes
-        lastPos = targetPos;
-        lastYaw = yaw;
-        lastPitch = pitch;
-        return new CameraUpdate(targetPos, yaw, pitch);
+        return new CameraUpdate(smoothedPos, smoothedYaw, smoothedPitch);
     }
+    public static Vec3d getRelativePosition(Vec3d pos, float pitch, float yaw, Vec3d offset) {
+        // WORKS BAD, NOT COMPLETELY IMPLEMENTED!!!
+        // TODO FIND THE NORMAL RELATIVE GETTER
+        // Convert angles to radians
+        float pitchRad = (float) Math.toRadians(pitch);
+        float yawRad = (float) Math.toRadians(yaw);
 
+        // Calculate the relative position
+        double x = pos.x + offset.x * Math.cos(yawRad) * Math.cos(pitchRad) - offset.z * Math.sin(yawRad);
+        double y = pos.y + offset.y * Math.cos(pitchRad) - offset.x * Math.sin(pitchRad);
+        double z = pos.z + offset.x * Math.sin(yawRad) * Math.cos(pitchRad) + offset.z * Math.cos(yawRad);
+
+        return new Vec3d(x, y, z);
+    }
     private double interpolate(double prev, double current, float tickDelta) {
         return prev + (tickDelta * (current - prev));
     }
@@ -274,7 +245,6 @@ public class EpicCamera {
         lastPos = Vec3d.ZERO;
         lastUpdateTime = System.currentTimeMillis();
         orbitRadius = targetRadius;
-        keyframes.clear();
     }
 
     public static class CameraUpdate {

@@ -145,7 +145,6 @@ public class SkyWarsTask extends Task {
     protected void onStart(AltoClef mod) {
         //Debug.logMessage("стейт = "+mod.getInfoSender().getState());
         mod.getBehaviour().push();
-        mod.getInfoSender().setState(String.valueOf(mod.getItemStorage().hasItem(Items.ENDER_PEARL)));
 
         mod.getBlockTracker().trackBlock(TO_SCAN);
 
@@ -549,7 +548,7 @@ public class SkyWarsTask extends Task {
 
         mod.getBehaviour().pop();
         mod.getBlockTracker().stopTracking(TO_SCAN);
-        EventBus.unsubscribe(_blockPlaceSubscription);
+        //EventBus.unsubscribe(_blockPlaceSubscription);
     }
 
     @Override

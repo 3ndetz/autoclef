@@ -19,7 +19,10 @@ public abstract class CameraMixin {
     @Inject(at = @At("TAIL"), method = "update")
     private void onUpdate(BlockView area, Entity focusedEntity, boolean thirdPerson, boolean inverseView, float tickDelta, CallbackInfo ci) {
         if (thirdPerson && !inverseView) {
-            var update = EpicCamera.getInstance().getUpdate(focusedEntity, tickDelta, AltoClef.getCameraRotationModifer());
+            var update = EpicCamera.getInstance().getUpdate(
+                    focusedEntity, tickDelta,
+                    AltoClef.getCameraRotationModifer(),
+                    AltoClef.getCameraPositionModifer());
             if (update != null) {
                 setPos(update.getPosition().x, update.getPosition().y, update.getPosition().z); 
                 setRotation(update.getYaw(), update.getPitch());

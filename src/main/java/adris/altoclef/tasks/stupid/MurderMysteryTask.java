@@ -113,14 +113,15 @@ public class MurderMysteryTask extends Task {
             }
         }
         boolean injured = isInjured(mod.getPlayer());
-        Optional<Entity> closestDanger = Optional.empty();
+        Optional<Entity> closestDanger;
         if(!isReadyToPunk(mod)) {   // shouldAvoid()
             closestDanger = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> shouldAvoid(mod, (PlayerEntity) toPunk), PlayerEntity.class);
+        } else {
+            closestDanger = Optional.empty();
         }
         Optional<Entity> closest = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> isEnemy(mod, (PlayerEntity) toPunk), PlayerEntity.class);
 
         if (closest.isPresent()) {
-
             _closestPlayerLastPos = closest.get().getPos();
             _closestPlayerLastObservePos = mod.getPlayer().getPos();
             _closestDistance = _closestPlayerLastPos.distanceTo(_closestPlayerLastObservePos);
@@ -149,6 +150,10 @@ public class MurderMysteryTask extends Task {
         if (hasKillerWeapon(mod)) {
             // if(_role.equals(MurderRole.UNKNOWN))  //TODO update only after unknown; unknown auto setting when world reload
             _role = MurderRole.KILLER;
+        }
+        if (!_role.equals(MurderRole.KILLER)) {
+            if(hasDetectiveWeapon(mod.getPlayer()))
+                _role = MurderRole.DETECTIVE;
         }
         Optional<Entity> closestKiller = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> hasKillerWeapon((PlayerEntity) toPunk), PlayerEntity.class);
         Optional<Entity> closestDetective = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> hasDetectiveWeapon((PlayerEntity) toPunk), PlayerEntity.class);
@@ -180,12 +185,12 @@ public class MurderMysteryTask extends Task {
 
             PlayerEntity entity = (PlayerEntity) closest.get();
             float dist = mod.getPlayer().distanceTo(entity);
-            boolean tooClose = dist < 10f;
+            boolean tooClose = dist < 6f;
             if (_role.equals(MurderRole.KILLER) && !injured) {
                 //tryDoFunnyMessageTo(mod, (PlayerEntity) entity);
-                if(tooClose) {
+                if (tooClose) {
                     mod.getSlotHandler().forceEquipItem(Items.SHEARS, Items.IRON_SWORD);
-                }else{
+                } else {
                     mod.getSlotHandler().forceDeequip(stack -> stack.getItem() instanceof ShearsItem || stack.getItem() instanceof SwordItem);
                 }
                 return new KillPlayerTask(entity.getName().getString());
@@ -193,11 +198,11 @@ public class MurderMysteryTask extends Task {
 
             // AGRESSIVE DETECTIVE TACTICS
 
-            if(LookHelper.cleanLineOfSight(entity.getPos(),mod.getPlayer().distanceTo(entity))) {
+            if (LookHelper.cleanLineOfSight(entity.getPos(),dist)) {
                 String name = entity.getName().getString();
-                if (mod.getItemStorage().getItemCount(Items.ENDER_PEARL) > 2){
+                if (mod.getItemStorage().getItemCount(Items.ENDER_PEARL) > 2) {
                     return new ThrowEnderPearlSimpleProjectileTask(entity.getBlockPos().add(0, -1, 0));
-                } else if (Objects.equals(_roles.get(name), MurderRole.KILLER)){
+                } else if (Objects.equals(_roles.get(name), MurderRole.KILLER)) {
                     if (UseBow(mod, entity)) {
                         _shootArrowTask = new ShootArrowSimpleProjectileTask(entity);
                         return _shootArrowTask;
@@ -221,7 +226,7 @@ public class MurderMysteryTask extends Task {
                         ent -> mod.getPlayer().getPos().isInRange(ent.getEyePos(), 400),check);
                 //
                 if(closestEnt.isPresent()) {
-                    setDebugState("Собирательство");
+                    setDebugState("Сбор ресурсов для оружия");
                     _pickupTask = new PickupDroppedItemTask(new ItemTarget(check), false, false);
                     return _pickupTask;
                 }
@@ -241,23 +246,7 @@ public class MurderMysteryTask extends Task {
         setDebugState("Чилл");
         Optional<Entity> chiller = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> true, PlayerEntity.class);
         if (chiller.isPresent() && chiller.get() instanceof PlayerEntity playerEntity) {
-
-            return new DoToClosestEntityTask(entity -> {
-                    switch (_chill_tactics){
-                        //case 0:
-                        //    return new KillPlayerTask(playerEntity.getName().getString());
-                        //case 1:
-                        //    _runAwayTask = new TerminatorTask.RunAwayFromPlayersTask(playerEntity, 5);
-                        //    _runAwayExtraTime.reset();
-                        //    return _runAwayTask;
-                        default:
-                            _chill_tactics = 0;
-                            return new GestureTask(entity);
-                            //return new SafeRandomShimmyTask();
-                    }
-
-                }, PlayerEntity.class
-            );
+            return new IdleTask();
         }
 
         //return new Kil
@@ -373,9 +362,9 @@ public class MurderMysteryTask extends Task {
     @Override
     protected String toDebugString() {
         if(_killerName == null || _role.equals(MurderRole.KILLER)){
-            return "MurderMystery: " + _role.toString();
+            return "MurderMystery: role " + _role.toString();
         } else {
-            return "MurderMystery: подозреваемый " + _killerName;
+            return "MurderMystery: found killer (mafia) -> " + _killerName + "!";
         }
     }
 

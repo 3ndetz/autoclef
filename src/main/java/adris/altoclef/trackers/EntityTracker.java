@@ -389,30 +389,7 @@ public class EntityTracker extends Tracker {
                     }
                 } else if (entity instanceof ProjectileEntity projEntity) {
                     if (!_mod.getBehaviour().shouldAvoidDodgingProjectile(entity)) {
-                        CachedProjectile proj = new CachedProjectile();
-
-                        boolean inGround = false;
-                        // Get projectile "inGround" variable
-                        if (entity instanceof PersistentProjectileEntity) {
-                            inGround = ((PersistentProjectileEntityAccessor) entity).isInGround();
-                        }
-
-                        // Ignore some of the harlmess projectiles
-                        if (projEntity instanceof FishingBobberEntity || projEntity instanceof EnderPearlEntity || projEntity instanceof ExperienceBottleEntity)
-                            continue;
-
-                        if(((ProjectileEntity) entity).getOwner()==_mod.getPlayer()){
-                            //Debug.logMessage("ОБНАРУЖЕНЫ СВОИ!!!");
-                            //!!!! ОБНАРУЖЕН "СВОЙ" СНАРЯД!
-                            continue;
-                        }
-                        if (!inGround) {
-                            proj.position = projEntity.getPos();
-                            proj.velocity = projEntity.getVelocity();
-                            proj.gravity = ProjectileHelper.hasGravity(projEntity) ? ProjectileHelper.ARROW_GRAVITY_ACCEL : 0;
-                            proj.projectileType = projEntity.getClass();
-                            _projectiles.add(proj);
-                        }
+                        addProjectile(projEntity);
                     }
                 } else if (entity instanceof PlayerEntity player) {
                     String name = player.getName().getString();
@@ -421,6 +398,38 @@ public class EntityTracker extends Tracker {
                 }
             }
         }
+    }
+    // NEW TODO untested
+    public boolean addProjectile(ProjectileEntity projEntity) {
+        CachedProjectile proj = new CachedProjectile();
+
+        boolean inGround = false;
+        // Get projectile "inGround" variable
+        if (projEntity instanceof PersistentProjectileEntity) {
+            inGround = ((PersistentProjectileEntityAccessor) projEntity).isInGround();
+        }
+
+        // Ignore some of the harlmess projectiles
+        if (projEntity instanceof FishingBobberEntity || projEntity instanceof EnderPearlEntity || projEntity instanceof ExperienceBottleEntity)
+            return false;
+
+        if((projEntity).getOwner()==_mod.getPlayer()){
+            //Debug.logMessage("ОБНАРУЖЕНЫ СВОИ!!!");
+            //!!!! ОБНАРУЖЕН "СВОЙ" СНАРЯД!
+            return false;
+        }
+        if (!inGround) {
+            proj.position = projEntity.getPos();
+            proj.velocity = projEntity.getVelocity();
+            proj.gravity = ProjectileHelper.hasGravity(projEntity) ? ProjectileHelper.ARROW_GRAVITY_ACCEL : 0;
+            proj.projectileType = projEntity.getClass();
+            if (_projectiles.contains(proj)) {
+                return false;
+            }
+            _projectiles.add(proj);
+            return true;
+        }
+        return false;
     }
 
     @Override

@@ -20,8 +20,8 @@ public abstract class LivingEntityMixin extends Entity {
     }
     //РАБОТАЕТ ТОЛЬКО ДЛЯ МОБОВ!
 
-    @Inject(method = "damage", at = @At("HEAD"))
-    private void onDamageHead(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
-        //Debug.logMessage("LIVING ENT урон получен "+source.getName());
-    }
+    //@Inject(method = "damage", at = @At("HEAD"))
+    //private void onDamageHead(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    //    //Debug.logMessage("LIVING ENT урон получен "+source.getName());
+    //}
 }

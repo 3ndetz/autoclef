@@ -192,7 +192,11 @@ public abstract class LookHelper {
      */
     public static boolean cleanLineOfSight(Vec3d end, double maxRange) {
         MinecraftClient minecraftClient = MinecraftClient.getInstance();
+        if (minecraftClient == null)
+            return false;
         PlayerEntity playerEntity = minecraftClient.player;
+        if (playerEntity == null)
+            return false;
         return cleanLineOfSight(playerEntity, end, maxRange);
     }
 
@@ -1107,7 +1111,7 @@ public abstract class LookHelper {
     }
 
     // Utility methods
-    private static float normalizeAngle(float angle) {
+    public static float normalizeAngle(float angle) {
         angle = angle % 360.0f;
         if (angle >= 180.0f) {
             angle -= 360.0f;
@@ -1116,10 +1120,22 @@ public abstract class LookHelper {
         }
         return angle;
     }
-    private static float clamp(float value, float min, float max) {
+    public static float normalizePitch(float angle) {
+        // TODO implement pitch normalizing; // untested
+        // pitch of entities is from -90 (full up) to 90 (full down)
+        angle = angle % 180.0f;
+        if (angle >= 90f) {
+            angle -= 180.0f;
+        } else if (angle < -90.0f) {
+            angle += 180.0f;
+        }
+        return angle;
+    }
+
+    public static float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
     }
-    private static double clamp(double value, double min, double max) {
+    public static double clamp(double value, double min, double max) {
         return (double) Math.max(min, Math.min(max, value));
     }
     private static void sleepSec(double seconds) {

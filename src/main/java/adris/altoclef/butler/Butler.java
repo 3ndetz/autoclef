@@ -283,7 +283,7 @@ public class Butler {
                 old_perspective = MinecraftClient.getInstance().options.getPerspective();
                 MinecraftClient.getInstance().options.setPerspective(Perspective.FIRST_PERSON);
                 boolean neural_captcha_solve = false;
-                if (CaptchaSolvingMode.equals("SOLVE_MAXIMUM") && _mod.getInfoSender().IsCallbackServerStarted()) {
+                if (CaptchaSolvingMode.equals("SOLVE_MAXIMUM") && _mod.getInfoSender().getCallbackServerStatusFast()) {
                     neural_captcha_solve = true;
                 }
                 String captchaImageFilename = MapItemHelper.saveNonExistMapToDataset(_mod, neural_captcha_solve);

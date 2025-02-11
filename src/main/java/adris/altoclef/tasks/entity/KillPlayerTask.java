@@ -25,7 +25,7 @@ public class KillPlayerTask extends AbstractKillEntityTask {
     private final double AUTO_PEARL_DISTANCE = 100;
     private TimerGame _pearlTimer = new TimerGame(10);
     private TimerGame _bowTimer = new TimerGame(4);
-    private final TimerGame _rangedTimer = new TimerGame(2);
+    private final TimerGame _rangedTimer = new TimerGame(6);
     private Task specialKillTask;
 
     private final IProgressChecker<Double> _distancePlayerCheck = new ProgressCheckerRetry<>(new LinearProgressChecker(5, -2), 3);
@@ -58,8 +58,7 @@ public class KillPlayerTask extends AbstractKillEntityTask {
                     
                     boolean canEnderpearl = (shouldEnderpearl(mod, player.get())
                             && distSq < AUTO_PEARL_DISTANCE * AUTO_PEARL_DISTANCE);
-                    boolean canPerformAnyRangedTactics = (canBow || canEnderpearl)
-                            && _rangedTimer.elapsed();
+                    boolean canPerformAnyRangedTactics = (canBow || canEnderpearl);
                     if (canPerformAnyRangedTactics) {
                         boolean BOW_OR_ENDERPEARL = true; // switcher
                         boolean bothRangedTacticsAvailable = canBow && canEnderpearl;

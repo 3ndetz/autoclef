@@ -4,6 +4,7 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.*;
+import adris.altoclef.eventbus.events.multiplayer.ItemUseEvent;
 import adris.altoclef.tasks.stupid.MurderMysteryTask;
 import adris.altoclef.trackers.threats.DamageTrackerStrategy;
 import adris.altoclef.trackers.threats.PlayerThreat;
@@ -49,7 +50,9 @@ public class DamageTracker extends Tracker {
         EventBus.subscribe(ClientHandSwingEvent.class, evt -> onClientHandSwing());
         EventBus.subscribe(DamageEvent.class, evt -> onAnyDamage(evt._entity));
         EventBus.subscribe(AnimEvent.class, evt -> onSwing(evt._entity, evt._type));
-
+        EventBus.subscribe(DeathEvent.class, evt -> checkOnClientKills(evt.name, evt.attacker));
+        // TODO add ranged timer and full implement ranged attacks recognize; THIS IS JUST STUDID EMULATES MELEE ATTACKS
+        EventBus.subscribe(ItemUseEvent.class, evt -> onSwing(evt.entity, AnimType.SWING_MAIN_HAND));
         //EventBus.subscribe(PlayerRemoveEvent.class, this::onPlayerRemove);
 
     }
@@ -146,7 +149,8 @@ public class DamageTracker extends Tracker {
 
         if (att_name != null) {
             _mod.getInfoSender().onDamageConfirmed(name, att_name, amount);
-            Debug.logMessage("Получен урон игроком "+name+ " от "+att_name + ": " + amount);
+            Debug.logMessage("Damage " + att_name + " -> " + name
+                    + String.format(" (%.1f)", amount));
         }
     }
 
@@ -194,8 +198,7 @@ public class DamageTracker extends Tracker {
         //handtool.getMaterial().getAttackDamage();
     }
 
-    private void onDeath(String name, String killerName) {
-
+    private void checkOnClientKills(String name, String killerName){
         if (_mod.getPlayer().getName().getString().equals(name)) {
             // Player death
 
@@ -204,14 +207,21 @@ public class DamageTracker extends Tracker {
             // Kill by player
             onClientKill(name);
         }
+    }
+
+    private void onDeath(String name, String killerName) {
+
         if (!(killerName.equals("undefined") || killerName.equals("неизвестный"))) {
+
             // TODO now untested
             if (_lastKilled.equals(name)) {
                 if (_deathEventSpamTimer.elapsed()) {
                     _deathEventSpamTimer.reset();
+                    Debug.logMessage("New kill: " + killerName + " -> " + name);
                     EventBus.publish(new DeathEvent(name, killerName));
                 }
             } else {
+                Debug.logMessage("New kill: " + killerName + " -> " + name);
                 EventBus.publish(new DeathEvent(name, killerName));
             }
             _lastKilled = name;

@@ -9,9 +9,9 @@ import java.util.Optional;
 
 public abstract class RunAwayFromEntitiesTask extends CustomBaritoneGoalTask {
 
-    private final Entity _runAwaySupplier;
+    public final Entity _runAwaySupplier;
 
-    private final double _distanceToRun;
+    public final double _distanceToRun;
     private final boolean _xz;
     // See GoalrunAwayFromEntities penalty value
     private final double _penalty;

@@ -86,6 +86,7 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
         // _ztask[0] = new GetToBlockTask(entity.getBlockPos());
         boolean isPlayer = entity.isPlayer();
         boolean canHit = LookHelper.canHitEntity(mod, entity);
+        double dist = entity.distanceTo(mod.getPlayer());
         //if (isPlayer){
         //    canHit = LookHelper.canHitEntity(mod, entity, 3.7f);
         //} else {
@@ -93,8 +94,10 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
         //}
         if (canHit) {
             if (isPlayer && !mod.getClientBaritone().getPathingBehavior().isPathing() && !WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos())) {
-                boolean RotatedJump = entity.squaredDistanceTo(mod.getPlayer()) < 4.4 * 4.4;
-                KillAuraHelper.GoJump(mod, RotatedJump);
+                // TODO untested
+                if (dist > 0.5) {
+                    KillAuraHelper.GoJump(mod, dist < 4.4);
+                }
             }
             if (!equipWeapon(mod)) {
                 float hitProg = mod.getPlayer().getAttackCooldownProgress(0);

@@ -1,6 +1,7 @@
 package adris.altoclef.tasks.examples;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.Debug;
 import adris.altoclef.tasks.InteractWithBlockTask;
 import adris.altoclef.tasks.construction.DestroyBlockTask;
 import adris.altoclef.tasks.container.LootContainerTask;
@@ -13,6 +14,7 @@ import adris.altoclef.util.helpers.WorldHelper;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.ZombieEntity;
+import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
@@ -52,7 +54,7 @@ public class ExampleStrategyTask extends Task {
         Optional<Entity> ply = mod.getEntityTracker().getClosestEntity(
                 mod.getPlayer().getPos(),
                 toPunk -> toPunk.distanceTo(mod.getPlayer()) < 50,
-                PlayerEntity.class, ZombieEntity.class
+                PlayerEntity.class, ZombieEntity.class, PigEntity.class
 
         );
 
@@ -62,12 +64,15 @@ public class ExampleStrategyTask extends Task {
         Optional<BlockPos> ore = mod.getBlockTracker().getNearestTracking(
                 blockPos -> mod.getPlayer().getBlockPos().isWithinDistance(blockPos, 50) &&
                         WorldHelper.canReach(mod,blockPos), Blocks.DIAMOND_ORE);
-
-        strategyMap.put(Strategy.LOOT_CHEST, PositionWrapper.ofBlockPos(cont.orElse(null)));
-        strategyMap.put(Strategy.DIAMONDS, PositionWrapper.ofBlockPos(ore.orElse(null)));
-        //strategyMap.put(Strategy.KILL_PLAYER, PositionWrapper.ofEntity(ply.orElse(null)));
+        // Debug.logMessage("cont "+ cont.orElse(null));
+        strategyMap.put(Strategy.LOOT_CHEST, PositionWrapper.ofBlockPos(cont.orElse(null),
+            (mod_next, p) -> WorldHelper.isUnopenedChest(mod_next, p)));
+        strategyMap.put(Strategy.DIAMONDS,PositionWrapper.ofBlockPos(ore.orElse(null),
+            (mod_next, p) -> !WorldHelper.isAir(mod_next, p)));
+        strategyMap.put(Strategy.KILL_PLAYER, PositionWrapper.ofEntity(ply.orElse(null),
+            (mod_next, e) -> e != null && e.isAlive() && e.isInRange(mod_next.getPlayer(), 50)));
 // Can also put empty positions:
-        strategyMap.put(Strategy.SOME_STRATEGY, PositionWrapper.empty());
+        //strategyMap.put(Strategy.SOME_STRATEGY, PositionWrapper.empty());
 
         // Create the task
         return new ChooseStrategyTask<>(

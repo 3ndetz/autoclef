@@ -288,7 +288,10 @@ public class InteractWithBlockTask extends Task {
             mod.getBlockTracker().requestBlockUnreachable(_target);
             return _wanderTask;
         }
-
+        if (_target == null) {
+            Debug.logMessage("TARGET BLOCK IS NULL!!! CHANGE TASK, SHOULD NOT BE LIKE THIS!!!");
+            return null;
+        }
         int reachDistance = 0;
         Goal moveGoal;
         if (mod.getExtraBaritoneSettings().shouldAvoidBreaking(_target.up())) {

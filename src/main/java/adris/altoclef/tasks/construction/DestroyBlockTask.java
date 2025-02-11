@@ -317,7 +317,7 @@ public class DestroyBlockTask extends Task implements ITaskRequiresGrounded {
                     boolean isAllowedToManage = !mod.getClientBaritone().getPathingBehavior().isPathing()
                             && !mod.getFoodChain().isTryingToEat();
                     if (isAllowedToManage) {
-                        Debug.logMessage("Found better tool in inventory, equipping.");
+                        Debug.logInternal("[DestroyBlockTask] Found better tool in inventory, equipping.");
                         ItemStack bestToolItemStack = StorageHelper.getItemStackInSlot(bestToolSlot.get());
                         Item bestToolItem = bestToolItemStack.getItem();
                         mod.getSlotHandler().forceEquipItem(bestToolItem);

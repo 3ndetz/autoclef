@@ -99,15 +99,13 @@ public class KitPVPTask extends Task {
     @Override
     protected void onStart(AltoClef mod) {
         //Debug.logMessage("стейт = "+mod.getInfoSender().getState());
-
-        mod.getInfoSender().setState(String.valueOf(mod.getItemStorage().hasItem(Items.ENDER_PEARL)));
         mod.getBehaviour().push();
         mod.getBlockTracker().trackBlock(TO_SCAN);
         mod.getBehaviour().setForceFieldPlayers(true);
         //mod.getExtraBaritoneSettings()
-        _blockPlaceSubscription = EventBus.subscribe(BlockPlaceEvent.class, evt -> {
-            OnBlockPlace(mod, evt.blockPos, evt.blockState);
-        });
+        //_blockPlaceSubscription = EventBus.subscribe(BlockPlaceEvent.class, evt -> {
+        //    OnBlockPlace(mod, evt.blockPos, evt.blockState);
+        //});
         //Debug.logMessage("мдааа");
         //AddNearestPlayerToFriends(mod,10);
 
@@ -357,7 +355,7 @@ public class KitPVPTask extends Task {
 
         mod.getBehaviour().pop();
         mod.getBlockTracker().stopTracking(TO_SCAN);
-        EventBus.unsubscribe(_blockPlaceSubscription);
+        //EventBus.unsubscribe(_blockPlaceSubscription);
     }
 
     @Override
