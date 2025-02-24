@@ -40,6 +40,8 @@ public class ButlerConfig {
      */
     public String[] whisperFormats = new String[]{
             "{from} whispers to you: {message}",
+            "{from} шепчет вам: {message}",
+            "{from} шепчет: {message}",
             "{from} whispers: {message}",
             "\\[{from} -> {to}\\] {message}"
     };

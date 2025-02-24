@@ -1,6 +1,7 @@
 package adris.altoclef;
 
 import adris.altoclef.butler.WhisperChecker;
+import adris.altoclef.tasks.entity.AbstractKillEntityTask;
 import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasks.movement.IdleTask;
 import adris.altoclef.tasks.multiplayer.GestureTask;
@@ -31,6 +32,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
@@ -134,11 +136,15 @@ public class Py4jEntryPoint {
         if (!(AltoClef.inGame() && _mod.getPlayer() !=null && _mod.getWorld() != null))
             return false;
         Task task = _mod.getCurrentTask();
+
+        if (task instanceof AbstractKillEntityTask || hasBaritoneGoal())
+            return true;
+
         return !( task instanceof IdleTask || task instanceof GestureTask //idle and gesture
                 || task instanceof WaitForDragonAndPearlTask // wait tasks
                 // parse from strings
-                || (task._debugState != null && !task._debugState.isBlank() &&
-                        task._debugState.toLowerCase().contains("wait")) );
+                || (task != null && (task._debugState != null && !task._debugState.isBlank() &&
+                        task._debugState.toLowerCase().contains("wait"))) );
 
         //boolean checkActiveTask = (AltoClef.inGame() && _mod.getPlayer() !=null && _mod.getWorld() != null)
         //        && !_mod.getUserTaskChain().isRunningIdleTask();
@@ -289,7 +295,7 @@ public class Py4jEntryPoint {
             // don't print, it's normal if there's errors, it just cant connect
         } catch (Exception e) {
             // unknown error but we won't all pipeline to crash
-            e.printStackTrace();
+            //e.printStackTrace();
         }
         callbackstarted = result;
         return result;
@@ -433,6 +439,9 @@ public class Py4jEntryPoint {
             }
         });
     }
+
+
+
     public Map<String,String> CentralGameInfoDict = new HashMap<>();
     public void UpdateServerInfo(String field, String value){
         executeInNetworkThread(() -> {
@@ -476,20 +485,38 @@ public class Py4jEntryPoint {
             _cb.onKill(killed);
         }});
     }
-    public void onAutoclefEvent(String description){
+
+    public String executeAgentCommand(String cmd){
         // TODO untested
-        // removed execution in network thread
-        //[19:52:28] [Worker-Main-43/ERROR] (Minecraft) Caught exception in thread Thread[#340,Worker-Main-43,10,main]
-        // py4j.Py4JException: Error while obtaining a new communication channel
-        //executeInNetworkThread(() -> {
         try {
-            if (IsCallbackServerStarted() && description != null && !description.isBlank()) {
-                _cb.onAutoclefEvent(description);
+            if (IsCallbackServerStarted() && cmd != null && !cmd.isBlank()) {
+                return _cb.agentCommandRequest(cmd);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //});
+        return "Not connected or error when execution queued.";
+    }
+
+
+    public void onAutoclefEvent(String type, String description){
+        try {
+            if (IsCallbackServerStarted() && description != null && !description.isBlank() && type != null && !type.isBlank()) {
+                _cb.onAutoclefEvent(type, description);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void onAutoclefEvent(String description){
+        try {
+            if (IsCallbackServerStarted() && description != null && !description.isBlank()) {
+                _cb.onAutoclefEvent("mc_executor_event", description);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     public void onCaptchaSolveRequest(byte[] image_bytes){
         try {
@@ -532,6 +559,23 @@ public class Py4jEntryPoint {
         }
         return result;
     }
+
+    public boolean hasBaritoneGoal() {
+        if (AltoClef.inGame()) {
+            Optional<IPath> pathq;
+            if (_mod.getClientBaritone().getCustomGoalProcess().isActive())
+                pathq = _mod.getClientBaritone().getPathingBehavior().getPath();
+            else
+                pathq = Optional.empty();
+
+            if (pathq.isPresent()) {
+                List<BetterBlockPos> pathlist = pathq.get().positions();
+                return !pathlist.isEmpty();
+            }
+        }
+        return false;
+    }
+
     public Vec3d getCurrentGoal(){
         Vec3d result = null;
         if (AltoClef.inGame()) {

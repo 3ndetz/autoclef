@@ -24,6 +24,10 @@ import adris.altoclef.tasks.misc.RavageDesertTemplesTask;
 import adris.altoclef.tasks.misc.RavageRuinedPortalsTask;
 import adris.altoclef.tasks.movement.*;
 import adris.altoclef.tasks.multiplayer.LobbyTask;
+import adris.altoclef.tasks.multiplayer.minigames.BattleRoyaleTask;
+import adris.altoclef.tasks.multiplayer.minigames.KitPVPTask;
+import adris.altoclef.tasks.multiplayer.minigames.MurderMysteryTask;
+import adris.altoclef.tasks.multiplayer.minigames.SkyWarsTask;
 import adris.altoclef.tasks.resources.CollectBlazeRodsTask;
 import adris.altoclef.tasks.resources.CollectFlintTask;
 import adris.altoclef.tasks.resources.CollectFoodTask;
@@ -58,7 +62,6 @@ import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.chunk.EmptyChunk;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;

@@ -434,7 +434,7 @@ public class MLGBucketTask extends Task {
 
     @Override
     protected String toDebugString() {
-        String result = "Эпик момент"; //Epic gaemer moment
+        String result = "Epic gamer moment";
         if (_movingTorwards != null) {
             result += " (ЗАБИРАЕМ ЭТОТ КЛАТЧ: " + _movingTorwards + ")";//CLUTCH AT
         }

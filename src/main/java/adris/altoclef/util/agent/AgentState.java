@@ -22,11 +22,12 @@ public class AgentState {
             return Gesture.Hey;
         }
         return switch (emotion) {
-            case "neutral" -> Gesture.Hey;
+            // case "neutral" -> Gesture.Hey;  // dublicate of default for now
             case "happy" -> Gesture.Cheer;
             case "sad" -> Gesture.Sad;
             case "angry" -> Gesture.Fight;
             case "disgusted" -> Gesture.Disrespect;
+            case "yandere" -> Gesture.Crazy;
             default -> Gesture.Hey;
         };
     }

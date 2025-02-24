@@ -128,6 +128,6 @@ public class KillPlayerTask extends AbstractKillEntityTask {
 
     @Override
     protected String toDebugString() {
-        return "Entering combat with: " + _playerName;
+        return "Striking player " + _playerName;
     }
 }

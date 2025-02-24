@@ -11,6 +11,7 @@ import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.progresscheck.MovementProgressChecker;
 import adris.altoclef.util.slots.Slot;
+import adris.altoclef.util.time.TimerGame;
 import baritone.api.pathing.goals.GoalRunAway;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
@@ -30,6 +31,9 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
     private final double _maintainDistance;
     private final double _combatGuardLowerRange;
     private final double _combatGuardLowerFieldRadius;
+    public boolean _forceGo = false;
+    private static final TimerGame _forceGoTimer = new TimerGame(0.5);
+
 
     public AbstractDoToEntityTask(double maintainDistance, double combatGuardLowerRange, double combatGuardLowerFieldRadius) {
         _maintainDistance = maintainDistance;
@@ -109,8 +113,12 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
                     mod.getClientBaritone().getCustomGoalProcess().setGoalAndPath(new GoalRunAway(maintainDistance, entity.getBlockPos()));
                 }
             }
-
+            if (_forceGo){
+                _forceGo = false;
+                _forceGoTimer.reset();
+            }
             if (//mod.getControllerExtras().inRange(entity) &&
+                    _forceGoTimer.elapsed() &&
                     result != null &&
                     result.getType() == HitResult.Type.ENTITY && !mod.getFoodChain().needsToEat() &&
                     !mod.getMLGBucketChain().isFallingOhNo(mod) && mod.getMLGBucketChain().doneMLG() &&
@@ -120,7 +128,7 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
             ) {
                 _progress.reset();
                 return onEntityInteract(mod, entity);
-            } else if (!tooClose) {
+            } else if (!tooClose || !_forceGoTimer.elapsed()) {
                 if (entity.getName() != null)
                     // UNTESTED!
                     if (mod.getEntityTracker().isEntityReachable(entity)){

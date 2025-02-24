@@ -35,18 +35,18 @@ public class UserTaskChain extends SingleTaskChain {
 
         String result = "";
         if (days != 0) {
-            result += days + " дн. "; //" days "; //
+            result += days + " days "; //
         }
         if (hours != 0) {
-            result += (hours % 24) + " час ";//" hours "
+            result += (hours % 24) + " hours ";
         }
         if (minutes != 0) {
-            result += (minutes % 60) + " мин ";//" minutes "
+            result += (minutes % 60) + " minutes ";
         }
         if (!result.equals("")) {
-            result += " и "; //" and "
+            result += "and ";
         }
-        result += String.format("%.3f", (seconds % 60));
+        result += String.format("%.1f", (seconds % 60));
         return result;
     }
 

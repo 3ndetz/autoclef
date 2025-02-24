@@ -7,9 +7,9 @@ import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.commandsystem.Command;
 import adris.altoclef.commandsystem.CommandException;
 import adris.altoclef.tasks.speedrun.BeatMinecraft2Task;
-import adris.altoclef.tasks.stupid.BattleRoyaleTask;
-import adris.altoclef.tasks.stupid.MurderMysteryTask;
-import adris.altoclef.tasks.stupid.SkyWarsTask;
+import adris.altoclef.tasks.multiplayer.minigames.BattleRoyaleTask;
+import adris.altoclef.tasks.multiplayer.minigames.MurderMysteryTask;
+import adris.altoclef.tasks.multiplayer.minigames.SkyWarsTask;
 import adris.altoclef.util.agent.Pipeline;
 import net.minecraft.util.math.BlockPos;
 
@@ -28,26 +28,36 @@ public class GameCommand extends Command {
             return;
         }
         pipelineStr = pipelineStr.toLowerCase();
+
         switch (pipelineStr) {
+            case "none", "no":
+                Debug.logMessage("Pipeline set to None");
+                AltoClef._pipeline = Pipeline.None;
+                break;
             case "swt", "skywarsteam", "sky_wars_team":
                 AltoClef._pipeline = Pipeline.SkyWars;
+                Debug.logMessage("Pipeline set to swt");
                 mod.getButler().AddNearestPlayerToFriends(mod, 15);
                 mod.runUserTask(new SkyWarsTask(new BlockPos(0,0,0),0d,false), this::finish);
                 break;
             case "sw", "skywars", "sky_wars":
                 AltoClef._pipeline = Pipeline.SkyWars;
+                Debug.logMessage("Pipeline set to sw");
                 mod.runUserTask(new SkyWarsTask(new BlockPos(0,0,0),0d,false), this::finish);
                 break;
             case "mm", "murder", "murdermystery", "mystery":
                 AltoClef._pipeline = Pipeline.MurderMystery;
+                Debug.logMessage("Pipeline set to mm");
                 mod.runUserTask(new MurderMysteryTask(-1), this::finish);
                 break;
             case "megabattle", "mega", "evil", "yandere":
                 AltoClef._pipeline = Pipeline.BattleRoyale;
+                Debug.logMessage("Pipeline set yandere");
                 mod.runUserTask(new BattleRoyaleTask(), this::finish);
                 break;
             default:
                 // may be MarvionBeatMinecraftTask
+                Debug.logMessage("Pipeline set to speedrun");
                 AltoClef._pipeline = Pipeline.SpeedRun;
                 mod.runUserTask(new BeatMinecraft2Task(), this::finish);
                 break;

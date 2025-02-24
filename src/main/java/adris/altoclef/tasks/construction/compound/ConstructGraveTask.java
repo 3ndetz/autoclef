@@ -198,7 +198,7 @@ public class ConstructGraveTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Constructing Grave for " + _signText;
+        return "Constructing Grave";  // + _signText;
     }
 
     public static ItemTarget[] graveMaterials() {

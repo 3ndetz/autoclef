@@ -60,18 +60,22 @@ public class PlayerExtraController {
             LookHelper.smoothLook(_mod, entity);
         //}
         //double PunkRange = 3.1;
+
+        // TODO FIX
+        // FAILS WHEN TOO CLOSE (INSIDE OF A HEAD OF AN ENT)
+
                 if (LookHelper.isLookingAtEntity(_mod, entity) && inRange(entity)) {//LookHelper.cleanLineOfSight(_mod.getPlayer(), LookHelper.getClosestPointOnEntityHitbox(_mod, entity),PunkRange)) {
                     try {
                         //if(!){
                             _mod.getInputControls().release(Input.CLICK_RIGHT);
                         //}
                         _mod.getInputControls().tryPress(Input.CLICK_LEFT);
-
+                        _mod.getDamageTracker().onClientMeleeAttack(entity);
+                        _succesfulHit = true;
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    _mod.getDamageTracker().onClientMeleeAttack(entity);
-                    _succesfulHit = true;
+
                 }
 
         return _succesfulHit;

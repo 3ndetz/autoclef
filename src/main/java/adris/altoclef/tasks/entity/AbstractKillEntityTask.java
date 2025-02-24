@@ -12,6 +12,8 @@ import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.slots.PlayerSlot;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import adris.altoclef.util.time.TimerGame;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -30,6 +32,7 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
     // Not the "striking" distance, but the "ok we're close enough, lower our guard for other mobs and focus on this one" range.
     private static final double CONSIDER_COMBAT_RANGE = 10;
     AtomicBoolean threadRunning = new AtomicBoolean(false);
+    private static final TimerGame _getToEntityTimer = new TimerGame(1);
 
     public AbstractKillEntityTask() {
         this(CONSIDER_COMBAT_RANGE, OTHER_FORCE_FIELD_RANGE);
@@ -87,12 +90,16 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
         boolean isPlayer = entity.isPlayer();
         boolean canHit = LookHelper.canHitEntity(mod, entity);
         double dist = entity.distanceTo(mod.getPlayer());
+        //Debug.logMessage("fdsf " +_getToEntityTimer.getDuration());
+        //if (!_getToEntityTimer.elapsed())
+        //    return new GetToEntityTask(entity);
         //if (isPlayer){
         //    canHit = LookHelper.canHitEntity(mod, entity, 3.7f);
         //} else {
         //    canHit = LookHelper.canHitEntity(mod, entity);
         //}
         if (canHit) {
+            _getToEntityTimer.reset();
             if (isPlayer && !mod.getClientBaritone().getPathingBehavior().isPathing() && !WorldHelper.isDangerZone(mod, mod.getPlayer().getBlockPos())) {
                 // TODO untested
                 if (dist > 0.5) {
@@ -120,6 +127,11 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
                 }
             }
         } else {
+            // TODO find out how effectively fix this
+            // GO FORCE NEED HERE OR IT WILL LAG DURING TARGET Shift going in air
+            //if (_getToEntityTimer.elapsed())
+            //    _forceGo = true;
+            //_getToEntityTimer.reset();
             setDebugState("Cannot hit, getting to entity");
             return new GetToEntityTask(entity);
             // working good

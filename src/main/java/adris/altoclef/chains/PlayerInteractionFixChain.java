@@ -96,7 +96,7 @@ public class PlayerInteractionFixChain extends TaskChain {
         // Refresh inventory
         if (_generalDuctTapeSwapTimeout.elapsed()) {
             if (!mod.getControllerExtras().isBreakingBlock()) {
-                Debug.logMessage("Инвентарь отсортирован..."); //Refreshed inventory
+                //Debug.logMessage("Инвентарь отсортирован..."); //Refreshed inventory
                 mod.getSlotHandler().refreshInventory();
                 _generalDuctTapeSwapTimeout.reset();
                 return Float.NEGATIVE_INFINITY;

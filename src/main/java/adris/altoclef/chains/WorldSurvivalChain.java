@@ -158,7 +158,7 @@ public class WorldSurvivalChain extends SingleTaskChain {
             _moveStuckTimer.reset();
             DeathMenuChain.StuckFixActivate();
         }
-        if(_moveStuckTimer.elapsed()){
+        if(_moveStuckTimer.elapsed() && mod.getInfoSender().hasActiveTask()){
             //_numTryingUnstuck++; //DEBUG
             //Debug.logMessage("чекаем. "+_moveStuckTimer.getDuration());
             Vec3d pos = mod.getPlayer().getPos();
@@ -272,7 +272,7 @@ public class WorldSurvivalChain extends SingleTaskChain {
             if (!WorldHelper.isAir(mod, _lastBrokenBlockPos)) {
                 Debug.logWarning("Block at " + _lastBrokenBlockPos + " failed to break!");
                 if (!_isAvoidingBlockBreak || _breakAvoidTimer.elapsed()) {
-                    Debug.logMessage("Adding temporary block " + _lastPlacedBlockPos + " avoidance for block breaking.");
+                    Debug.logMessage("Adding temporary block " + _lastBrokenBlockPos + " avoidance for block breaking.");
                     addTemporaryBreakAvoidance(mod, _lastBrokenBlockPos);
                 }
             }

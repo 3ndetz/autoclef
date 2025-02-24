@@ -1,8 +1,7 @@
-package adris.altoclef.tasks.stupid;
+package adris.altoclef.tasks.multiplayer.minigames;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
-import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.Subscription;
 import adris.altoclef.eventbus.events.BlockPlaceEvent;
 import adris.altoclef.tasks.container.LootContainerTask;

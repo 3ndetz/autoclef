@@ -1,12 +1,10 @@
-package adris.altoclef.tasks.stupid;
+package adris.altoclef.tasks.multiplayer.minigames;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.butler.ButlerConfig;
-import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.Subscription;
 import adris.altoclef.eventbus.events.BlockPlaceEvent;
-import adris.altoclef.tasks.DoToClosestBlockTask;
 import adris.altoclef.tasks.container.LootContainerTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.entity.ShiftEntityTask;
@@ -25,9 +23,6 @@ import baritone.api.utils.input.Input;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.SleepingChatScreen;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -41,8 +36,6 @@ import net.minecraft.util.math.Vec3i;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
-import static adris.altoclef.util.helpers.ItemHelper.clickCustomItem;
 
 /**
  * SlotHandler 39 timer override изменил

@@ -219,6 +219,11 @@ public class Butler {
             }
         }
         //Debug.logMessage("Recieved msg DEBUG!!! "+ourName+ " " + serverAdress + " " + serverMode + "\n>"+msg+"<");
+
+        // TODO NEW EXTRA untested
+        WhisperChecker.MessageResult whisper = this._whisperChecker.receiveMessage(_mod, ourName, msg);
+        if (whisper != null && whisper.from != null && whisper.message != null)
+            this.receiveWhisper(whisper.from, whisper.message);
         boolean strongChatMessage = false;
         WhisperChecker.MessageResult chatParsedResult = this._whisperChecker.receiveChat(_mod, ourName, msg,
                 serverAdress, serverMode);

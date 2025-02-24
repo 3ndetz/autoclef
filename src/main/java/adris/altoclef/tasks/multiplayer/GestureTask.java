@@ -152,7 +152,8 @@ public class GestureTask extends Task {
             mod.getBehaviour().setCameraRotationModifer(lookAtCamera);
         }
         double yDiff = lookTarget.getY() - mod.getPlayer().getPos().getY();
-        boolean tooClose = mod.getPlayer().getPos().distanceTo(lookTarget) < _stopDistance;
+        double dist = mod.getPlayer().getPos().distanceTo(lookTarget);
+        boolean tooClose = dist < _stopDistance;
         boolean shifting = !(_gesture.equals(Gesture.Fight) || _gesture.equals(Gesture.BrawlStars) || _gesture.equals(Gesture.Disagree) || _gesture.equals(Gesture.Agree));
         //boolean inShiftRange = mod.getPlayer().getPos().distanceTo(lookTarget) <= _shiftDistance; 
         double yBorder = 0.9f;
@@ -230,9 +231,13 @@ public class GestureTask extends Task {
 
         if (swingHand) {
             if (_phase == 0) {
-                mod.getInputControls().tryPress(Input.CLICK_LEFT);
-                mod.getInputControls().release(Input.CLICK_LEFT);
+                // CHECK NOT TO HIT THE ENTITY
+                // CHECK NOT TO HIT THE BLOCK IF IN CREATIVE
+                if (dist>6 && !mod.getPlayer().isInCreativeMode())
+                    //mod.getInputControls().tryPress(Input.CLICK_LEFT);
+                    mod.getInputControls().hold(Input.CLICK_LEFT);
             }
+            mod.getInputControls().release(Input.CLICK_LEFT);
         }
 
         if (shifting) {

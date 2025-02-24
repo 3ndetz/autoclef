@@ -415,18 +415,35 @@ public class ThreatTable {
         PlayerThreat threat = playerThreats.get(playerName);
         return threat != null && (!threat.shouldKillTimer.elapsed());
     }
+
+    // TODO UNTESTED, MAY NOT WORK!!! TEST NOW!!!
     public boolean isSelfThreat(PlayerThreat threat) {
-        return threat.name != null && Objects.equals(AltoClef.getSelfName(), threat.name);
+        return (threat.name != null && Objects.equals(AltoClef.getSelfName(), threat.name));
     }
 
-    public boolean forget(String playerName) {
-        PlayerThreat threat = playerThreats.get(playerName);
+    /**
+     * Forget ALL avoiding and killing
+     */
+    public boolean forget() {
+        for (Map.Entry<String, PlayerThreat> entry : playerThreats.entrySet()) {
+            Debug.logMessage("[DEBUG] forgetting "+ entry.getKey());
+            forget(entry.getValue());
+        }
+        return true;
+    }
+
+    public boolean forget(PlayerThreat threat){
         if (threat != null && !isSelfThreat(threat)) {
             threat.shouldAvoidTimer.forceElapse();
             threat.shouldKillTimer.forceElapse();
             return true;
         }
         return false;
+    }
+
+    public boolean forget(String playerName) {
+        PlayerThreat threat = playerThreats.getOrDefault(playerName, null);
+        return forget(threat);
     }
 
     public boolean avoid(String playerName) {

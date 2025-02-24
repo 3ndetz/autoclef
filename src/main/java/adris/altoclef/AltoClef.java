@@ -394,7 +394,8 @@ public class AltoClef implements ModInitializer {
         getClientBaritoneSettings().overshootTraverse.value = false;
         getClientBaritoneSettings().allowOvershootDiagonalDescend.value = true;
         getClientBaritoneSettings().allowInventory.value = true;
-        // TODO VERY DANGEROUS!
+        // TODO NEW VERY DANGEROUS!
+        // TODO UNTESTED
         // TODO DANGER PARKOUR BARITONE
         // OFF MARKED ON ISSUES
         getClientBaritoneSettings().allowParkour.value = true; // was false

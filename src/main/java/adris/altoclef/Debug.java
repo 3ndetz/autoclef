@@ -30,12 +30,21 @@ public class Debug {
         return "[Alto Clef] ";
     }
 
+    private static void addChatMessageInternalPlayer(String message){
+        if(jankModInstance != null){
+            // TODO NEW UNTESTED NEW REMOVE
+            jankModInstance.getInfoSender().onAutoclefEvent("mc_executor_log","[Baritone] " + message);
+        }
+        MinecraftClient.getInstance().player.sendMessage(Text.of(message), false);
+    }
+
     public static void logMessage(String message, boolean prefix) {
-        if (MinecraftClient.getInstance() != null && MinecraftClient.getInstance().player != null) {
+        if (MinecraftClient.getInstance() != null && MinecraftClient.getInstance().player != null && message != null) {
             if (prefix) {
                 message = "\u00A7d\u00A7l" + getLogPrefix() + "\u00A7r" + message;
             }
-            MinecraftClient.getInstance().player.sendMessage(Text.of(message), false);
+            addChatMessageInternalPlayer(message);
+            //MinecraftClient.getInstance().player.sendMessage(Text.of(message), false);
             //MinecraftClient.getInstance().player.sendChatMessage(msg);
         } else {
             logInternal(message);
@@ -53,9 +62,10 @@ public class Debug {
     public static void logWarning(String message) {
         logInternal("WARNING: " + message);
         if (jankModInstance != null && !jankModInstance.getModSettings().shouldHideAllWarningLogs()) {
-            if (MinecraftClient.getInstance() != null && MinecraftClient.getInstance().player != null) {
+            if (MinecraftClient.getInstance() != null && MinecraftClient.getInstance().player != null && message != null) {
                 String msg = "\u00A7d\u00A7l\u00A7n" + getLogPrefix() + "\u00A7c" + message + "\u00A7r";
-                MinecraftClient.getInstance().player.sendMessage(Text.of(msg), false);
+                addChatMessageInternalPlayer(msg);
+                //MinecraftClient.getInstance().player.sendMessage(Text.of(msg), false);
                 //MinecraftClient.getInstance().player.sendChatMessage(msg);
             }
         }
@@ -72,7 +82,8 @@ public class Debug {
         System.err.println(stacktrace);
         if (MinecraftClient.getInstance() != null && MinecraftClient.getInstance().player != null) {
             String msg = "\u00A72\u00A7l\u00A7c" + getLogPrefix() + "[ERROR] " + message + "\nat:\n" + stacktrace + "\u00A7r";
-            MinecraftClient.getInstance().player.sendMessage(Text.of(msg), false);
+            addChatMessageInternalPlayer(msg);
+            //MinecraftClient.getInstance().player.sendMessage(Text.of(msg), false);
         }
     }
 

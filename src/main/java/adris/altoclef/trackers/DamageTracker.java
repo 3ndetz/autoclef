@@ -5,7 +5,7 @@ import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.*;
 import adris.altoclef.eventbus.events.multiplayer.ItemUseEvent;
-import adris.altoclef.tasks.stupid.MurderMysteryTask;
+import adris.altoclef.tasks.multiplayer.minigames.MurderMysteryTask;
 import adris.altoclef.trackers.threats.DamageTrackerStrategy;
 import adris.altoclef.trackers.threats.PlayerThreat;
 import adris.altoclef.trackers.threats.ThreatTable;

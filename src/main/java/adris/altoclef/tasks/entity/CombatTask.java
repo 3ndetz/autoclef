@@ -7,7 +7,6 @@ import adris.altoclef.eventbus.Subscription;
 import adris.altoclef.eventbus.events.DeathEvent;
 import adris.altoclef.tasks.multiplayer.GestureTask;
 import adris.altoclef.tasks.construction.compound.ConstructGraveTask;
-import adris.altoclef.tasks.stupid.BattleRoyaleTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.time.TimerGame;
@@ -274,11 +273,14 @@ public class CombatTask extends Task {
     @Override
     protected boolean isEqual(Task other) {
         return other instanceof CombatTask task
-                && (this._targetPlayerName != null
-                && task._targetPlayerName != null
-                && task._targetPlayerName.equals(this._targetPlayerName))
-                && task._shouldBuildGraves == this._shouldBuildGraves
-                && task._shouldUseGestures == this._shouldUseGestures;
+             && (this._targetPlayerName == null && task._targetPlayerName == null
+             || (
+                     this._targetPlayerName != null
+                      && task._targetPlayerName != null
+                      && task._targetPlayerName.equals(this._targetPlayerName)
+        ))
+             && task._shouldBuildGraves == this._shouldBuildGraves
+             && task._shouldUseGestures == this._shouldUseGestures;
     }
 
     @Override
@@ -291,6 +293,8 @@ public class CombatTask extends Task {
         String name = player.getName().getString();
         if (_targetPlayerName != null && _targetPlayerName.equals(name)) return true;
         if (_blacklistedPlayers.contains(name)) return false;
+        // TODO untested
+        if (player.isInCreativeMode() || player.isSpectator() || !player.isAlive()) return false;
         if (_shouldAttackPredicate != null) return _shouldAttackPredicate.test(player);
         return true;
     }

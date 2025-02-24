@@ -11,11 +11,14 @@ import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.util.helpers.*;
 import adris.altoclef.util.baritone.CachedProjectile;
+import adris.altoclef.util.baritone.GoalFollowEntity;
 import adris.altoclef.util.progresscheck.MovementProgressChecker;
 import adris.altoclef.util.slots.PlayerSlot;
 import adris.altoclef.util.slots.Slot;
 import adris.altoclef.util.time.TimerGame;
 import baritone.Baritone;
+import baritone.api.pathing.goals.Goal;
+import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.input.Input;
 import net.minecraft.block.AbstractFireBlock;
@@ -55,6 +58,7 @@ public class MobDefenseChain extends SingleTaskChain {
     private boolean _doingFunkyStuff = false;
     private boolean _wasPuttingOutFire = false;
     private CustomBaritoneGoalTask _runAwayTask;
+    private TimerGame _runAwayTimer = new TimerGame(2);
     private Rotation _suggestedProjectileRotation;
     public TimerGame _preProjectileTimer = new TimerGame(0.3);
     public TimerGame _projectileTimer = new TimerGame(0.7);
@@ -140,6 +144,8 @@ public class MobDefenseChain extends SingleTaskChain {
             return Float.NEGATIVE_INFINITY;
         }
 
+
+
         // Apply avoidance if we're vulnerable, avoiding mobs if at all possible.
         // mod.getClientBaritoneSettings().avoidance.value = isVulnurable(mod);
         // Doing you a favor by disabling avoidance
@@ -170,22 +176,63 @@ public class MobDefenseChain extends SingleTaskChain {
         doForceField(mod);
 
         Optional<Entity> avoidTarget = getAvoidTarget(mod);
-        // TODO UNTESTED
-        // THIS SHIT NOW NOT WORK IDK WHY!!! WORKS BEFORE!!!!!!!!!!!!
+        // TODO
+        // THE BADDEST BUG!!!!
+        // If avoiding target AND and going to this area (other task in task chain) => infinite loop of interruption task
+        // 1. it gets to target
+        // 2. Interrupted by distance with avoid target and set avoid task
+        // 3. Avoid distance reached, avoid task interrupt, return to main task
+        // 4. Back to point 1 
         if (avoidTarget.isPresent()) {
             // run away from players task
+            // TRY #0 FIX BADDEST BUG
+            // TODO if vehavior STRICTLY_AVOID, then disable this check
+            
+            boolean[] target_is_close_to_avoid = {false};
 
-            // older: works good but dont says the avoid target and name
-            //_runAwayTask = new RunAwayFromPositionTask(DANGER_KEEP_DISTANCE, avoidTarget.get().getBlockPos());
-            // TODO UNTESTED
-            ///*
-            // DOING NOTHING IN SOME CASES!!! (after 3-5 minutes of running away from avoiding target)
-            // JUST STAYS NEAR THREAT AND DO NOTHING =(((( and cancels all the tasks, like somewhere is something like
-            //return null =((
-            //_runAwayTask = ;
-             //*/
-            setTask(new RunAwayFromPlayersTask(avoidTarget.get(), SAFE_KEEP_DISTANCE + 5));
-            return 55;
+            if (mod.getClientBaritone().getCustomGoalProcess().isActive()) {
+                Vec3d goalPos = mod.getInfoSender().getCurrentGoal();
+                if (goalPos != null) {
+                        if (goalPos.isInRange(avoidTarget.get().getPos(), SAFE_KEEP_DISTANCE)) {
+                            // Target is close to the avoid, ignore avoidance.
+                            target_is_close_to_avoid[0] = true;
+                        }
+                };
+                /*
+                // work only for xyz goal AND NO MORE
+                Goal goal = mod.getClientBaritone().getCustomGoalProcess().getGoal();
+                if (goal instanceof GoalBlock goalBlock) {
+                    if (goalBlock.getGoalPos().isWithinDistance(avoidTarget.get().getBlockPos(), SAFE_KEEP_DISTANCE)) {
+                        // Target is close to the avoid, ignore avoidance.
+                        target_is_close_to_avoid[0] = true;
+                    }
+                } else if (goal instanceof GoalFollowEntity 
+                && mod.getClientBaritone().getFollowProcess() != null
+                && mod.getClientBaritone().getFollowProcess().following() != null) {
+                // not work
+                    //BlockPos avoidPos = avoidTarget.get().getBlockPos();
+                    mod.getClientBaritone().getFollowProcess().following().forEach(entity -> {
+                        if (entity != null && entity.equals(avoidTarget.get())) {
+                            if(entity.getPos().isInRange(avoidTarget.get().getPos(), SAFE_KEEP_DISTANCE)){
+                                target_is_close_to_avoid[0] = true;
+                                return;
+                            };
+                        }
+                    });
+
+                    //if (goalFollowEntity.heuristic(avoidPos.getX(), avoidPos.getY(), avoidPos.getZ()) < SAFE_KEEP_DISTANCE*3) {
+                    //    // Target is close to the avoid, ignore avoidance.
+                    //    target_is_close_to_avoid = true;
+                    //}
+                }
+                 */
+            }
+            if (!target_is_close_to_avoid[0]) {
+                setTask(new RunAwayFromPlayersTask(avoidTarget.get(), SAFE_KEEP_DISTANCE + 5));
+                return 55;
+            } else {
+                //Debug.logMessage("WARNING! TARGET IS CLOSE TO AVOID!!! IGNORING IT!!!");
+            }
         }
         // Tell baritone to avoid mobs if we're vulnurable.
         // Costly.
@@ -380,15 +427,26 @@ public class MobDefenseChain extends SingleTaskChain {
                 return 80;
             }
         }
+
+
+
         // By default if we aren't "immediately" in danger but were running away, keep running away until we're good.
         if (_runAwayTask != null && !_runAwayTask.isFinished(mod)) {
-            setTask(_runAwayTask);
-            return _cachedLastPriority;
+            if (!_runAwayTask.isFinished(mod)) {
+                _runAwayTimer.reset();
+                setTask(_runAwayTask);
+                return _cachedLastPriority;
+            } else {
+                if (!_runAwayTimer.elapsed()) {
+                    setTask(new IdleTask());
+                    return 51;
+                }
+            }
         }
         _runAwayTask = null;
         return 0;
     }
-    public void onPlayerItemUse(AltoClef mod, Entity entity, boolean sticked) {
+    public void onPlayerItemUse(AltoClef mod, Entity entity, boolean released) {
         if (entity instanceof PlayerEntity player && mod.getPlayer() != null) {
             double prob = LookHelper.getLookingProbability(player, mod.getPlayer());
 
@@ -417,11 +475,12 @@ public class MobDefenseChain extends SingleTaskChain {
         //}
     }
     public void onProjectileLaunched(AltoClef mod, ProjectileEntity arrowEntity, boolean sticked){
-        Debug.logMessage("[DEFENSE CHAIN] Detected projectile: "
-                + arrowEntity.getName().getString()
-                + " sticked = " + sticked);
+        //Debug.logMessage("[DEFENSE CHAIN] Detected projectile: "
+        //        + arrowEntity.getName().getString()
+        //        + " sticked = " + sticked);
         // TODO untested
-        mod.getEntityTracker().addProjectile(arrowEntity);
+        if (!sticked)
+            mod.getEntityTracker().addProjectile(arrowEntity);
 
         //if (sticked) return;
         //if (arrowEntity instanceof PersistentProjectileEntity arrow) {
@@ -447,7 +506,7 @@ public class MobDefenseChain extends SingleTaskChain {
                 }
             }
             setDebugState("NO RUNAWAY TARGET / MAYBE BUG");
-            return null;
+            return new IdleTask();
 
         }
 

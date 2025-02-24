@@ -12,6 +12,7 @@ public class AltoClefCommands {
     public AltoClefCommands() throws CommandException {
         // List commands here
         AltoClef.getCommandExecutor().registerNewCommand(
+                new AgentCommand(),
                 new BuildCommand(),
                 new GameCommand(),
                 new ShiftCommand(),
@@ -35,6 +36,7 @@ public class AltoClefCommands {
                 new InventoryCommand(),
                 new LocateStructureCommand(),
                 new StopCommand(),
+                new ForgetCommand(),
                 new TestCommand(),
                 new FoodCommand(),
                 new MeatCommand(),

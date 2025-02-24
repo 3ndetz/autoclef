@@ -1,13 +1,10 @@
-package adris.altoclef.tasks.stupid;
+package adris.altoclef.tasks.multiplayer.minigames;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.butler.ButlerConfig;
-import adris.altoclef.tasks.entity.DoToClosestEntityTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
-import adris.altoclef.tasks.entity.ShiftEntityTask;
 import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
 import adris.altoclef.tasks.movement.*;
-import adris.altoclef.tasks.multiplayer.GestureTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.trackers.threats.DamageTrackerStrategy;
 import adris.altoclef.util.ItemTarget;
@@ -364,7 +361,7 @@ public class MurderMysteryTask extends Task {
         if(_killerName == null || _role.equals(MurderRole.KILLER)){
             return "MurderMystery: role " + _role.toString();
         } else {
-            return "MurderMystery: found killer (mafia) -> " + _killerName + "!";
+            return "MurderMystery: KILLER IS " + _killerName + "!";
         }
     }
 
