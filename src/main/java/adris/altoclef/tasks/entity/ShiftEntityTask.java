@@ -169,6 +169,6 @@ public class ShiftEntityTask extends AbstractDoToEntityTask {
     }
     @Override
     protected String toDebugString() {
-        return "Doing stupid fun (pressing shift near " + _shiftType.toString() + " of target)";
+        return "Ducking " + _shiftType.toString() + " of target";
     }
 }

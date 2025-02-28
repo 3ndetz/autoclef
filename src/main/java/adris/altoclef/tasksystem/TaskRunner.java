@@ -2,6 +2,7 @@ package adris.altoclef.tasksystem;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
+import adris.altoclef.chains.GameMenuTaskChain;
 
 import java.util.ArrayList;
 
@@ -12,6 +13,7 @@ public class TaskRunner {
     private boolean _active;
 
     private TaskChain _cachedCurrentTaskChain = null;
+    public GameMenuTaskChain _gameMenuTaskChain = null;
 
     public TaskRunner(AltoClef mod) {
         _mod = mod;
@@ -19,7 +21,16 @@ public class TaskRunner {
     }
 
     public void tick() {
-        if (!_active || !AltoClef.inGame()) return;
+        if (!_active) return;
+        if (!AltoClef.inGame()) {
+            if(_gameMenuTaskChain != null) {
+                // it's not concurrent with other chains while in menu for now
+                // but needs to save priority methods since it's working based on it
+                _gameMenuTaskChain.getPriority(_mod);
+                _gameMenuTaskChain.tick(_mod);
+            }
+            return;
+        }
         // Get highest priority chain and run
         TaskChain maxChain = null;
         float maxPriority = Float.NEGATIVE_INFINITY;
@@ -41,6 +52,9 @@ public class TaskRunner {
     }
 
     public void addTaskChain(TaskChain chain) {
+        if (chain instanceof GameMenuTaskChain menuTaskChain) {
+            _gameMenuTaskChain = menuTaskChain;
+        }
         _chains.add(chain);
     }
 
@@ -61,7 +75,7 @@ public class TaskRunner {
         }
         _active = false;
 
-        Debug.logMessage("Выполнение задачи принудительно остановлено"); //Stopped
+        Debug.logMessage("Force stopped");
     }
 
     public TaskChain getCurrentTaskChain() {

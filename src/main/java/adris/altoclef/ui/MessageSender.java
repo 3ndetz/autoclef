@@ -75,7 +75,9 @@ public class MessageSender {
              // TODO ADD KICK-RESTRICTED SYMBOLS CLEAR
              // auto kick reason: недопустимые символы в чате
              // этот параграф даже в чате не написать
-             message = message.replace("§", "");
+             message = message.replace("§", "")
+                     .replace("\n", "")
+                     .replace("\r", "");
              if (message.length() > 1 && message.startsWith("/")) {
                  // remove "/" from the command
                  sendCmdInstant(message.substring(1));

@@ -26,7 +26,7 @@ public class GestureCommand extends Command {
         Optional<Entity> entity = getEntityTarget(mod, username);
 
         if (entity.isEmpty()) {
-            mod.logWarning("Player not found.");
+            mod.logWarning("Player " + username + " not found.");
             finish();
             return;
         }

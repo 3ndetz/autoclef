@@ -332,15 +332,23 @@ public abstract class LookHelper {
      * @return The camera position of the entity.
      */
     public static Vec3d getCameraPos(Entity entity) {
-        boolean isPlayerSneaking = entity instanceof PlayerEntity && entity.isSneaking();
+        //boolean isPlayerSneaking = entity instanceof PlayerEntity && entity.isSneaking();
 
+        //TODO DEAL WITH IT SOMETHING!!!
+        // BREAKS ALL DISTANCE CHECKERS BARITONE ALGORITHMS INTO INFINITE LOOPS!!!!
+        // like dist 1.0 (far), pressed shift -> dist 0.7 (close enough)
+        // doing some action when shift is not pressed -> dist 1.0 (far) -> baritone
+        // -> stupid shift
+
+//
         // If the entity is a player and is sneaking, infer the sneaking eye position
-        if (isPlayerSneaking) {
-            return RayTraceUtils.inferSneakingEyePosition(entity);
-        } else {
+        //if (isPlayerSneaking) {
+//
+        //    return RayTraceUtils.inferSneakingEyePosition(entity);
+        //} else {
             // Otherwise, return the default camera position of the entity
             return entity.getCameraPosVec(1.0F);
-        }
+        //}
     }
 
     /**
@@ -512,8 +520,9 @@ public abstract class LookHelper {
     public static boolean canHitEntity(AltoClef mod, Entity entity, float range){
         Vec3d playerEyePos = mod.getPlayer().getEyePos();
         Vec3d closestPoint = getClosestPointOnEntityHitbox(mod, entity);
-        double distance = playerEyePos.distanceTo(closestPoint);
-        boolean inRange = ((distance*distance) < (range*range));
+        //double distance = playerEyePos.distanceTo(closestPoint);
+        double distance = mod.getPlayer().getPos().distanceTo(entity.getPos());
+        boolean inRange = distance < range;
         boolean cleanLOS = LookHelper.cleanLineOfSight(closestPoint, distance);
         return cleanLOS && inRange;
     }
@@ -866,7 +875,7 @@ public abstract class LookHelper {
         return toEntity.normalize().dotProduct(RotationFrom); //0.8 60 град, 0.9 30 град 0.95 15 град (точный взгляд
     }
 
-    static class WindMouseState {
+    public static class WindMouseState {
         public static boolean isRotating = false;
         public static double windX = 0;
         public static double windY = 0;

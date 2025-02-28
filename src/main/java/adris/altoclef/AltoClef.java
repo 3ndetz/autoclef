@@ -37,6 +37,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.*;
@@ -89,6 +90,8 @@ public class AltoClef implements ModInitializer {
     private MLGBucketFallChain _mlgBucketChain;
     public PlayerInteractionFixChain _playerInteractionFixChain;
     public WorldSurvivalChain _worldSurvivalChain;
+    public GameMenuTaskChain _gameMenuTaskChain;
+
     // Trackers
     private ItemStorageTracker _storageTracker;
     private ContainerSubTracker _containerSubTracker;
@@ -110,9 +113,18 @@ public class AltoClef implements ModInitializer {
     private static GatewayServer _gatewayServer;
     private static Py4jEntryPoint _py4jEntryPoint;
     public static Pipeline _pipeline = Pipeline.None;
+
+    @NotNull
+    public static Pipeline getPipeline(){
+        return _pipeline;
+    }
     // Are we in game (playing in a server/world)
     public static boolean inGame() {
-        return MinecraftClient.getInstance().player != null && MinecraftClient.getInstance().getNetworkHandler() != null;
+        MinecraftClient client = MinecraftClient.getInstance();
+
+        return client != null && client.player != null
+                && client.getNetworkHandler() != null
+                && client.world != null;
     }
     // TODO UNTESTED MAY CAUSE ERRORS
     // NEED TO WORK IN MENUS!
@@ -194,7 +206,7 @@ public class AltoClef implements ModInitializer {
         _supervisorTaskChain = new SupervisorTaskChain(_taskRunner);
         _mobDefenseChain = new MobDefenseChain(_taskRunner);
         _deathMenuChain = new DeathMenuChain(_taskRunner);
-
+        _gameMenuTaskChain = new GameMenuTaskChain(_taskRunner);
         _playerInteractionFixChain = new PlayerInteractionFixChain(_taskRunner);
         _mlgBucketChain = new MLGBucketFallChain(_taskRunner);
         _worldSurvivalChain = new WorldSurvivalChain(_taskRunner);
@@ -379,6 +391,7 @@ public class AltoClef implements ModInitializer {
         _messageSender.tick();
 
         _inputControls.onTickPost();
+        _gameMenuTaskChain.onTickPost(this);
     }
 
     /// GETTERS AND SETTERS
@@ -672,6 +685,7 @@ public class AltoClef implements ModInitializer {
     public MLGBucketFallChain getMLGBucketChain() {
         return _mlgBucketChain;
     }
+    public GameMenuTaskChain getGameMenuTaskChain() {return _gameMenuTaskChain;}
 
     public void log(String message) {
         log(message, MessagePriority.TIMELY);

@@ -3,6 +3,7 @@ package adris.altoclef.butler;
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.chains.DeathMenuChain;
+import adris.altoclef.chains.GameMenuTaskChain;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.ChatMessageEvent;
 import adris.altoclef.eventbus.events.TaskFinishedEvent;
@@ -329,9 +330,9 @@ public class Butler {
         Runnable rejoinOnDelayTask = new Runnable() {
             public void run() {
                 mod.runUserTask(new GetToXZTask(-1000, 1000));
-                DeathMenuChain._needDisconnect = true;
-                DeathMenuChain._reJoinAfterDisconnect = true;
-                DeathMenuChain._needToStopTasksOnReconnect = true;
+                GameMenuTaskChain._needDisconnect = true;
+                GameMenuTaskChain._reJoinAfterDisconnect = true;
+                GameMenuTaskChain._needToStopTasksOnReconnect = true;
             }
         };
 

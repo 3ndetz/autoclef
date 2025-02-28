@@ -40,7 +40,7 @@ public class DodgeProjectilesTask extends CustomBaritoneGoalTask {
 
     @Override
     protected String toDebugString() {
-        return "MLG УВОРОТ ОТ СТРЕЛЫ НА " + _distanceHorizontal + " БЛОКОВ!"; //TRS Dodge arrows at " + _distanceHorizontal + " blocks away
+        return "MLG ARROW DODGE FOR " + _distanceHorizontal + " BLOCKS!"; //TRS Dodge arrows at " + _distanceHorizontal + " blocks away
     }
 
     @Override

@@ -4,6 +4,7 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
 import adris.altoclef.tasksystem.Task;
+import adris.altoclef.util.agent.Pipeline;
 import adris.altoclef.util.progresscheck.IProgressChecker;
 import adris.altoclef.util.progresscheck.LinearProgressChecker;
 import adris.altoclef.util.progresscheck.ProgressCheckerRetry;
@@ -106,6 +107,12 @@ public class KillPlayerTask extends AbstractKillEntityTask {
             if (!_distancePlayerCheck.failed()) {
                 _progress.reset();
             }
+        }
+        // TODO untested
+        if (AltoClef._pipeline.equals(Pipeline.MurderMystery) && player.isPresent() && canUseRanged(mod, player.get())) {
+            _bowTimer.forceElapse();
+            specialKillTask = new ShootArrowSimpleProjectileTask(player.get());
+            return specialKillTask;
         }
         return super.onTick(mod);
     }

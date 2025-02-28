@@ -5,6 +5,7 @@ import adris.altoclef.Debug;
 import adris.altoclef.TaskCatalogue;
 import adris.altoclef.tasks.InteractWithBlockTask;
 import adris.altoclef.tasks.movement.GetCloseToBlockTask;
+import adris.altoclef.tasks.movement.GetToBlockTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ItemHelper;
@@ -84,8 +85,13 @@ public class PlaceSignTask extends Task {
             }
 
             BlockPos baseBlockPos = _target.add(_dir.getOpposite().getVector());
-            if (LookHelper.cleanLineOfSight(WorldHelper.toVec3d(_target), 5))
-                return new InteractWithBlockTask(new ItemTarget("sign", 1), _dir, baseBlockPos, true);
+            BlockPos playerPos = mod.getPlayer().getBlockPos();
+
+            if (!(playerPos.getX() == _target.getX() && playerPos.getZ() == _target.getZ()))
+                return new GetToBlockTask(_target);//new GetCloseToBlockTask(_target);
+            //return null;
+            if (LookHelper.cleanLineOfSight(mod.getPlayer(), WorldHelper.toVec3d(_target), 2))
+                return new InteractWithBlockTask(new ItemTarget("sign", 1), _dir, baseBlockPos, false);
             else
                 return new GetCloseToBlockTask(_target);  // TODO NOW UNTESTED
         }
@@ -158,6 +164,11 @@ public class PlaceSignTask extends Task {
         if (other instanceof PlaceSignTask task) {
             if (!task._message.equals(_message)) return false;
             if ((task._target == null) != (_target == null)) return false;
+
+            if (_dir != null && task._dir != null) {
+                if (!task._dir.equals(_dir))
+                    return false;
+            }
             if (task._target != null) {
                 return task._target.equals(_target);
             }

@@ -117,14 +117,14 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
                 _forceGo = false;
                 _forceGoTimer.reset();
             }
-            if (//mod.getControllerExtras().inRange(entity) &&
+            if (mod.getControllerExtras().inRange(entity) &&
                     _forceGoTimer.elapsed() &&
                     result != null &&
                     result.getType() == HitResult.Type.ENTITY && !mod.getFoodChain().needsToEat() &&
                     !mod.getMLGBucketChain().isFallingOhNo(mod) && mod.getMLGBucketChain().doneMLG() &&
                     !mod.getMLGBucketChain().isChorusFruiting() &&
                     mod.getClientBaritone().getPathingBehavior().isSafeToCancel()
-                    //&& mod.getPlayer().isOnGround()
+                    && mod.getPlayer().isOnGround()
             ) {
                 _progress.reset();
                 return onEntityInteract(mod, entity);

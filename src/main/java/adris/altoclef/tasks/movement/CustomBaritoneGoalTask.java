@@ -149,12 +149,12 @@ public abstract class CustomBaritoneGoalTask extends Task implements ITaskRequir
                 _checker.reset();
             } else {
                 if (_wanderTask.isActive() && !_wanderTask.isFinished(mod)) {
-                    setDebugState("Исследование...");
+                    setDebugState("Exploring...");
                     _checker.reset();
                     return _wanderTask;
                 }
                 if (!_checker.check(mod)) {
-                    Debug.logMessage("Не получилось достичь цели привычными способами, запрошено проведение исследования.");//"Failed to make progress on goal, wandering.
+                    Debug.logMessage("Failed to make progress on goal, wandering.");
                     onWander(mod);
                     return _wanderTask;
                 }
@@ -164,7 +164,7 @@ public abstract class CustomBaritoneGoalTask extends Task implements ITaskRequir
                 && mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
             mod.getClientBaritone().getCustomGoalProcess().setGoalAndPath(_cachedGoal);
         }
-        setDebugState("Выполнение цели."); //Completing goal.
+        setDebugState("Completing goal.");
         return null;
     }
 

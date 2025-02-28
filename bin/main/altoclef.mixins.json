@@ -1,0 +1,40 @@
+{
+  "required": true,
+  "package": "adris.altoclef.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "CameraMixin",
+    "AbstractFurnaceScreenHandlerAccessor",
+    "BlockModifiedByPlayerMixin",
+    "ClientBlockBreakAccessor",
+    "ClientConnectionAccessor",
+    "ClientInteractWithBlockMixin",
+    "ClientPlayerInteractionAccessor",
+    "ClientPlayerInteractionManagerMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "ClientUIMixin",
+    "DeathScreenAccessor",
+    "GameOverlayMixin",
+    "LivingEntityMixin",
+    "ServerPlayerEntityMixin",
+    "EntityMixin",
+    "PersistentProjectileEntityAccessor",
+    "SlotClickMixin",
+    "WorldBlockModifiedMixin",
+    "ChatInputMixin",
+    "ChatReadMixin",
+    "ClientBlockBreakMixin",
+    "ClientOpenScreenMixin",
+    "ClientTickMixin",
+    "EntryMixin",
+    "LoadChunkMixin",
+    "MixinLocalPlayer",
+    "PlayerCollidesWithEntityMixin",
+    "MapRendererInvoker",
+    "MapTextureAccessor",
+    "ScreenshotRecorderInvoker"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

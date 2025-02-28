@@ -143,10 +143,9 @@ public class EntityTracker extends Tracker {
     }
 
     public Optional<Entity> getClosestEntity(Class... entityTypes) {
-        if (_mod.getPlayer().getPos() != null)
+        if (_mod.getPlayer() != null && _mod.getPlayer().getPos() != null)
             return getClosestEntity(_mod.getPlayer().getPos(), entityTypes);
-
-        return null;
+        return Optional.empty();
     }
 
     public Optional<Entity> getClosestEntity(Vec3d position, Class... entityTypes) {

@@ -2,41 +2,26 @@ package adris.altoclef.chains;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
-import adris.altoclef.TaskCatalogue;
-import adris.altoclef.eventbus.EventBus;
-import adris.altoclef.eventbus.events.TaskFinishedEvent;
 import adris.altoclef.tasks.movement.MLGBucketTask;
 import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
-import adris.altoclef.util.helpers.LookHelper;
-import adris.altoclef.util.helpers.WorldHelper;
-import adris.altoclef.util.time.Stopwatch;
 import adris.altoclef.util.time.TimerGame;
 import adris.altoclef.util.time.TimerReal;
-import baritone.api.utils.Rotation;
-import baritone.api.utils.input.Input;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.GameMenuScreen;
+import net.minecraft.client.gui.screen.DisconnectedScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.network.ServerAddress;
 import net.minecraft.client.network.ServerInfo;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.RaycastContext;
 
-import java.util.Optional;
-
-// A task chain that runs a user defined task at the same priority.
-// This basically replaces our old Task Runner.
+/*
+* PRIORETIZED TASK CHAIN
+*
+* */
 @SuppressWarnings("ALL")
 public class SupervisorTaskChain extends SingleTaskChain {
 
@@ -69,43 +54,21 @@ public class SupervisorTaskChain extends SingleTaskChain {
         }
     }
 
+    public boolean shouldAutoReconnect(AltoClef mod){return true;}
+
     @Override
     public float getPriority(AltoClef mod) {
         if (!AltoClef.inGame()) {
-            // TODO ADD
-            //  MAIN MENU MULTIPLAYER JOIN
-            //  GET SERVER LIST, AUTO CONNECT TO SERVER
-            /*
-            Screen screen = MinecraftClient.getInstance().currentScreen;
-            MinecraftClient client = MinecraftClient.getInstance();
-
-                Debug.logMessage("RECONNECTING: Going ");
-                _reconnecting = false;
-
-                if (_prevServerEntry == null) {
-                    Debug.logWarning("Failed to re-connect to server, no server entry cached.");
-                } else {
-                    Debug.logMessage("RECONNECTING!: " + _prevServerEntry.address.toString());
-                    ConnectScreen.connect(screen, client, ServerAddress.parse(_prevServerEntry.address), _prevServerEntry, false, null);
-                    if (_needToStopTasksOnReconnect) {
-                        mod.cancelUserTask();
-                        _needToStopTasksOnReconnect = false;
-                    }
-                }
-            }
-        }
-        if (screen != null) {
-            _prevScreen = screen.getClass();
-        }
-        */
-
-
-
-            // menu commands
+            // main game menu
             return Float.NEGATIVE_INFINITY;
         }
+
         if (getCurrentTask() != null) {
-            if (getCurrentTask().isFinished(mod) || _taskTimer.elapsed()){
+            // TODO untested
+            if (getCurrentTask().stopped()
+                    //|| !getCurrentTask().isActive()
+                    || getCurrentTask().isFinished(mod)
+                    || _taskTimer.elapsed()){
                 setTask(null);
             } else {
                 return 51f;

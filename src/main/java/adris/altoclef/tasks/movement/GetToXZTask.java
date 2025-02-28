@@ -52,6 +52,6 @@ public class GetToXZTask extends CustomBaritoneGoalTask {
 
     @Override
     protected String toDebugString() {
-        return "Движение в (" + _x + "," + _z + ")" + (_dimension != null ? " в измерение " + _dimension : ""); //TRS "Getting to (" + _x + "," + _z + ")" + (_dimension != null ? " in dimension
+        return "Getting to (" + _x + "," + _z + ")" + (_dimension != null ? " in dimension " + _dimension : "");
     }
 }

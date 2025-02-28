@@ -87,7 +87,7 @@ public abstract class AbstractDoToClosestObjectTask<T> extends Task {
                 _currentlyPursuing = newClosest;
             } else {
                 if (isMovingToClosestPos(mod)) {
-                    setDebugState("Движение навстречу ближайшему...");//"Moving towards closest...");
+                    setDebugState("Moving towards closest...");
                     double currentHeuristic = getCurrentCalculatedHeuristic(mod);
                     double closestDistanceSqr = getPos(mod, _currentlyPursuing).squaredDistanceTo(mod.getPlayer().getPos());
                     int lastTick = WorldHelper.getTicks();

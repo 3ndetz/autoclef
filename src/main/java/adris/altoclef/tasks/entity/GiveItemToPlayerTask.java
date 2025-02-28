@@ -5,6 +5,7 @@ import adris.altoclef.Debug;
 import adris.altoclef.TaskCatalogue;
 import adris.altoclef.tasks.movement.FollowPlayerTask;
 import adris.altoclef.tasks.movement.RunAwayFromPositionTask;
+import adris.altoclef.tasks.slot.ThrowCursorTask;
 import adris.altoclef.tasks.squashed.CataloguedResourceTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
@@ -77,10 +78,12 @@ public class GiveItemToPlayerTask extends Task {
                             _throwTarget.set(i, target);
                             Debug.logMessage("THROWING: " + has.get());
                             mod.getSlotHandler().clickSlot(Slot.UNDEFINED, 0, SlotActionType.PICKUP);
+
                         } else {
                             mod.getSlotHandler().clickSlot(currentlyPresent, 0, SlotActionType.PICKUP);
                         }
-                        return null;
+                        _throwTask = new ThrowCursorTask();
+                        return _throwTask;
                     }
                 }
             }
@@ -90,6 +93,7 @@ public class GiveItemToPlayerTask extends Task {
                 stop(mod);
                 return null;
             }
+            //return _throwTask;
             return new RunAwayFromPositionTask(6, WorldHelper.toBlockPos(targetPos));
         }
 
@@ -109,7 +113,7 @@ public class GiveItemToPlayerTask extends Task {
         }
 
         setDebugState("Going to player...");
-        return new FollowPlayerTask(_playerName);
+        return new FollowPlayerTask(_playerName, 0.7);
     }
 
     @Override

@@ -34,7 +34,7 @@ public class TimerGame extends BaseTimer {
         if (currentConnection != _lastConnection) {
             if (_lastConnection != null) {
                 double prevTimeTotal = getTime(_lastConnection);
-                Debug.logInternal("(TimerGame: New connection detected, offsetting by " + prevTimeTotal + " seconds)");
+                // Debug.logInternal("(TimerGame: New connection detected, offsetting by " + prevTimeTotal + " seconds)");
                 setPrevTimeForce(getPrevTime() - prevTimeTotal);
             }
             _lastConnection = currentConnection;

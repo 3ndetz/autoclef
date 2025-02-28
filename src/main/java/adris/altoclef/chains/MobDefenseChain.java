@@ -227,7 +227,8 @@ public class MobDefenseChain extends SingleTaskChain {
                 }
                  */
             }
-            if (!target_is_close_to_avoid[0]) {
+            // windows todo untested
+            if (!target_is_close_to_avoid[0] && !LookHelper.WindMouseState.isRotating) {
                 setTask(new RunAwayFromPlayersTask(avoidTarget.get(), SAFE_KEEP_DISTANCE + 5));
                 return 55;
             } else {
@@ -463,7 +464,7 @@ public class MobDefenseChain extends SingleTaskChain {
                         if (invertedYaw < 0) invertedYaw += 360;
                         _suggestedProjectileRotation = new Rotation(invertedYaw, 0f);
                         _projectileTimer.reset();
-                        Debug.logMessage("DODGING!");
+                        Debug.logMessage("PROJECTILE DODGING!");
                 //    }
                 //}
 

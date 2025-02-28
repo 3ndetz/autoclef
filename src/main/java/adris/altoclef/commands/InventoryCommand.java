@@ -12,6 +12,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 public class InventoryCommand extends Command {
     public InventoryCommand() throws CommandException {
@@ -22,37 +23,31 @@ public class InventoryCommand extends Command {
     protected void call(AltoClef mod, ArgParser parser) throws CommandException {
         String item = parser.get(String.class);
         if (item == null) {
-            // Print inventory
-            // Get item counts
+            // Print inventory as single message
             HashMap<String, Integer> counts = new HashMap<>();
             for (int i = 0; i < mod.getPlayer().getInventory().size(); ++i) {
                 ItemStack stack = mod.getPlayer().getInventory().getStack(i);
                 if (!stack.isEmpty()) {
                     String name = ItemHelper.stripItemName(stack.getItem());
-                    if (!counts.containsKey(name)) counts.put(name, 0);
-                    counts.put(name, counts.get(name) + stack.getCount());
+                    counts.merge(name, stack.getCount(), Integer::sum);
                 }
             }
-            // Print
-            mod.log("INVENTORY: ", MessagePriority.OPTIONAL);
-            for (String name : counts.keySet()) {
-                mod.log(name + " : " + counts.get(name), MessagePriority.OPTIONAL);
-            }
-            mod.log("(inventory list sent) ", MessagePriority.OPTIONAL);
+            
+            String inventory = counts.entrySet().stream()
+                .map(entry -> entry.getKey() + ": " + entry.getValue())
+                .collect(Collectors.joining(", "));
+            
+            mod.log("Inventory: {" + inventory + "}", MessagePriority.OPTIONAL);
         } else {
-            // Print item quantity
+            // Print specific item quantity
             Item[] matches = TaskCatalogue.getItemMatches(item);
             if (matches == null || matches.length == 0) {
-                mod.logWarning("Item \"" + item + "\" is not catalogued/recognized.");
+                mod.logWarning("Item \"" + item + "\" is not catalogued.");
                 finish();
                 return;
             }
             int count = mod.getItemStorage().getItemCount(matches);
-            if (count == 0) {
-                mod.log(item + " COUNT: (none)");
-            } else {
-                mod.log(item + " COUNT: " + count);
-            }
+            mod.log(item + ": " + (count > 0 ? count : "none"));
         }
         finish();
     }

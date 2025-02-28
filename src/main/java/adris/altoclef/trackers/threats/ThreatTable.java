@@ -41,11 +41,12 @@ public class ThreatTable {
                 if (threat.sneakRate > 5) {
                     if (threat.name != null) {
                         if (threat.sneakRate == 6)
-                            Debug.logMessage("[SHIFT ALERT] " + threat.name + " performs aggresively shifting!");
+                            _mod.getInfoSender().onAutoclefEvent(threat.name
+                                    + " is agressive shifting (likely an adult 18+ action). Avoiding...");
+                            //Debug.logMessage("[SHIFT ALERT] " + threat.name + " performs aggresively shifting!");
                         avoid(threat.name);
                         //threat.shouldAvoidTimer.reset();
-                        _mod.getInfoSender().onAutoclefEvent(threat.name
-                                + " is agressive shifting (likely an adult 18+ action). Avoiding...");
+
                     }
 
                 }

@@ -62,7 +62,7 @@ public class GestureTask extends Task {
     public float _rotationIter = -179;
     public Gesture _gesture;
     private final TimerGame _shiftTimer = new TimerGame(0.15);
-    public final TimerGame _gestureTimer = new TimerGame(3);
+    public final TimerGame _gestureTimer = new TimerGame(1.7);
 
     public GestureTask(Entity target, Gesture type) {
         _target = target;
@@ -97,7 +97,7 @@ public class GestureTask extends Task {
     public GestureTask(AltoClef mod, String playerName, String gestureString) {
         Optional<PlayerEntity> player = mod.getEntityTracker().getPlayerEntity(playerName);
         if (player.isEmpty()) {
-            Debug.logMessage("Player not found");
+            Debug.logMessage("Player " + playerName + " not found.");
             _target = null;
             _targetPos = null;
         } else {
@@ -163,27 +163,27 @@ public class GestureTask extends Task {
 
         // Handle different gesture types and looking
         if (_gesture.equals(Gesture.Hey)) {
-            LookHelper.smoothLookAt(mod, lookTarget, 0.1f);
+            LookHelper.smoothLookAt(mod, lookTarget, 0.3f);
         } else if (_gesture.equals(Gesture.Agree)) {
             if (_phase == 0) {
                 Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 20);
-                LookHelper.smoothLook(mod, newRot, 0.2f);
+                LookHelper.smoothLook(mod, newRot, 0.3f);
             } else {
-                LookHelper.smoothLookAt(mod, lookTarget, 0.2f);
+                LookHelper.smoothLookAt(mod, lookTarget, 0.3f);
             }
         } else if (_gesture.equals(Gesture.Disagree)) {
             if (_phase == 0) {
                 Rotation newRot = new Rotation(50, mod.getPlayer().getPitch());
-                LookHelper.smoothLook(mod, newRot, 0.1f);
+                LookHelper.smoothLook(mod, newRot, 0.2f);
             } else {
-                LookHelper.smoothLookAt(mod, lookTarget, 0.3f);
+                LookHelper.smoothLookAt(mod, lookTarget, 0.4f);
             }
         } else if (_gesture.equals(Gesture.Fight)) {
             if (_shiftTimer.getDuration() < 0.1d) {
                 Rotation newRot = new Rotation(mod.getPlayer().getYaw(), 40);
                 LookHelper.smoothLook(mod, newRot, (float) _shiftTimer.getDuration()*4);
             } else {
-                LookHelper.smoothLookAt(mod, lookTarget, 0.2f);
+                LookHelper.smoothLookAt(mod, lookTarget, 0.4f);
             }
         } else if (_gesture.equals(Gesture.BrawlStars)) {
             // TODO UNTESTED

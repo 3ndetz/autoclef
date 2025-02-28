@@ -5,6 +5,7 @@ import adris.altoclef.TaskCatalogue;
 import adris.altoclef.tasks.construction.DestroyBlockTask;
 import adris.altoclef.tasks.construction.PlaceBlockTask;
 import adris.altoclef.tasks.construction.PlaceSignTask;
+import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.StorageHelper;
@@ -40,6 +41,7 @@ public class ConstructGraveTask extends Task {
     private boolean _finished = false;
     private Task _placeSignTask;
     private boolean _useSmoothStoneSlabs = false; // false for standart
+    public int _checkpoint = 0;
     public ConstructGraveTask(String signText) {
         _signText = signText;
     }
@@ -51,9 +53,11 @@ public class ConstructGraveTask extends Task {
     @Override
     protected void onStart(AltoClef mod) {
         mod.getBehaviour().push();
-        mod.getBehaviour().addProtectedItems(Items.COBBLESTONE, Items.COBBLESTONE_SLAB, Items.OAK_SIGN);
-        //mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.add(Blocks.COBBLESTONE);
-        //mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.add(Blocks.COBBLESTONE_SLAB);
+        mod.getBehaviour().addProtectedItems(Items.COBBLESTONE, Items.COBBLESTONE_SLAB, Items.SMOOTH_STONE_SLAB, Items.OAK_SIGN);
+        mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.add(Blocks.COBBLESTONE);
+        mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.add(Blocks.OAK_SIGN);
+        mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.add(Blocks.COBBLESTONE_SLAB);
+        mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.add(Blocks.SMOOTH_STONE_SLAB);
     }
     public static boolean hasGraveMaterials(AltoClef mod) {
         return StorageHelper.itemTargetsMetInventory(mod, graveMaterials())
@@ -61,6 +65,10 @@ public class ConstructGraveTask extends Task {
     }
     @Override
     protected Task onTick(AltoClef mod) {
+        if (mod.getPlayer() == null || mod.getPlayer().getBlockPos() == null)
+            return null;
+
+        BlockPos blockPos = mod.getPlayer().getBlockPos();
         // Get required materials first
         if (StorageHelper.itemTargetsMetInventory(mod, graveMaterialsPrettier())) {
             _useSmoothStoneSlabs = true;
@@ -90,26 +98,32 @@ public class ConstructGraveTask extends Task {
         }
 
         // Build the vertical cobblestone blocks
-        if (!WorldHelper.isBlock(mod, _position, Blocks.COBBLESTONE)) {
-            if (!WorldHelper.isBlock(mod, _position, Blocks.AIR)) {
-                setDebugState("Destroying block in way of bottom cobblestone");
-                return new DestroyBlockTask(_position);
+        if (_checkpoint <= 0) {
+            if (!WorldHelper.isBlock(mod, _position, Blocks.COBBLESTONE)) {
+                if (!WorldHelper.isBlock(mod, _position, Blocks.AIR)) {
+                    setDebugState("Destroying block in way of bottom cobblestone");
+                    return new DestroyBlockTask(_position);
+                }
+                setDebugState("Placing bottom cobblestone");
+                mod.getBehaviour().avoidBlockBreaking(_position);
+                return new PlaceBlockTask(_position, Blocks.COBBLESTONE);
             }
-            setDebugState("Placing bottom cobblestone");
-            mod.getBehaviour().avoidBlockBreaking(_position);
-            return new PlaceBlockTask(_position, Blocks.COBBLESTONE);
+            _checkpoint = 2;
         }
+        // always check this
+        //if (_checkpoint == 1) {
+            if (!WorldHelper.isBlock(mod, _position.up(), Blocks.COBBLESTONE)) {
+                if (!WorldHelper.isBlock(mod, _position.up(), Blocks.AIR)) {
 
-        if (!WorldHelper.isBlock(mod, _position.up(), Blocks.COBBLESTONE)) {
-            if (!WorldHelper.isBlock(mod, _position.up(), Blocks.AIR)) {
-
-                setDebugState("Destroying block in way of top cobblestone");
-                return new DestroyBlockTask(_position.up());
+                    setDebugState("Destroying block in way of top cobblestone");
+                    return new DestroyBlockTask(_position.up());
+                }
+                setDebugState("Placing top cobblestone");
+                mod.getBehaviour().avoidBlockBreaking(_position.up());
+                return new PlaceBlockTask(_position.up(), Blocks.COBBLESTONE);
             }
-            setDebugState("Placing top cobblestone");
-            mod.getBehaviour().avoidBlockBreaking(_position.up());
-            return new PlaceBlockTask(_position.up(), Blocks.COBBLESTONE);
-        }
+            //_checkpoint = 2;
+        //}
 
         // Place side slabs
         boolean SIDE_OR_FORWARD_SLABS = false;
@@ -123,27 +137,41 @@ public class ConstructGraveTask extends Task {
             firstSlab = _position.west();
             secSlab = _position.west(2);
         }
+        // GO IN POSITION RIGHT UPPER FIRST SLAB
+
 
         Block targetSlab = _useSmoothStoneSlabs ? Blocks.SMOOTH_STONE_SLAB : Blocks.COBBLESTONE_SLAB;
-
-        if (!WorldHelper.isBlock(mod, firstSlab, targetSlab)) {
-            if (!WorldHelper.isBlock(mod, firstSlab, Blocks.AIR)) {
-                setDebugState("Destroying block in way of left slab");
-                return new DestroyBlockTask(firstSlab);
+        if (_checkpoint == 2) {
+            if (!WorldHelper.isBlock(mod, firstSlab, targetSlab)) {
+                if (!WorldHelper.isBlock(mod, firstSlab, Blocks.AIR)) {
+                    setDebugState("Destroying block in way of left slab");
+                    return new DestroyBlockTask(firstSlab);
+                }
+                setDebugState("Placing left slab");
+                return new PlaceBlockTask(firstSlab, targetSlab);
             }
-            setDebugState("Placing left slab");
-            return new PlaceBlockTask(firstSlab, targetSlab);
+            _checkpoint = 3;
         }
 
-
-        if (!WorldHelper.isBlock(mod, secSlab, targetSlab)) {
-            if (!WorldHelper.isBlock(mod, secSlab, Blocks.AIR)) {
-                setDebugState("Destroying block in way of right slab");
-                return new DestroyBlockTask(secSlab);
+        if (_checkpoint == 3) {
+            if (!WorldHelper.isBlock(mod, secSlab, targetSlab)) {
+                if (!WorldHelper.isBlock(mod, secSlab, Blocks.AIR)) {
+                    setDebugState("Destroying block in way of right slab");
+                    return new DestroyBlockTask(secSlab);
+                }
+                setDebugState("Placing right slab");
+                return new PlaceBlockTask(secSlab, targetSlab);
             }
-            setDebugState("Placing right slab");
-            return new PlaceBlockTask(secSlab, targetSlab);
+            _checkpoint = 4;
         }
+
+        //if (!blockPos.equals(secSlab.west()))
+        //    return new GetCloseToBlockTask(secSlab.west());
+        //baritone should automatically destroy stupid bad blocks here
+
+        // IF POSITION MET, THEN GO IN POSITION RIGHT UPPER SECOND (DISTANT) SLAB
+        //if (!blockPos.equals(secSlab))
+        //    return new GetCloseToBlockTask(secSlab.up());
 
         // Place sign at the top
         BlockPos signPos = _position.up().west();
@@ -174,6 +202,11 @@ public class ConstructGraveTask extends Task {
     @Override
     protected void onStop(AltoClef mod, Task interruptTask) {
         mod.getBehaviour().pop();
+        mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.remove(Blocks.COBBLESTONE);
+        mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.remove(Blocks.OAK_SIGN);
+        mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.remove(Blocks.SMOOTH_STONE_SLAB);
+        mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.remove(Blocks.STONE_SLAB);
+
     }
 
     @Override

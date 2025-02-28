@@ -6,6 +6,7 @@ import adris.altoclef.eventbus.events.BlockBreakingCancelEvent;
 import adris.altoclef.eventbus.events.BlockBreakingEvent;
 import adris.altoclef.util.helpers.LookHelper;
 import baritone.api.utils.input.Input;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 
@@ -63,8 +64,13 @@ public class PlayerExtraController {
 
         // TODO FIX
         // FAILS WHEN TOO CLOSE (INSIDE OF A HEAD OF AN ENT)
-
-                if (LookHelper.isLookingAtEntity(_mod, entity) && inRange(entity)) {//LookHelper.cleanLineOfSight(_mod.getPlayer(), LookHelper.getClosestPointOnEntityHitbox(_mod, entity),PunkRange)) {
+        boolean attackable;
+        if (MinecraftClient.getInstance().targetedEntity != null) {
+            attackable = MinecraftClient.getInstance().targetedEntity.isAttackable();
+        } else {
+            attackable = false;
+        }
+                if (attackable) {//(LookHelper.isLookingAtEntity(_mod, entity) && inRange(entity)) {//LookHelper.cleanLineOfSight(_mod.getPlayer(), LookHelper.getClosestPointOnEntityHitbox(_mod, entity),PunkRange)) {
                     try {
                         //if(!){
                             _mod.getInputControls().release(Input.CLICK_RIGHT);

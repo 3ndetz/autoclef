@@ -11,6 +11,7 @@ import adris.altoclef.trackers.threats.PlayerThreat;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.agent.AgentState;
+import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.agent.Pipeline;
@@ -37,6 +38,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 import py4j.Py4JException;
 import py4j.Py4JJavaServer;
 
@@ -97,10 +99,6 @@ public class Py4jEntryPoint {
         CentralGameInfoDict.put("server", "universal");
         CentralGameInfoDict.put("serverMode", "survival");
         CentralGameInfoDict.put("chatType", "lobby");
-        //if(DeathMenuChain.ServerIp!=null)
-        //    if(!DeathMenuChain.ServerIp.isEmpty())
-        //        CentralGameInfoDict.put("server", DeathMenuChain.ServerIp);
-
     }
 
     public void setPerspective(int perspectiveNum) {
@@ -219,8 +217,8 @@ public class Py4jEntryPoint {
                 //MinecraftClient.getInstance().options.setPerspective(Perspective.THIRD_PERSON_BACK); //ЗАДНИЦА
                 //MinecraftClient.getInstance().options.setPerspective(Perspective.THIRD_PERSON_FRONT); //ВСЕМ ПРИВЕТ
                 String blockName = WorldHelper.getGroundBlockName(_mod);
-                if(_mod.getPlayer().isOnGround() && blockName.equals("воздух")){
-                    return "земля";
+                if(_mod.getPlayer().isOnGround() && blockName.equals("air")){
+                    return "dirt";
                 }else{
                     return blockName;
                 }
@@ -663,20 +661,24 @@ public class Py4jEntryPoint {
         return 0;
     }
 
-    public List<String> nearestPlayersInfo(int limit){
+    public ArrayList<PlayerThreat> nearsetPlayerThreats(List<AbstractClientPlayerEntity> playerList, int limit) {
         PlayerEntity self = _mod.getPlayer();
-        List<String> playersStrings = new ArrayList<>();
         ArrayList<PlayerThreat> nearsetPlayerThreats = new ArrayList<>();
-        if (self != null && self.getName() != null && _mod.getWorld() != null) {
+        if (playerList != null && self != null && self.getName() != null && _mod.getWorld() != null) {
             Vec3d selfPos = self.getPos();
             if (selfPos != null) {
-                List<AbstractClientPlayerEntity> playerList = _mod.getDamageTracker().getPlayerList();
                 for (AbstractClientPlayerEntity player : playerList) {
                     if (player != null && player.getName() != null) {
                         PlayerThreat playerThreat = _mod.getDamageTracker().getThreatTable().getPlayerThreat(player.getName().getString());
-                        if (playerThreat != null) {
-                            nearsetPlayerThreats.add(playerThreat);
+                        if(limit > 0) {
+                            if (playerThreat != null) {
+                                nearsetPlayerThreats.add(playerThreat);
+                            }
+                            limit--;
+                        } else {
+                            break;
                         }
+
                     }
                 }
                 PlayerThreat selfThreat = _mod.getDamageTracker().getThreatTable().getPlayerThreat(self.getName().getString());
@@ -691,6 +693,17 @@ public class Py4jEntryPoint {
                 }
             }
         }
+        return nearsetPlayerThreats;
+    }
+
+    public ArrayList<PlayerThreat> nearsetPlayerThreats(int limit) {
+        return nearsetPlayerThreats(_mod.getDamageTracker().getPlayerList(), limit);
+    }
+
+    public List<String> nearestPlayersInfo(int limit){
+
+        List<String> playersStrings = new ArrayList<>();
+        ArrayList<PlayerThreat> nearsetPlayerThreats = nearsetPlayerThreats(limit);
         int count = 0;
         for(PlayerThreat threat : nearsetPlayerThreats){
             if(limit > 0){
@@ -701,7 +714,7 @@ public class Py4jEntryPoint {
                                 .getThreatTable()
                                 .playerThreatInfo(threat, count));
                 limit--;
-            }else{
+            } else {
                 break;
             }
         }
@@ -719,43 +732,98 @@ public class Py4jEntryPoint {
 
     }
 
-    public Map<String, Map<String, String>> getPlayersInfo(){
+    boolean attackable(AbstractClientPlayerEntity player){
+        return player != null && !player.isInCreativeMode() && !player.isSpectator() && !player.isInvulnerable();
+    }
+
+    GameMode getGameMode(AbstractClientPlayerEntity player){
+        if (player == null)
+            return GameMode.SURVIVAL;
+        if (player.isInCreativeMode())
+            return GameMode.CREATIVE;
+        if (player.isSpectator())
+            return GameMode.SPECTATOR;
+        return GameMode.SURVIVAL;
+    }
+
+    public List<Map<String, String>>  getPlayersInfo(int limit){
+        // ordered players info
+
         PlayerEntity self = _mod.getPlayer();
-        Map<String, Map<String, String>> map = new HashMap<>();
+        List<Map<String, String>> list = new ArrayList<>();
         if (self != null) {
             Vec3d selfPos = self.getPos();
             if (selfPos != null) {
+
                 List<AbstractClientPlayerEntity> playerList = _mod.getDamageTracker().getPlayerList();
-                for (AbstractClientPlayerEntity player : playerList) {
-                    if (player != null) {
-                        Text name = player.getName();
-                        Vec3d pos = player.getPos();
-                        if(name != null && pos != null){
-                            Vec3d position = player.getPos();
+                Map<String, AbstractClientPlayerEntity> playerListMap = new HashMap<>();
+
+                for (AbstractClientPlayerEntity player: playerList) {
+                    if (player != null && player.getName() != null) {
+                        playerListMap.put(player.getName().getString(), player);
+                    }
+                }
+
+                ArrayList<PlayerThreat> nearsetPlayerThreats = nearsetPlayerThreats(playerList, limit);
+                Map<String, PlayerThreat> playerThreatsMap = new HashMap<>();
+
+                // convert nearsetPlayerThreats to map with playerName, PlayerThreat
+
+                for (PlayerThreat threat : nearsetPlayerThreats) {
+                    if (threat != null && threat.name != null && !threat.name.isBlank()) {
+                        playerThreatsMap.put(threat.name, threat);
+                    }
+                }
+
+
+                for (PlayerThreat threat : nearsetPlayerThreats) {
+                    AbstractClientPlayerEntity player = playerListMap.get(threat.name);
+                        Text nameText = player.getName();
+                        Vec3d pos = threat.lastPos;
+                        if(nameText != null && pos != null){
                             Map<String, String> playerInfoMap = new HashMap<>();
-                            playerInfoMap.put("health", String.valueOf(player.getHealth()));
-                            playerInfoMap.put("distance", String.valueOf(position.distanceTo(self.getPos())));
-                            playerInfoMap.put("isLookingAtYouProb", String.valueOf(getLookingProbability(player, self)));
+                            playerInfoMap.put("name", threat.name);
+                            playerInfoMap.put("health", String.valueOf(threat.lastHealth));
+                            playerInfoMap.put("distance", String.valueOf(pos.distanceTo(self.getPos())));
+                            playerInfoMap.put("is_looking_at_you_prob", String.valueOf(getLookingProbability(player, self)));
                             //playerInfoMap.put("isYouLookingAtProb", (float) getLookingProbability(player, self));
                             Item item = player.getMainHandStack().getItem();
                             if(item != null){
-                                playerInfoMap.put("item", item.toString());
+                                playerInfoMap.put("hand_item", item.toString());
+                            } else {
+                                playerInfoMap.put("hand_item", "");
                             }
-                            playerInfoMap.put("groundBlock", this.getGroundBlock());
-                            Item weapon = getWeaponInHand(player);
-                            if(weapon != null){
-                                playerInfoMap.put("hasWeapon", "1");
-                            }else{
-                                playerInfoMap.put("hasWeapon", "0");
-                            }
-                            map.put(player.getName().getString(), playerInfoMap);
+                            playerInfoMap.put("ground_block", WorldHelper.getGroundBlockName(_mod, player));
+                            playerInfoMap.put("weapon_threat", threat.weaponThreat.toString());
+                            playerInfoMap.put("avoiding", String.valueOf(!threat.shouldAvoidTimer.elapsed()));
+                            playerInfoMap.put("attacking", String.valueOf(!threat.shouldKillTimer.elapsed()));
+                            playerInfoMap.put("in_combat", String.valueOf(!threat.combatEngagementTimer.elapsed()));
+                            playerInfoMap.put("recently_damaged", String.valueOf(!threat.damagedTimer.elapsed()));
+                            playerInfoMap.put("recently_attacked", String.valueOf(!threat.lastAttackTimer.elapsed()));
+                            playerInfoMap.put("attackable", String.valueOf(attackable(player)));
+                            playerInfoMap.put("gamemode", getGameMode(player).asString());
+                            playerInfoMap.put("godmode", String.valueOf(player.isInvulnerable()));
+                            playerInfoMap.put("is_operator", String.valueOf(player.isCreativeLevelTwoOp()));
+                            // rounded position like xyz: 1, 2, 3
+                            playerInfoMap.put("position", String.format("%.0f, %.0f, %.0f", pos.x, pos.y, pos.z));
+                            list.add(playerInfoMap);
+
                         }
-                    }
+
                 }
             }
         }
+        return list;
+    }
+    public LinkedHashMap<String, Map<String, String>> getPlayersInfo(int limit, boolean dictFormat){
+        LinkedHashMap<String, Map<String, String>> map = new LinkedHashMap<>();
+        for (Map<String, String> playerInfo : getPlayersInfo(limit)) {
+            map.put(playerInfo.get("name"), playerInfo);
+        }
         return map;
     }
+
+
     public String parsePlayersInfoToString(Map<String, Map<String, String>> playersInfo) {
         StringBuilder result = new StringBuilder();
 

@@ -65,10 +65,10 @@ public class UserTaskChain extends SingleTaskChain {
             onTaskFinish(mod);
         }
     }
-
+    // TODO SUPER NEW UNTESTED
     @Override
     public float getPriority(AltoClef mod) {
-        return 50;
+        return mod.getBehaviour().getUserTaskChainPriority();
     }
 
     @Override

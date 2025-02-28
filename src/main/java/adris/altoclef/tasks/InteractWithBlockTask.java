@@ -304,7 +304,7 @@ public class InteractWithBlockTask extends Task {
         _cachedClickStatus = rightClick(mod);
         switch (Objects.requireNonNull(_cachedClickStatus)) {
             case CANT_REACH -> {
-                setDebugState("Подтверждено движение к цели"); //"Getting to our goal"
+                setDebugState("Getting to our goal");
                 // Get to our goal then
                 if (!proc.isActive()) {
                     proc.setGoalAndPath(moveGoal);

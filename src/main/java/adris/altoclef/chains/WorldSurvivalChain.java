@@ -156,7 +156,7 @@ public class WorldSurvivalChain extends SingleTaskChain {
             Debug.logMessage("СЛИШКОМ МНОГО ПОПЫТОК! ОБОЗГАЧАЕМ КАК БАГ! StuckFixActivated!!!!!");
             _numTryingUnstuck = 0;
             _moveStuckTimer.reset();
-            DeathMenuChain.StuckFixActivate();
+            GameMenuTaskChain.StuckFixActivate();
         }
         if(_moveStuckTimer.elapsed() && mod.getInfoSender().hasActiveTask()){
             //_numTryingUnstuck++; //DEBUG
@@ -164,7 +164,6 @@ public class WorldSurvivalChain extends SingleTaskChain {
             Vec3d pos = mod.getPlayer().getPos();
             if(_lastPos.isInRange(pos,2.0D)){
                 //Debug.logMessage("StuckFixActivated!!! ");
-                //DeathMenuChain.StuckFixActivate(); // DEBUUUUUG DEBUG УБРАТЬ DEBUG УБРАТЬ ПОТОМ УБРАТЬ
                 //Debug.logMessage("ЧООО ОО О ОО О О ");
                 //Debug.logMessage("Застряли (в стиралке). Перезагрузка систем маршрутизации."+_moveStuckTimer.getDuration());
                 //mod.getChunkTracker().reset(mod);
@@ -181,11 +180,12 @@ public class WorldSurvivalChain extends SingleTaskChain {
                     setTask(new SafeRandomShimmyTask());
                     return 60;
                 } else{
-                    Debug.logMessage("[scam] опять заскамили =( try="+_numTryingUnstuck);
+                    Debug.logWarning("Maybe we stuck, change task may help");
+                    //Debug.logMessage("[scam] опять заскамили =( try="+_numTryingUnstuck);
                     if(Butler.IsStuckFixAllow()) {
                         _numTryingUnstuck++;
                     }else{
-                        Debug.logWarning("butler stuck fix allow = false");
+                        //Debug.logWarning("butler stuck fix allow = false");
                     }
                 }
             }
@@ -249,10 +249,10 @@ public class WorldSurvivalChain extends SingleTaskChain {
         if (_lastPlacedBlock && _lastPlacedBlockPos != null && _blockPlaceCheckTimer.elapsed()) {
             if (WorldHelper.isAir(mod, _lastPlacedBlockPos)) {
                 Debug.logWarning("Block at " + _lastPlacedBlockPos + " failed to place!");
-                if (!_isAvoidingBlockPlace || _placeAvoidTimer.elapsed()) {
-                    Debug.logMessage("Adding temporary block " + _lastPlacedBlockPos + " avoidance for block placement.");
-                    addTemporaryPlaceAvoidance(mod, _lastPlacedBlockPos);
-                }
+                //if (!_isAvoidingBlockPlace || _placeAvoidTimer.elapsed()) {
+                //    Debug.logMessage("Adding temporary block " + _lastPlacedBlockPos + " avoidance for block placement.");
+                //    addTemporaryPlaceAvoidance(mod, _lastPlacedBlockPos);
+                //}
             }
             _lastPlacedBlock = false;
             _lastPlacedBlockPos = null;
@@ -270,11 +270,12 @@ public class WorldSurvivalChain extends SingleTaskChain {
     private void checkLastBrokenBlock(AltoClef mod) {
         if (_lastBrokenBlock && _lastBrokenBlockPos != null && _blockBreakCheckTimer.elapsed()) {
             if (!WorldHelper.isAir(mod, _lastBrokenBlockPos)) {
-                Debug.logWarning("Block at " + _lastBrokenBlockPos + " failed to break!");
-                if (!_isAvoidingBlockBreak || _breakAvoidTimer.elapsed()) {
-                    Debug.logMessage("Adding temporary block " + _lastBrokenBlockPos + " avoidance for block breaking.");
-                    addTemporaryBreakAvoidance(mod, _lastBrokenBlockPos);
-                }
+                Debug.logWarning("Block at " + _lastBrokenBlockPos + " failed to break! Maybe private area, try another place.");
+                //
+                //if (!_isAvoidingBlockBreak || _breakAvoidTimer.elapsed()) {
+                //    Debug.logMessage("Adding temporary block " + _lastBrokenBlockPos + " avoidance for block breaking.");
+                //    addTemporaryBreakAvoidance(mod, _lastBrokenBlockPos);
+                //}
             }
             _lastBrokenBlock = false;
             _lastBrokenBlockPos = null;

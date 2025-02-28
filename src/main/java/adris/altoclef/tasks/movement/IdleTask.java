@@ -27,8 +27,8 @@ public class IdleTask extends Task {
     @Override
     protected void onStart(AltoClef mod) {
     }
-    public TimerGame _lookTimer = new TimerGame(3);
-    private TimerGame _gestureTimer = new TimerGame(8);
+    public static TimerGame _lookTimer = new TimerGame(3);
+    private static TimerGame _gestureTimer = new TimerGame(10);
     private Task _currentGesture = null;
     private Random random = new Random();
     public Vec3d _lastLookPos;
@@ -52,37 +52,51 @@ public class IdleTask extends Task {
             }
             if (_lastLookPos == null)
                 _lastLookPos = mod.getPlayer().getPos();
-            
+
             boolean get_from_agent_state = mod.getInfoSender().getCallbackServerStatusFast() && mod.getInfoSender().getState() != null;
             // Regular looking behavior
             if (get_from_agent_state){
                 Optional<PlayerEntity> findPlayer = mod.getEntityTracker().getPlayerEntity(mod.getInfoSender().getState().focusPlayerName);
                 if (findPlayer.isPresent()) {
-                    chillEntity = Optional.of(findPlayer.get());
+                    Entity player = (Entity) findPlayer.get();
+                    chillEntity = Optional.of(player);
                 }
             }
-            if (chillEntity.isEmpty())
-                chillEntity = mod.getEntityTracker().getClosestEntity(
-                    entity -> entity != null && entity.isAlive() &&
-                            entity.distanceTo(mod.getPlayer()) < 10,
-                    PlayerEntity.class, AnimalEntity.class);
 
+            if (chillEntity.isEmpty()) {
+                Optional<Entity> closest = mod.getEntityTracker().getClosestEntity(
+                        entity -> entity != null &&
+                                entity.distanceTo(mod.getPlayer()) < 10,
+                        PlayerEntity.class, AnimalEntity.class);
+                if(closest.isPresent()) {
+                    chillEntity = Optional.of(closest.get());
+                }
+            }
             // Maybe start a new gesture
             float gestureChance;
-            if (chillEntity.isPresent()) gestureChance = 0.7f; else gestureChance = 0.3f;
+            if (chillEntity.isPresent())
+                gestureChance = 0.7f;
+            else
+                gestureChance = 0.3f;
+            //Debug.logMessage("gdfhg" + get_from_agent_state + " " + chillEntity.isEmpty() + " " + gestureChance );
             if (_gestureTimer.elapsed()) {
+                Gesture showGesture;
                 if (get_from_agent_state) {
-                    _currentGesture = new GestureTask(_lastLookPos, mod.getInfoSender().getState().getGesture());
+                    showGesture = mod.getInfoSender().getState().getGesture();
                 } else { // random gesture
-                    if (random.nextFloat() < gestureChance) { // 30% chance to start gesture
-                        GestureTask.Gesture[] idleGestures = {
-                                GestureTask.Gesture.Sad,
-                                GestureTask.Gesture.BrawlStars,
-                                GestureTask.Gesture.Crazy,
-                                GestureTask.Gesture.Disrespect
-                        };
-                        _currentGesture = new GestureTask(_lastLookPos, idleGestures[random.nextInt(idleGestures.length)]);
-                    }
+                    GestureTask.Gesture[] idleGestures = {
+                            GestureTask.Gesture.Sad,
+                            GestureTask.Gesture.BrawlStars,
+                            GestureTask.Gesture.Crazy,
+                            GestureTask.Gesture.Disrespect
+                    };
+                    showGesture = idleGestures[random.nextInt(idleGestures.length)];
+                }
+                if (random.nextFloat() < gestureChance) { // 30% chance to start gesture
+                    if (chillEntity.isPresent())
+                        _currentGesture = new GestureTask(chillEntity.get(), mod.getInfoSender().getState().getGesture());
+                    else
+                        _currentGesture = new GestureTask(_lastLookPos, showGesture);
                 }
                 _gestureTimer.reset();
             }

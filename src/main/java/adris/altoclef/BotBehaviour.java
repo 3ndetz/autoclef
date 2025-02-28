@@ -81,6 +81,19 @@ public class BotBehaviour {
         current().applyState();
     }
 
+    public void setUserTaskChainPriority(float priority) {
+        current().userTaskChainPriority = priority;
+        current().applyState();
+    }
+    public void setDefaultUserTaskChainPriority() {
+        current().userTaskChainPriority = 50;
+        current().applyState();
+    }
+
+    public float getUserTaskChainPriority() {
+        return current().userTaskChainPriority;
+    }
+
 
     public boolean exclusivelyMineLogs() {
         return current().exclusivelyMineLogs;
@@ -319,6 +332,7 @@ public class BotBehaviour {
     }
 
     class State {
+        public float userTaskChainPriority = 50f;
         /// Baritone Params
         public double followOffsetDistance;
         public List<Item> protectedItems = new ArrayList<>();

@@ -3,17 +3,17 @@ package adris.altoclef.tasks.entity;
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.chains.DeathMenuChain;
+import adris.altoclef.chains.GameMenuTaskChain;
 import adris.altoclef.tasks.movement.GetToBlockTask;
 import adris.altoclef.tasks.movement.GetToEntityTask;
 import adris.altoclef.tasksystem.Task;
-import adris.altoclef.util.helpers.KillAuraHelper;
-import adris.altoclef.util.helpers.LookHelper;
-import adris.altoclef.util.helpers.StorageHelper;
-import adris.altoclef.util.helpers.WorldHelper;
+import adris.altoclef.util.agent.Pipeline;
+import adris.altoclef.util.helpers.*;
 import adris.altoclef.util.slots.PlayerSlot;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import adris.altoclef.util.time.TimerGame;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -47,12 +47,19 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
     }
 
     public static Item bestWeapon(AltoClef mod) {
+
         List<ItemStack> invStacks = mod.getItemStorage().getItemStacksPlayerInventory(true);
         if (!invStacks.isEmpty()) {
             float handDamage = Float.NEGATIVE_INFINITY;
             Item bestItem = null;
             for (ItemStack invStack : invStacks) {
-                if (invStack.getItem() instanceof SwordItem item) {
+                // TODO untested
+                if (AltoClef._pipeline.equals(Pipeline.MurderMystery)) {
+                    for(Item weapon : ItemHelper.MMKillerWeapons) {
+                        if (invStack.isOf(weapon))
+                            return weapon;
+                    }
+                } else if (invStack.getItem() instanceof SwordItem item) {
                     float itemDamage = item.getMaterial().getAttackDamage();
                     Item handItem = StorageHelper.getItemStackInSlot(PlayerSlot.getEquipSlot()).getItem();
                     if (handItem instanceof SwordItem handToolItem) {
@@ -88,6 +95,7 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
         //TODO if can't hit DO CLOSER
         // _ztask[0] = new GetToBlockTask(entity.getBlockPos());
         boolean isPlayer = entity.isPlayer();
+
         boolean canHit = LookHelper.canHitEntity(mod, entity);
         double dist = entity.distanceTo(mod.getPlayer());
         //Debug.logMessage("fdsf " +_getToEntityTimer.getDuration());
@@ -160,7 +168,7 @@ public abstract class AbstractKillEntityTask extends AbstractDoToEntityTask {
 
                 threadRunning.set(true);
                 float hitProg = 0;
-                if (DeathMenuChain.ServerIp.equals("mc.vimemc.net")) { //||DeathMenuChain.ServerIp == "mc.mineblaze.net"
+                if (GameMenuTaskChain.ServerIp.equals("mc.vimemc.net")) { //||DeathMenuChain.ServerIp == "mc.mineblaze.net"
                     hitProg = 1;
                 } else
                     hitProg = mod.getPlayer().getAttackCooldownProgress(

@@ -12,9 +12,16 @@ public class FollowPlayerTask extends Task {
 
     public final String _playerName;
     public double CLOSE_ENOUGH_DIST = 2;
+    public boolean IDLE_TASK_AFTER_REACH = true;
 
     public FollowPlayerTask(String playerName) {
         _playerName = playerName;
+    }
+
+    public FollowPlayerTask(String playerName, double closeEnoughDist) {
+        _playerName = playerName;
+        CLOSE_ENOUGH_DIST = closeEnoughDist;
+        IDLE_TASK_AFTER_REACH = false;
     }
 
     @Override
@@ -33,6 +40,7 @@ public class FollowPlayerTask extends Task {
             // WHAT THE F...???
             // FPS DROPPING HERE TO 0000000
             // WHYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY ?
+            stop(mod);
             return null;
         }
         Vec3d target = lastPos.get();
@@ -53,8 +61,8 @@ public class FollowPlayerTask extends Task {
 
         if (player.get().distanceTo(mod.getPlayer()) <= CLOSE_ENOUGH_DIST) {
             setDebugState("Target follow finished.");
-            return new IdleTask();
-            //return null;
+            //return new IdleTask();
+            return null;
         }
         setDebugState("Trying to approach target...");
         return new GetToEntityTask(player.get(), 0);
@@ -68,7 +76,7 @@ public class FollowPlayerTask extends Task {
     @Override
     protected boolean isEqual(Task other) {
         if (other instanceof FollowPlayerTask task) {
-            return task._playerName.equals(_playerName);
+            return task._playerName.equals(_playerName) && task.CLOSE_ENOUGH_DIST == CLOSE_ENOUGH_DIST;
         }
         return false;
     }

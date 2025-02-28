@@ -39,6 +39,7 @@ public class MurderMysteryTask extends Task {
     private MurderRole _role;
     private Task _runAwayTask;
     private final TimerGame _runAwayExtraTime = new TimerGame(5);
+    private final boolean _change_chain_priority = false;
     private List<Item> lootableItems(AltoClef mod) {
         List<Item> lootable = new ArrayList<>();
         //lootable.addAll(ArmorAndToolsNeeded(mod));
@@ -84,6 +85,8 @@ public class MurderMysteryTask extends Task {
         mod.getBehaviour().avoidBlockBreaking(this::avoidBlockBreak);
         mod.getBehaviour().avoidBlockPlacing(this::avoidBlockBreak);
         mod.getBehaviour().setDamageTrackerStrategy(DamageTrackerStrategy.MurderMystery);
+        if(_change_chain_priority)
+            mod.getBehaviour().setUserTaskChainPriority(80);
     }
     private boolean avoidBlockBreak(BlockPos pos) {
         return true;
@@ -172,6 +175,8 @@ public class MurderMysteryTask extends Task {
             if (mod.getPlayer().distanceTo(danger) < 20) {
                 setDebugState("RUNNING FROM DANGER");
                 _runAwayExtraTime.reset();
+                if(_change_chain_priority)
+                    mod.getBehaviour().setUserTaskChainPriority(80);
                 _runAwayTask = new RunAwayFromPositionTask(40, danger.getBlockPos());
                 //_runAwayTask = new TerminatorTask.RunAwayFromPlayersTask(danger, 20);
                 return _runAwayTask;
@@ -190,6 +195,7 @@ public class MurderMysteryTask extends Task {
                 } else {
                     mod.getSlotHandler().forceDeequip(stack -> stack.getItem() instanceof ShearsItem || stack.getItem() instanceof SwordItem);
                 }
+                if (_change_chain_priority) mod.getBehaviour().setUserTaskChainPriority(80);
                 return new KillPlayerTask(entity.getName().getString());
             }
 
@@ -201,12 +207,14 @@ public class MurderMysteryTask extends Task {
                     return new ThrowEnderPearlSimpleProjectileTask(entity.getBlockPos().add(0, -1, 0));
                 } else if (Objects.equals(_roles.get(name), MurderRole.KILLER)) {
                     if (UseBow(mod, entity)) {
+                        if (_change_chain_priority) mod.getBehaviour().setUserTaskChainPriority(80);
                         _shootArrowTask = new ShootArrowSimpleProjectileTask(entity);
                         return _shootArrowTask;
                     }
                 }
             } else if (!injured) {
                 setDebugState("PURSUE ENEMY!");
+                if (_change_chain_priority) mod.getBehaviour().setUserTaskChainPriority(80);
                 return new GetToEntityTask(entity);
             }
 
@@ -223,6 +231,7 @@ public class MurderMysteryTask extends Task {
                         ent -> mod.getPlayer().getPos().isInRange(ent.getEyePos(), 400),check);
                 //
                 if(closestEnt.isPresent()) {
+                    if (_change_chain_priority) mod.getBehaviour().setDefaultUserTaskChainPriority();
                     setDebugState("Сбор ресурсов для оружия");
                     _pickupTask = new PickupDroppedItemTask(new ItemTarget(check), false, false);
                     return _pickupTask;
@@ -241,14 +250,16 @@ public class MurderMysteryTask extends Task {
             //Debug.logMessage("ChillTactics: " + _chill_tactics);
         }
         setDebugState("Чилл");
-        Optional<Entity> chiller = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> true, PlayerEntity.class);
-        if (chiller.isPresent() && chiller.get() instanceof PlayerEntity playerEntity) {
-            return new IdleTask();
-        }
+        if (_change_chain_priority) mod.getBehaviour().setDefaultUserTaskChainPriority();
+        //Optional<Entity> chiller = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> true, PlayerEntity.class);
+        //if (chiller.isPresent() && chiller.get() instanceof PlayerEntity playerEntity) {
+        //    return new IdleTask();
+        //}
 
         //return new Kil
-        return new SafeRandomShimmyTask();
+        //return new SafeRandomShimmyTask();
         //return new TimeoutWanderTask();
+        return new IdleTask();
     }
     private boolean isReadyToPunk(AltoClef mod){
         if(_role.equals(MurderRole.KILLER)){

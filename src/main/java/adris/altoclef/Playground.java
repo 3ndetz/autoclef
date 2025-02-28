@@ -3,6 +3,7 @@ package adris.altoclef;
 import adris.altoclef.butler.ButlerConfig;
 import adris.altoclef.butler.WhisperChecker;
 import adris.altoclef.chains.DeathMenuChain;
+import adris.altoclef.chains.GameMenuTaskChain;
 import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.tasks.CraftGenericManuallyTask;
 import adris.altoclef.tasks.construction.PlaceBlockNearbyTask;
@@ -153,16 +154,15 @@ public class Playground {
             case "inv":
                 List<ItemStack> itemStacks = mod.getItemStorage().getItemStacksPlayerInventory(true);
                 for (ItemStack item : itemStacks) {
-                    if(item.getItem()!=null) {
-
+                    if(item.getItem() != null) {
                         String itemName = item.getItem().getName().getString().toLowerCase();
+                        Debug.logMessage("item" + itemName);
                         if (!itemName.equals("воздух")) {
                             if (item.contains(DataComponentTypes.CUSTOM_NAME)) {
                                 String itemCustomName = removeMCFormatCodes(item.getName().getString().toLowerCase());
                                 Debug.logMessage("ITEM CUSTOM NAME = "+itemCustomName);
                                 //return itemName+" (с названием " + itemCustomName+")";
                             }
-
                             //Debug.logMessage("ITEM CUSTOM NAME = "+itemCustomName);
                         }
                     }
@@ -172,7 +172,7 @@ public class Playground {
             case "stuckdebug":
                 Debug.logMessage("STUCK DEBUG!!!!");
                 mod.runUserTask(new GetToXZTask(0,0));
-                DeathMenuChain.StuckFixActivate();
+                GameMenuTaskChain.StuckFixActivate();
                 break;
             case "cb_reload":
                 Debug.logMessage("PYTHON SENDER & CALLBACK RELOAD INITIATED");

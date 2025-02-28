@@ -23,7 +23,7 @@ public abstract class Task {
         parentChain.addTaskToChain(this);
         if (_first) {
             Debug.logInternal("Task START: " + this);
-            mod.getInfoSender().onAutoclefEvent("Task START: " + this.toString());
+            mod.getInfoSender().onAutoclefEvent("[Baritone task] starting " + this);
             _active = true;
             onStart(mod);
             _first = false;
@@ -78,9 +78,14 @@ public abstract class Task {
      */
     public void stop(AltoClef mod, Task interruptTask) {
         if (!_active) return;
-        Debug.logInternal("Task STOP: " + this + ", interrupted by " + interruptTask);
+        String interruptMessage;
+        if (interruptTask != null)
+            interruptMessage = " and changed to " + interruptTask;
+        else
+            interruptMessage = "";
+        Debug.logInternal("Task STOP: " + this + interruptMessage);
         try {
-            mod.getInfoSender().onAutoclefEvent("Task STOP: " + this + ", interrupted by " + interruptTask);
+            mod.getInfoSender().onAutoclefEvent("Stopped baritone task " + this + interruptMessage);
         } catch (Exception e) {
             Debug.logInternal("Failed to send task stop event: " + e);
         }

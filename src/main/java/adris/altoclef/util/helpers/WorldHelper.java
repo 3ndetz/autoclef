@@ -184,11 +184,23 @@ public interface WorldHelper {
         return false;
     }
 
+    static String getGroundBlockName(AltoClef mod, Entity target) {
+        //Debug.logMessage("your blockpos="+mod.getPlayer().getBlockPos().subtract(new Vec3i(0,1,0)));
+        String blockname = getBlockName(mod, target.getBlockPos().subtract(new Vec3i(0, 1, 0)));
+        int i = 1;
+        while (blockname.equals("air") && i <= 3) {
+            i++;
+            blockname = getBlockName(mod, target.getBlockPos().subtract(new Vec3i(0, i, 0)));
+
+        }
+        return blockname;
+    }
+
     static String getGroundBlockName(AltoClef mod) {
         //Debug.logMessage("your blockpos="+mod.getPlayer().getBlockPos().subtract(new Vec3i(0,1,0)));
         String blockname = getBlockName(mod, mod.getPlayer().getBlockPos().subtract(new Vec3i(0, 1, 0)));
         int i = 1;
-        while (blockname.equals("воздух") && i <= 3) {
+        while (blockname.equals("air") && i <= 3) {
             i++;
             blockname = getBlockName(mod, mod.getPlayer().getBlockPos().subtract(new Vec3i(0, i, 0)));
 
@@ -200,9 +212,9 @@ public interface WorldHelper {
         BlockState s = mod.getWorld().getBlockState(pos);
         Block block = s.getBlock();
         if (s.isAir()) {
-            return "воздух";
+            return "air";
         } else {
-            return block.getName().getString().toLowerCase();
+            return  block.asItem().toString(); //.getString().toLowerCase();
         }
     }
 

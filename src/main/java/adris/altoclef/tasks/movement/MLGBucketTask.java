@@ -142,13 +142,13 @@ public class MLGBucketTask extends Task {
         if (bestClutchPos.isPresent()) {
             _movingTorwards = bestClutchPos.get().mutableCopy();
             if (!_movingTorwards.equals(oldMovingTorwards)) {
-                if (oldMovingTorwards == null)
-                    Debug.logMessage("(MLG Bucket Clutch: " + _movingTorwards + ")"); //TRS NEW clutch target:
-                else
-                    Debug.logMessage("(MLG Bucket pos change: " + _movingTorwards + ")"); //  chutch changed
+                //if (oldMovingTorwards == null)
+                    //Debug.logMessage("(MLG Bucket Clutch: " + _movingTorwards + ")"); //TRS NEW clutch target:
+                //else
+                    //Debug.logMessage("(MLG Bucket pos change: " + _movingTorwards + ")"); //  chutch changed
             }
         } else if (oldMovingTorwards != null) {
-            Debug.logMessage("(LOST clutch pos!)");// LOST clutch position!
+            //Debug.logMessage("(LOST clutch pos!)");// LOST clutch position!
         }
         if (willLandOn.isPresent()) {
             handleJumpForLand(mod, willLandOn.get());
@@ -163,7 +163,7 @@ public class MLGBucketTask extends Task {
 
     private Task placeMLGBucketTask(AltoClef mod, BlockPos toPlaceOn) {
         if (!hasClutchItem(mod)) {
-            setDebugState("Отсутствует оборудование для клатча =(");//Wait for it...
+            setDebugState("Wait for it placeMLG bucket");
             return null;
         }
         // If our raycast hit a non-solid block, go DOWN one.

@@ -58,6 +58,6 @@ public class LobbyMoveTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Движение по лобби";
+        return "Lobby moving";
     }
 }

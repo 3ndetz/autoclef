@@ -1,6 +1,7 @@
 package adris.altoclef.ui;
 
 import adris.altoclef.AltoClef;
+import adris.altoclef.chains.UserTaskChain;
 import adris.altoclef.tasksystem.Task;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -38,10 +39,17 @@ public class CommandStatusOverlay {
     }
 
     private void drawTaskChain(TextRenderer renderer, float dx, float dy, int color, boolean shadow, Matrix4f matrix, VertexConsumerProvider vertexConsumers, TextRenderer.TextLayerType layerType, int backgroundColor, int light, int maxLines, List<Task> tasks, AltoClef mod) {
-        String info = "| "+mod.getInfoSender().getInfo();
-        dy += 15;
+        String info = " "+mod.getInfoSender().getInfo();
+        dy += 5;
+        if (mod.getTaskRunner() != null
+                && mod.getTaskRunner().getCurrentTaskChain() != null
+                && !(mod.getTaskRunner().getCurrentTaskChain() instanceof UserTaskChain)
+            )
+            renderer.draw("{" + mod.getTaskRunner().getCurrentTaskChain().getName() + "}",
+                    dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+        dy += 10;
         if (tasks.size() == 0) {
-            renderer.draw(" *энергосбережение* " + info, dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
+            renderer.draw(" *resource saving mode* " + info, dx, dy, color, shadow, matrix, vertexConsumers, layerType, backgroundColor, light);
             if (_lastTime + 10000 < Instant.now().toEpochMilli() && mod.getModSettings().shouldShowTimer()) {//if it doesn't run any task in 10 secs
                 _timeRunning = Instant.now().toEpochMilli();//reset the timer
             }
