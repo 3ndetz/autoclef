@@ -152,14 +152,16 @@ public class WorldSurvivalChain extends SingleTaskChain {
             _moveStuckTimer.reset();
         }
 
-        if(_numTryingUnstuck>5){
-            Debug.logMessage("СЛИШКОМ МНОГО ПОПЫТОК! ОБОЗГАЧАЕМ КАК БАГ! StuckFixActivated!!!!!");
+        if(_numTryingUnstuck>3){
+            Debug.logMessage("We're stuck completely. Trying to fix.");
             _numTryingUnstuck = 0;
             _moveStuckTimer.reset();
-            GameMenuTaskChain.StuckFixActivate();
+            // mod.getEntityTracker().
+            mod.runForcedTask(new SafeRandomShimmyTask(), 3);
+            // GameMenuTaskChain.StuckFixActivate();  //join singleplayer and relaxing
         }
         if(_moveStuckTimer.elapsed() && mod.getInfoSender().hasActiveTask()){
-            //_numTryingUnstuck++; //DEBUG
+            _numTryingUnstuck++; //DEBUG
             //Debug.logMessage("чекаем. "+_moveStuckTimer.getDuration());
             Vec3d pos = mod.getPlayer().getPos();
             if(_lastPos.isInRange(pos,2.0D)){

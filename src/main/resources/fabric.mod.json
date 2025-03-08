@@ -3,11 +3,12 @@
   "id": "altoclef",
   "version": "1.21-beta1",
   "name": "Alto Clef",
-  "description": "Plays Block Game",
+  "description": "PRO Plays Block Game",
   "authors": [
     "TacoTechnica",
     "James Green",
-    "Marvion Kirito"
+    "Marvion Kirito",
+    "3ndetz"
   ],
   "contact": {
     "homepage": "https://fabricc.net/",
@@ -19,7 +20,13 @@
   "entrypoints": {
     "main": [
       "adris.altoclef.AltoClef"
+    ],
+    "voicechat": [
+      "adris.altoclef.AltoclefVoicechat"
     ]
+  },
+  "depends": {
+    "voicechat": ">=1.21-2.5.0"
   },
   "mixins": [
     "altoclef.mixins.json"

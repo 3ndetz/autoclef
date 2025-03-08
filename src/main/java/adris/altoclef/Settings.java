@@ -18,7 +18,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -46,6 +45,13 @@ public class Settings implements IFailableConfigFile {
     //////////////////////////////////////////////////////////////////////////////////////////
 
     /**
+     * Should show inner chat (setting deleted)
+     */
+    private boolean showChat = true;
+
+    private boolean reloadInfoSender = true;
+
+    /**
      * If true, text will appear on the top left showing the current task chain.
      */
     private boolean showTaskChains = true;
@@ -65,7 +71,7 @@ public class Settings implements IFailableConfigFile {
     /**
      * When logging to chat, will prepend this to each log.
      */
-    private String chatLogPrefix = "[Alto Clef] ";
+    private String chatLogPrefix = "[NetTyanBaritone] ";
 
     /**
      * If true, will show a timer.
@@ -453,6 +459,8 @@ public class Settings implements IFailableConfigFile {
     public boolean shouldHideAllWarningLogs() {
         return hideAllWarningLogs;
     }
+    public boolean showChat() {return showChat;}
+    public void setShowChat(boolean showChatNew) {showChat = showChatNew;}
 
     public String getCommandPrefix() {
         return commandPrefix;
@@ -533,6 +541,7 @@ public class Settings implements IFailableConfigFile {
     public String getDeathCommand() {
         return deathCommand;
     }
+    public boolean shouldReloadInfoSender(){return reloadInfoSender;}
 
     public boolean shouldRunIdleCommandWhenNotActive() {
         return idleCommand != null && !idleCommand.isBlank();

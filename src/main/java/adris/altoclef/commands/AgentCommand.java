@@ -21,12 +21,12 @@ public class AgentCommand extends Command {
         //String commandName = commandArgs.remove(0);
         String text = String.join(" ", commandArgs);
         if (!text.isBlank()) {
-            Debug.logMessage("Executing agent command " + text);
+            //Debug.logMessage("Executing agent command " + text);
             String result = mod.getInfoSender().executeAgentCommand(text);
-            Debug.logMessage("Executing result: " + result);
+            //Debug.logMessage("Executing result: " + result);
             finish();
         } else {
-            Debug.logWarning("Text is blank!");
+            //Debug.logWarning("Text is blank!");
             finish();
         }
     }

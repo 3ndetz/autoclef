@@ -12,21 +12,22 @@ import java.util.Optional;
 
 public class GestureCommand extends Command {
     public GestureCommand() throws CommandException {
-        super("gesture", "Show gesture to someone", new Arg(String.class, "username", null, 0), new Arg(String.class, "gesture", null, 0));
+        super("gesture", "Show gesture to someone", new Arg(String.class, "username"), new Arg(String.class, "gesture"));
     }
 
     @Override
     protected void call(AltoClef mod, ArgParser parser) throws CommandException {
         String username = parser.get(String.class);
         if (username == null) {
+            mod.logWarning("Not specified");
             finish();
             return;
         }
 
-        Optional<Entity> entity = getEntityTarget(mod, username);
+        Optional<Entity> entity = getPlayerTarget(mod, username);
 
         if (entity.isEmpty()) {
-            mod.logWarning("Player " + username + " not found.");
+            mod.logWarning("GestureAction: Player " + username + " not found.");
             finish();
             return;
         }
@@ -37,12 +38,12 @@ public class GestureCommand extends Command {
             try {
                 gesture = GestureTask.Gesture.valueOf(gesture_str);
             } catch (IllegalArgumentException e) {
-                mod.logWarning("Invalid gesture: " + gesture_str);
+                mod.logWarning("GestureAction: Invalid gesture: " + gesture_str);
             }
         }
         mod.runForcedTask(new GestureTask(entity.get(), gesture), 3);
     }
-    private Optional<Entity> getEntityTarget(AltoClef mod, String username){
+    public static Optional<Entity> getPlayerTarget(AltoClef mod, String username){
         if (mod.getEntityTracker().isPlayerLoaded(username)) {
             return mod.getEntityTracker().getPlayerEntity(username).map(Entity.class::cast);
         }

@@ -4,6 +4,7 @@ import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.ChatMessageEvent;
 import com.mojang.authlib.GameProfile;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.message.MessageHandler;
 import net.minecraft.network.message.MessageType;
 import net.minecraft.network.message.SignedMessage;

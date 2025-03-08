@@ -115,6 +115,13 @@ public class Butler {
     public static boolean IsStuckFixAllow() {
         return STUCK_FIX_BUTLER_ALLOW && ButlerConfig.getInstance().autoStuckFix;
     }
+    public boolean recieveWhisperCommand(String ourName, String msg){
+        // TODO NEW EXTRA untested
+        WhisperChecker.MessageResult whisper = this._whisperChecker.receiveMessage(_mod, ourName, msg);
+        if (whisper != null && whisper.from != null && whisper.message != null)
+            return this.receiveWhisper(whisper.from, whisper.message);
+        return false;
+    }
 
     private void receiveMessage(String msg, String receiver) {
         // Format: <USER> whispers to you: <MESSAGE>
@@ -221,28 +228,34 @@ public class Butler {
         }
         //Debug.logMessage("Recieved msg DEBUG!!! "+ourName+ " " + serverAdress + " " + serverMode + "\n>"+msg+"<");
 
-        // TODO NEW EXTRA untested
-        WhisperChecker.MessageResult whisper = this._whisperChecker.receiveMessage(_mod, ourName, msg);
-        if (whisper != null && whisper.from != null && whisper.message != null)
-            this.receiveWhisper(whisper.from, whisper.message);
+
         boolean strongChatMessage = false;
+        //boolean is_whisper = this.recieveWhisperCommand(ourName, msg);
+
         WhisperChecker.MessageResult chatParsedResult = this._whisperChecker.receiveChat(_mod, ourName, msg,
                 serverAdress, serverMode);
         if (chatParsedResult != null) {
             if (ButlerConfig.getInstance().debugChatParseResult) {
-                Debug.logMessage(
+                Debug.logInternal(
                         "Chatparsedresult>>" + chatParsedResult.toString() +"<<\nexact:" + chatParsedResult.serverExactPrediction);
             }
             if (chatParsedResult.serverExactPrediction != null) {
+                String pred = chatParsedResult.serverExactPrediction;
                 if (ButlerConfig.getInstance().debugChatParseResult) {
                     Debug.logMessage("serverExactPrediction=" + chatParsedResult.serverExactPrediction + ",server="
                             + chatParsedResult.server);
                 }
                 String nick = chatParsedResult.from;
-                if (!nick.isBlank()) {
-                    if (nick.contains("MurderMystery")){
+                if (!nick.isBlank() && (
+                        pred.equals("exact")
+                        || pred.equals("server")
+                        || pred.equals("universal")
+                    )
+                )
+                {
+                    if (nick.contains("MurderMystery") || nick.equals("Ошибка")){
 
-                    } else if (nick.matches(".*[^a-zA-Zа-яА-Я0-9_].*")) { // contains bad chars
+                    } else if (nick.matches(".*[^a-zA-Z0-9_].*")) { // contains bad chars
 
                     } else {
                         _mod.getInfoSender().onStrongChatMessage(chatParsedResult);
@@ -342,22 +355,31 @@ public class Butler {
 
     }
 
-    private void receiveWhisper(String username, String message) {
+    private boolean receiveWhisper(String username, String message) {
 
         boolean debug = ButlerConfig.getInstance().whisperFormatDebug;
         // Ignore messages from other bots.
         if (message.startsWith(BUTLER_MESSAGE_START)) {
             if (debug) {
-                Debug.logMessage("    Rejecting: MSG is detected to be sent from another bot.");
+                Debug.logMessage("Rejecting: MSG is detected to be sent from another bot.");
             }
-            return;
+            return false;
         }
 
         if (_userAuth.isUserAuthorized(username)) {
-            executeWhisper(username, message);
+            if (message.startsWith(_mod.getModSettings().getCommandPrefix())) {
+                executeWhisper(username, message);
+                return true;
+            } else {
+                if (debug) {
+                    Debug.logMessage("User \"" + username + "\" sent simple private message.");
+                }
+            }
+
         } else {
             if (debug) {
-                Debug.logMessage("    Rejecting: User \"" + username + "\" is not authorized.");
+                Debug.logMessage("Rejecting: User \"" + username + "\" is not authorized.");
+
             }
             if (ButlerConfig.getInstance().sendAuthorizationResponse) {
                 sendWhisper(username,
@@ -365,6 +387,7 @@ public class Butler {
                         MessagePriority.UNAUTHORIZED);
             }
         }
+        return false;
     }
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
@@ -448,17 +471,20 @@ public class Butler {
         _commandInstantRan = true;
         _commandFinished = false;
         _currentUser = username;
-        sendWhisper("Command Executing: " + message, MessagePriority.TIMELY);
+        if (ButlerConfig.getInstance().sendCommandOutput)
+            sendWhisper("Command Executing: " + message, MessagePriority.TIMELY);
         String prefix = ButlerConfig.getInstance().requirePrefixMsg ? _mod.getModSettings().getCommandPrefix() : "";
         AltoClef.getCommandExecutor().execute(prefix + message, () -> {
             // On finish
-            sendWhisper("Command Finished: " + message, MessagePriority.TIMELY);
+            if (ButlerConfig.getInstance().sendCommandOutput)
+                sendWhisper("Command Finished: " + message, MessagePriority.TIMELY);
             if (!_commandInstantRan) {
                 _currentUser = null;
             }
             _commandFinished = true;
         }, e -> {
-            sendWhisper("TASK FAILED: " + e.getMessage(), MessagePriority.ASAP);
+            if (ButlerConfig.getInstance().sendCommandOutput)
+                sendWhisper("TASK FAILED: " + e.getMessage(), MessagePriority.ASAP);
             e.printStackTrace();
             _currentUser = null;
             _commandInstantRan = false;
@@ -474,7 +500,7 @@ public class Butler {
         if (_currentUser != null) {
             sendWhisper(_currentUser, message, priority);
         } else {
-            Debug.logWarning("Failed to send butler message as there are no users present: " + message);
+            //Debug.logWarning("Failed to send butler message as there are no users present: " + message);
         }
     }
 

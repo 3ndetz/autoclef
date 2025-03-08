@@ -27,19 +27,22 @@ public class Debug {
         if (jankModInstance != null) {
             return jankModInstance.getModSettings().getChatLogPrefix();
         }
-        return "[Alto Clef] ";
+        return "[NetTyanBaritone] ";
+    }
+
+    public static void logAgent(String message) {
+        if(jankModInstance != null && message != null && !message.isBlank()){
+            jankModInstance.getInfoSender().onAutoclefEvent("mc_executor_log", message);
+        }
     }
 
     private static void addChatMessageInternalPlayer(String message){
-        if(jankModInstance != null){
-            // TODO NEW UNTESTED NEW REMOVE
-            jankModInstance.getInfoSender().onAutoclefEvent("mc_executor_log","[Baritone] " + message);
-        }
         MinecraftClient.getInstance().player.sendMessage(Text.of(message), false);
     }
 
     public static void logMessage(String message, boolean prefix) {
         if (MinecraftClient.getInstance() != null && MinecraftClient.getInstance().player != null && message != null) {
+            logAgent(message);
             if (prefix) {
                 message = "\u00A7d\u00A7l" + getLogPrefix() + "\u00A7r" + message;
             }
@@ -61,6 +64,7 @@ public class Debug {
 
     public static void logWarning(String message) {
         logInternal("WARNING: " + message);
+        logAgent(message);
         if (jankModInstance != null && !jankModInstance.getModSettings().shouldHideAllWarningLogs()) {
             if (MinecraftClient.getInstance() != null && MinecraftClient.getInstance().player != null && message != null) {
                 String msg = "\u00A7d\u00A7l\u00A7n" + getLogPrefix() + "\u00A7c" + message + "\u00A7r";
@@ -80,6 +84,7 @@ public class Debug {
         System.err.println(message);
         System.err.println("at:");
         System.err.println(stacktrace);
+        logAgent(message);
         if (MinecraftClient.getInstance() != null && MinecraftClient.getInstance().player != null) {
             String msg = "\u00A72\u00A7l\u00A7c" + getLogPrefix() + "[ERROR] " + message + "\nat:\n" + stacktrace + "\u00A7r";
             addChatMessageInternalPlayer(msg);

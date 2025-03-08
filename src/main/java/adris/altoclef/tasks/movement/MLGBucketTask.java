@@ -199,12 +199,12 @@ public class MLGBucketTask extends Task {
                 }
             }
             if (hasClutch) {
-                Debug.logMessage("ДОЛБАНЕМСЯ: " + willLandIn);//HIT:
+                Debug.logMessage("WILL HIT LAND IN: " + willLandIn);
                 _placedPos = willLandIn;
                 mod.getInputControls().tryPress(Input.CLICK_RIGHT);
                 //mod.getClientBaritone().getInputOverrideHandler().setInputForceState(Input.CLICK_RIGHT, true);
             } else {
-                setDebugState("КУДА ПАЛИШЬ!");//NOT LOOKING CORRECTLY!
+                setDebugState("NOT LOOKING CORRECTLY!!");
             }
         } else {
             setDebugState("Выжидание момента падения на нужный блок...");//Waiting to reach target block.

@@ -21,6 +21,14 @@ repositories {
         name = 'babbaj-repo'
         url = 'https://babbaj.github.io/maven/'
     }
+    maven { url = 'https://maven.maxhenkel.de/repository/public' }
+    maven {
+        name = "Modrinth"
+        url = "https://api.modrinth.com/maven"
+        content {
+            includeGroup "maven.modrinth"
+        }
+    }
     flatDir {
         dirs '../baritone/dist'
     }
@@ -48,6 +56,10 @@ dependencies {
     implementation 'net.sf.py4j:py4j:0.10.9.7'
     modImplementation "net.sf.py4j:py4j:0.10.9.7"
     include "net.sf.py4j:py4j:0.10.9.7"
+
+    //VOICE CHAT API
+    implementation "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}"
+
     // Nether pathfinder
     implementation 'dev.babbaj:nether-pathfinder:1.5'
 
@@ -73,6 +85,8 @@ dependencies {
     //modImplementation 'baritone-api-fabric:baritone-api-fabric:1.6.3'
     //implementation files('baritone-plus/build/libs/baritone-unoptimized-fabric-1.6.3.jar')
 	//implementation files('libs/py4j0.10.9.7.jar')
+    //VOICE CHAT MOD
+    modImplementation "maven.modrinth:simple-voice-chat:fabric-${project.voicechat_version}"
 }
 shadowJar {
     configurations = [project.configurations.shadow]

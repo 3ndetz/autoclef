@@ -12,6 +12,8 @@ public class AltoClefCommands {
     public AltoClefCommands() throws CommandException {
         // List commands here
         AltoClef.getCommandExecutor().registerNewCommand(
+                new ShootCommand(),
+                new PearlCommand(),
                 new ConnectCommand(),
                 new AgentCommand(),
                 new BuildCommand(),

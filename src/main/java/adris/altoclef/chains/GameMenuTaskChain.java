@@ -85,10 +85,25 @@ public class GameMenuTaskChain extends SingleTaskChain {
     private boolean _clicked = false;
     private boolean _joined = false;
     public TimerReal clickTimer = new TimerReal(0.7);
-
+    public TimerReal _reloadInfoSenderTimer = new TimerReal(10);
+    private boolean _infoSenderLoaded = true;
     @Override
     public float getPriority(AltoClef mod) {
-
+        if (mod.getModSettings().shouldReloadInfoSender() && _reloadInfoSenderTimer.elapsed() ){
+            if (!mod.getInfoSender().getCallbackServerStatusFast()) {
+                if (_infoSenderLoaded) {
+                    Debug.logMessage("[InfoSender] Python callback connection lost. Retry...");
+                    _infoSenderLoaded = false;
+                }
+                mod.reloadPythonSender();
+            } else {
+                if (!_infoSenderLoaded) {
+                    Debug.logMessage("[InfoSender] Python callback connection established!");
+                    _infoSenderLoaded = true;
+                }
+            }
+            _reloadInfoSenderTimer.reset();
+        }
 
         if (ButlerConfig.getInstance().autoJoin) {
             // in choose menu
@@ -371,6 +386,6 @@ public class GameMenuTaskChain extends SingleTaskChain {
 
     @Override
     public String getName() {
-        return "Death Menu Respawn Handling";
+        return "Game Menu Chain";
     }
 }

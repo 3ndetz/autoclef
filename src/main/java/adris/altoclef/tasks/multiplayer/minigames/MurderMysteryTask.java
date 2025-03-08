@@ -228,7 +228,8 @@ public class MurderMysteryTask extends Task {
             if (mod.getEntityTracker().itemDropped(check)) {
 
                 Optional<ItemEntity> closestEnt = mod.getEntityTracker().getClosestItemDrop(
-                        ent -> mod.getPlayer().getPos().isInRange(ent.getEyePos(), 400),check);
+                        ent -> mod.getEntityTracker().isEntityReachable(ent)
+                                && mod.getPlayer().getPos().isInRange(ent.getEyePos(), 400),check);
                 //
                 if(closestEnt.isPresent()) {
                     if (_change_chain_priority) mod.getBehaviour().setDefaultUserTaskChainPriority();

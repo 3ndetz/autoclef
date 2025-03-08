@@ -499,6 +499,15 @@ public class Playground {
                 PlayerEntity target_ply = players.get(0);
                 mod.runUserTask(new ShootArrowSimpleProjectileTask(target_ply));
                 break;
+            case "mace":
+                List<PlayerEntity> playerss = mod.getEntityTracker().getTrackedEntities(PlayerEntity.class);
+                if (playerss.isEmpty()) {
+                    Debug.logWarning("No targets found.");
+                    break;
+                }
+                PlayerEntity target_plyy = playerss.getFirst();
+                mod.runUserTask(new MacePunchTask(target_plyy, 8));
+                break;
             case "itemthreat":
                 List<PlayerEntity> players2 = mod.getEntityTracker().getTrackedEntities(PlayerEntity.class);
 

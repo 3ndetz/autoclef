@@ -80,7 +80,7 @@ public class SupervisorTaskChain extends SingleTaskChain {
 
     public void runTask(AltoClef mod, Task task, double time) {
         if (task != null) {
-            Debug.logMessage("[SUDO] Задача поставлена: " + task.toString()); //TRS "User Task Set: "
+            Debug.logMessage("[SUDO] Task set to: " + task.toString()); //TRS "User Task Set: "
         }
         //mod.getTaskRunner().enable();
         setTask(task);

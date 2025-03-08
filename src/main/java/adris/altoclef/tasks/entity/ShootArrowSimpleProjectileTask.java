@@ -35,7 +35,10 @@ public class ShootArrowSimpleProjectileTask extends Task {
     private boolean failed = false;
     private Item _rangedItem = Items.BOW;
     private boolean _highAng = false;
-    private final TimerGame _shotTimer = new TimerGame(0.7);
+    private final TimerGame _shotTimer = new TimerGame(0.2);
+    // Rapid fire mode for close combat
+    private final double RAPID_FIRE_DISTANCE = 10.0;
+    private boolean _rapidFireMode = false;
 
     public ShootArrowSimpleProjectileTask(Entity target) {
         this.target = target;
@@ -52,17 +55,28 @@ public class ShootArrowSimpleProjectileTask extends Task {
         return !LookHelper.cleanLineOfSight(target.getEyePos(),100);
     }
 
-    public static Rotation calculateThrowLook(AltoClef mod, Entity target) {
-        return calculateThrowLook(mod, target, shouldUseHighAngRanged(target));
+    public static Rotation calculateThrowLook(AltoClef mod, Entity target, Item rangedItem) {
+        return calculateThrowLook(mod, target, shouldUseHighAngRanged(target), rangedItem);
     }
 
 
-    public static Rotation calculateThrowLook(AltoClef mod, Entity target, boolean highAng) {
+    public static Rotation calculateThrowLook(AltoClef mod, Entity target, boolean highAng, Item rangedItem) {
+        float velocity = 1;
+        if (rangedItem != null) {
+            if (rangedItem.equals(Items.BOW)) {
+                // Velocity based on bow charge.
+                int useTime = mod.getPlayer().getItemUseTime();
+                if (useTime > 5) {
+                    velocity = mod.getPlayer().getItemUseTime() / 20f;
+                    //(mod.getPlayer().getItemUseTime() - (mod.getPlayer().getItemUseTimeLeft() - 72000 + 10)) / 20f;
+                    velocity = (velocity * velocity + velocity * 2) / 3;
+                    //Debug.logMessage("Velocity = " + velocity + " gdfg " + useTime + " left " + mod.getPlayer().getItemUseTimeLeft());
+                    if (velocity < 0.5f) velocity = 0.5f;
+                    if (velocity > 1f) velocity = 1f;
+                }
+            }
+        }
 
-        // Velocity based on bow charge.
-        float velocity = (mod.getPlayer().getItemUseTime() - mod.getPlayer().getItemUseTimeLeft()) / 20f;
-        velocity = (velocity * velocity + velocity * 2) / 3;
-        if (velocity > 1) velocity = 1;
         //boolean highAng = false;
         //boolean highAng = shouldUseHighAngle(mod, target);
 
@@ -99,14 +113,25 @@ public class ShootArrowSimpleProjectileTask extends Task {
         float pitch = mod.getPlayer().getPitch();
 
         if (highAng){ //режим артиллерии
-
             velocitySq = velocitySq*0.7f; //скорость снаряда сильно падает когда он вверху, учитываем это
-            pitch = (float) -Math.toDegrees(Math.atan2((velocitySq + Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))),(g * hDistance)));}
-        else{
-            pitch = (float) -Math.toDegrees(Math.atan((velocitySq - Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))) / (g * hDistance)));}
+            pitch = (float) -Math.toDegrees(Math.atan2((velocitySq + Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))),(g * hDistance)));
+        } else {
+            pitch = (float) -Math.toDegrees(Math.atan((velocitySq - Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))) / (g * hDistance)));
+        }
         // Set player rotation
         if (Float.isNaN(pitch)) {
-            return new Rotation(target.getYaw(), target.getPitch());
+            if (highAng){ //режим артиллерии
+                velocity = 1;
+                velocitySq = velocity * velocity;
+                velocitySq = velocitySq*0.7f; //скорость снаряда сильно падает когда он вверху, учитываем это
+                pitch = (float) -Math.toDegrees(Math.atan2((velocitySq + Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))),(g * hDistance)));
+            } else {
+                pitch = (float) -Math.toDegrees(Math.atan((velocitySq - Math.sqrt(velocitySq * velocitySq - g * (g * hDistanceSq + 2 * relativeY * velocitySq))) / (g * hDistance)));
+            }
+            if (Float.isNaN(pitch))
+                return new Rotation(mod.getPlayer().getYaw(), mod.getPlayer().getPitch());
+            else
+                return new Rotation(Vec3dToYaw(mod, new Vec3d(posX, posY, posZ)), pitch);
         } else {
             return new Rotation(Vec3dToYaw(mod, new Vec3d(posX, posY, posZ)), pitch);
         }
@@ -138,12 +163,17 @@ public class ShootArrowSimpleProjectileTask extends Task {
             failed = true;
             return null;
         }
+        
+        // Check distance to target for rapid fire mode
+        double distanceToTarget = mod.getPlayer().distanceTo(target) / 2; // Approximate distance
+        _rapidFireMode = _rangedItem == Items.BOW && distanceToTarget <= RAPID_FIRE_DISTANCE;
+        
         int useTime = mod.getPlayer().getItemUseTime();
-        if(useTime <= 1){
+        if (useTime <= 1){
             //LookHelper.smoothLookAt(mod, target);
         }else {
             _highAng = shouldUseHighAngRanged(target);
-            Rotation lookTarget = calculateThrowLook(mod, target, _highAng);
+            Rotation lookTarget = calculateThrowLook(mod, target, _highAng, _rangedItem);
             LookHelper.smoothLook(mod, lookTarget);
         }
 
@@ -156,8 +186,25 @@ public class ShootArrowSimpleProjectileTask extends Task {
         boolean isBow = _rangedItem == Items.BOW;
         //Debug.logMessage(mod.getPlayer().getActiveItem().getItem().toString());
         if (isBow) {
+            // For rapid fire mode, we need less charge time when target is close
+            int requiredChargeTime;
+            if (_rapidFireMode) {
+                if (distanceToTarget < 4) {
+                    requiredChargeTime = MathHelper.clamp(useTime*2, 4, 6);
+                } else if (distanceToTarget < 7) {
+                    requiredChargeTime = MathHelper.clamp(useTime*2,8,10);
+                } else {
+                    requiredChargeTime = MathHelper.clamp(useTime*2, 10,12);
+                }
 
-            charged = mod.getPlayer().getActiveItem().getItem() == _rangedItem && useTime > 20;
+            } else {
+                requiredChargeTime = 20;
+            }
+            charged = mod.getPlayer().getActiveItem().getItem() == _rangedItem && useTime > requiredChargeTime;
+            
+            if (_rapidFireMode && charged) {
+                setDebugState("Bow (RAPID FIRE MODE)");
+            }
         }else if (StorageHelper.getItemStackInSlot(PlayerSlot.getEquipSlot()).getItem() == _rangedItem){
             // TODO untested
             // } else if(mod.getPlayer().getMainHandStack().getItem() == _rangedItem) {
@@ -343,7 +390,10 @@ public class ShootArrowSimpleProjectileTask extends Task {
 
     @Override
     protected String toDebugString() {
-        if(_highAng){
+        if(_rapidFireMode) {
+            return "Rapid firing at " + target.getType().getName().getString() + " using " + _rangedItem.getName().getString();
+        }
+        else if(_highAng){
             return "Shooting at " + target.getType().getName().getString() + " using " + _rangedItem.getName().getString() + " at UPPER (high angle, artillery) trajectory";
         } else {
             return "Shooting at " + target.getType().getName().getString() + " using " + _rangedItem.getName().getString();

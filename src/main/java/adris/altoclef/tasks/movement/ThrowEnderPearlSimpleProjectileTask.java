@@ -90,7 +90,7 @@ public class ThrowEnderPearlSimpleProjectileTask extends Task {
         }
         return false;
     }
-    public boolean canEnderpearl(AltoClef mod){
+    public static boolean canEnderpearl(AltoClef mod){
         // we have enderpearl?
         if (mod.getItemStorage().hasItemInventoryOnly(Items.ENDER_PEARL)) {
             return true;

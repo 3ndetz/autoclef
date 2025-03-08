@@ -229,7 +229,7 @@ public class PlaceBlockNearbyTask extends Task {
                     mod.getPlayer().isSneaking()) {
                 mod.getPlayer().swingHand(hand);
                 _justPlaced = targetPlace;
-                Debug.logMessage("PRESSED");
+                Debug.logMessage("Block successfully placed");
                 return true;
             }
 

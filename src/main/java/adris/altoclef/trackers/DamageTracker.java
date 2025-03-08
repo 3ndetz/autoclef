@@ -137,8 +137,8 @@ public class DamageTracker extends Tracker {
         else{
             self_damage=false;
         }
-        if(amount>1&&name.equals(_lastAttackingPlayerName) && !_attackCheckTimer.elapsed()){
-            Debug.logMessage("Урон по "+_lastAttackingPlayerName+" прошел!");
+        if(amount > 1 && name.equals(_lastAttackingPlayerName) && !_attackCheckTimer.elapsed()){
+            Debug.logInternal("Урон по "+_lastAttackingPlayerName+" прошел!");
             _attackerCheckHit = false;
         }
         int id = threatTable.get(name);

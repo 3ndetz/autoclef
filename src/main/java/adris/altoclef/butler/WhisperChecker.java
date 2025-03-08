@@ -13,10 +13,14 @@ public class WhisperChecker {
     private static final TimerGame _repeatTimer = new TimerGame(0.1);
 
     private static String _lastMessage = null;
-
-    public static MessageResult tryParse(String ourUsername, String whisperFormat, String message) {
+    public boolean isVanillaWhisperMessage(String message) {
+        // Common whisper patterns - adjust these based on your server's format
+        return message.matches("^\\[\\w+\\] whispers to you:.*") ||
+                message.matches("^\\[\\w+\\] шепчет вам:.*");
+    }
+    public static MessageResult tryParse(String ourUsername, String whisperFormatInp, String message) {
         List<String> parts = new ArrayList<>(Arrays.asList("{from}", "{to}", "{message}"));
-
+        String whisperFormat = escapeRegexChars(whisperFormatInp);
         // Sort by the order of appearance in whisperFormat.
         parts.sort(Comparator.comparingInt(whisperFormat::indexOf));
         parts.removeIf(part -> !whisperFormat.contains(part));
@@ -67,7 +71,16 @@ public class WhisperChecker {
     public static MessageResult chatParse(String ourUsername, String[] chatFormatMas, String message) {
         return chatParse(ourUsername, chatFormatMas, message, "exact");
     }
+    public static String escapeRegexChars(String text) {
+        List<Character> regexKillingChars = new ArrayList<>(
+                Arrays.asList('[', ']', '.', '^', '?', '*', '$', '(', ')', '/', '|', '+'));
 
+        for (Character killer : regexKillingChars) {
+            String charr = killer.toString();
+            text = text.replace(charr, "\\" + charr);
+        }
+        return text;
+    }
     public static MessageResult chatParse(String ourUsername, String[] chatFormatMas, String message,
                                           String ExactState) {
         List<String> parts = new ArrayList<>(
@@ -87,13 +100,7 @@ public class WhisperChecker {
                 message = message.replace(arrow, ">");
             }
         }
-        List<Character> regexKillingChars = new ArrayList<>(
-                Arrays.asList('[', ']', '.', '^', '?', '*', '$', '(', ')', '/', '|', '+'));
-
-        for (Character killer : regexKillingChars) {
-            String charr = killer.toString();
-            chatFormatNew = chatFormatNew.replace(charr, "\\" + charr);
-        }
+        chatFormatNew = escapeRegexChars(chatFormatNew);
         String chatFormat = chatFormatNew;
 
         parts.sort(Comparator.comparingInt(chatFormat::indexOf));
@@ -112,9 +119,10 @@ public class WhisperChecker {
         }
         Pattern p = Pattern.compile(regexFormat);
         Matcher m = p.matcher(message);
+        //Debug.logInternal("values " + m.toString());
         Map<String, String> values = new HashMap<>();
         if (m.matches()) {
-            //Debug.logMessage("4o 3a dermo"+m.toString());
+            //Debug.logMessage("4o 3a o"+m.toString());
             for (int i = 0; i < m.groupCount(); ++i) {
                 // parts is sorted, so the order should lign up.
                 if (i >= parts.size()) {
@@ -133,12 +141,14 @@ public class WhisperChecker {
                 return null;
             }
         }
+
         List<Character> nickKillingChars = new ArrayList<>(
                 Arrays.asList('~', '[', ']', '.', '^', '?', '*', '$', '(', ')', '/', '|', '+'));
         if (values.containsKey("{from}") && values.containsKey("{message}")) {
             String name = values.get("{from}");
+
             if (name != null) {
-                if (name != null && name.strip() != "") {
+                if (!name.isBlank()) {
                     String[] splittedName = name.strip().split(" ");
                     if (splittedName.length > 0) {
                         if (splittedName.length == 1) {
@@ -197,7 +207,6 @@ public class WhisperChecker {
             // It's probably an actual duplicate. IDK why we get those but yeah.
             return null;
         }
-
         _lastMessage = msg;
 //сначала проверяем находимся ли мы на этом сервере и в этом режиме
         for (String[] format : ButlerConfig.getInstance().chatFormats) {
@@ -208,7 +217,7 @@ public class WhisperChecker {
                     String user = check.from;
                     String message = check.message;
                     if (user == null || message == null) {
-                        break;
+                        continue;
                     }
                     return check;
                 }
@@ -223,7 +232,7 @@ public class WhisperChecker {
                     String user = check.from;
                     String message = check.message;
                     if (user == null || message == null) {
-                        break;
+                        continue;
                     }
                     return check;
                 }
@@ -238,7 +247,7 @@ public class WhisperChecker {
                     String user = check.from;
                     String message = check.message;
                     if (user == null || message == null) {
-                        break;
+                        continue;
                     }
                     return check;
                 }
@@ -250,13 +259,11 @@ public class WhisperChecker {
                 String user = check.from;
                 String message = check.message;
                 if (user == null || message == null) {
-                    break;
+                    continue;
                 }
                 return check;
-
             }
         }
-
         return null;
     }
 
@@ -274,7 +281,8 @@ public class WhisperChecker {
         _lastMessage = msg;
 
         for (String format : ButlerConfig.getInstance().whisperFormats) {
-            MessageResult check = tryParse(ourUsername, format, msg);
+            MessageResult check = tryParse(ourUsername, format, msg);  //chatParse(ourUsername, new String[] {format}, msg);
+            //
             if (check != null) {
                 String user = check.from;
                 String message = check.message;

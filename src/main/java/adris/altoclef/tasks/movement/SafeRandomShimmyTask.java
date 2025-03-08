@@ -57,6 +57,6 @@ public class SafeRandomShimmyTask extends Task {
 
     @Override
     protected String toDebugString() {
-        return "Мурчание";
+        return "Shimmying";
     }
 }

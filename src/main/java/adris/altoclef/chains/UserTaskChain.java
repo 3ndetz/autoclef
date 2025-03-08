@@ -83,7 +83,7 @@ public class UserTaskChain extends SingleTaskChain {
         _currentOnFinish = onFinish;
 
         if (!_runningIdleTask) {
-            Debug.logMessage("Задача поставлена: " + task.toString()); //TRS "User Task Set: "
+            Debug.logMessage("New task set to: " + task.toString()); //TRS "User Task Set: "
         }
         mod.getTaskRunner().enable();
         _taskStopwatch.begin();

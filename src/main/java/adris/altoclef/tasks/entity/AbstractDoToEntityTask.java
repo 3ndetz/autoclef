@@ -124,7 +124,7 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
                     !mod.getMLGBucketChain().isFallingOhNo(mod) && mod.getMLGBucketChain().doneMLG() &&
                     !mod.getMLGBucketChain().isChorusFruiting() &&
                     mod.getClientBaritone().getPathingBehavior().isSafeToCancel()
-                    && mod.getPlayer().isOnGround()
+                    //&& mod.getPlayer().isOnGround()  // fix when jumping to target that upper... really dont know how to fix this any another way
             ) {
                 _progress.reset();
                 return onEntityInteract(mod, entity);
@@ -132,7 +132,7 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
                 if (entity.getName() != null)
                     // UNTESTED!
                     if (mod.getEntityTracker().isEntityReachable(entity)){
-                            setDebugState("Approaching target '" + entity.getName().getString() + "'"); //TRS Approaching target
+                            setDebugState("Approaching target '" + entity.getName().getString() + "'");
                     } else {
                         setDebugState("Cannot get to target '" + entity.getName().getString() + "'!");
                     }
@@ -149,7 +149,7 @@ public abstract class AbstractDoToEntityTask extends Task implements ITaskRequir
         if (!mod.getClientBaritone().getPathingBehavior().isSafeToCancel()) {
             return null;
         }
-        setDebugState("Cannot get to target since it is not exists! Just TRY to find by random wandering but chance is 0%");
+        setDebugState("Target not exists! CHANGE TASK! Will try wander until you change task.");
         //Debug.logMessage(" fgsdgdf");
         return new TimeoutWanderTask();
     }

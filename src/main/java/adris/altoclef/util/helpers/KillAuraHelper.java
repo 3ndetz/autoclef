@@ -26,6 +26,8 @@ public abstract class KillAuraHelper {
     public static float PitchSpeed = 1;
     private static final TimerGame _inPvpAction = new TimerGame(1);
     private static final TimerGame _CooldownFor18 = new TimerGame(0.07);
+    private static final TimerGame _rotatedMoveTimer = new TimerGame(1);
+    private static Input _rotatedMove = Input.MOVE_RIGHT;
     public static boolean ElapsedPvpCD(){
         return _CooldownFor18.elapsed();
     }
@@ -84,30 +86,49 @@ public abstract class KillAuraHelper {
     //    return true;
     //    mod.getInputControls().
     //}
-    public static void GoJump(AltoClef mod, boolean rotated)
+    /*
+     * TODO implement special behaviour
+     * Choose between rotate right and left
+     * Choosing should be based on timer
+     */
+    public static Input getRotatedMove() {
+        if (_rotatedMoveTimer.elapsed()) {
+            _rotatedMoveTimer.reset();
+            if (Math.random() > 0.5) {
+                _rotatedMove = Input.MOVE_LEFT;
+            } else {
+                _rotatedMove = Input.MOVE_RIGHT;
+            }
+        }
+        return _rotatedMove;
+    }
+
+    public static void GoJump(AltoClef mod, boolean rotated, boolean jump)
     {
         if (JumpTimerStarted==-1) {
             JumpTimerStarted = System.currentTimeMillis();
         }
-        if (System.currentTimeMillis()>JumpTimerStarted+900){
+        if (System.currentTimeMillis() > JumpTimerStarted+900){
             //boolean doJump = false;
             //boolean HighSpeed = false;
-            boolean doJump = mod.getPlayer().isOnGround();
+            boolean doJump = jump && mod.getPlayer().isOnGround();
             boolean HighSpeed = mod.getPlayer().getVelocity().horizontalLengthSquared()>0.02 ;
         new Thread(() -> {
+            Input rotatedInp = getRotatedMove();
             mod.getInputControls().hold(Input.SPRINT);
             mod.getInputControls().hold(Input.MOVE_FORWARD);
             if( HighSpeed ){
                 //Debug.logMessage("GoJump onGround?"+mod.getPlayer().isOnGround() + "HS?"+HighSpeed+" Speed "+mod.getPlayer().getVelocity().horizontalLengthSquared());
-                mod.getInputControls().hold(Input.JUMP);}
+                mod.getInputControls().hold(Input.JUMP);
+            }
             if (rotated)
-                mod.getInputControls().hold(Input.MOVE_RIGHT);
+                mod.getInputControls().hold(rotatedInp);
             sleepSec(0.3);
-            //if(doJump & !HighSpeed )
-            //    mod.getInputControls().hold(Input.JUMP);
+            if (doJump) //& !HighSpeed )
+                mod.getInputControls().hold(Input.JUMP);
             sleepSec(0.5);
             if (rotated)
-                mod.getInputControls().release(Input.MOVE_RIGHT);
+                mod.getInputControls().release(rotatedInp);
             mod.getInputControls().release(Input.MOVE_FORWARD);
             mod.getInputControls().release(Input.SPRINT);
             mod.getInputControls().release(Input.JUMP);
@@ -115,6 +136,12 @@ public abstract class KillAuraHelper {
             JumpTimerStarted = -1;
         }
     }
+
+    public static void GoJump(AltoClef mod, boolean rotated)
+    {
+        GoJump(mod, rotated, false);
+    }
+
     private static void sleepSec(double seconds) {
         try {
             Thread.sleep((int) (1000 * seconds));

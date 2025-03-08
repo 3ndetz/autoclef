@@ -1,6 +1,7 @@
 package adris.altoclef;
 
 import adris.altoclef.butler.Butler;
+import adris.altoclef.butler.WhisperChecker;
 import adris.altoclef.chains.*;
 import adris.altoclef.commandsystem.CommandExecutor;
 import adris.altoclef.control.InputControls;
@@ -26,6 +27,7 @@ import baritone.altoclef.AltoClefSettings;
 import baritone.api.BaritoneAPI;
 import baritone.api.Settings;
 import baritone.api.utils.Rotation;
+import io.netty.handler.codec.marshalling.DefaultUnmarshallerProvider;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.block.Blocks;
@@ -37,6 +39,8 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.Vec3d;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 
@@ -52,6 +56,7 @@ import static adris.altoclef.util.helpers.StringHelper.removeMCFormatCodes;
  */
 public class AltoClef implements ModInitializer {
     public static final String MOD_ID = "altoclef";
+    public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
     // Static access to altoclef
     private static final Queue<Consumer<AltoClef>> _postInitQueue = new ArrayDeque<>();
     public static Rotation getCameraRotationModifer(){
@@ -187,7 +192,7 @@ public class AltoClef implements ModInitializer {
 
     }
 
-    public String _modPrefixNoCodes = "[Alto Clef]";
+    public String _modPrefixNoCodes = "[NetTyanBaritone]";
     public void onInitializeLoad() {
         // This code should be run after Minecraft loads everything else in.
         // This is the actual start point, controlled by a mixin.
@@ -262,6 +267,7 @@ public class AltoClef implements ModInitializer {
 
         // Debug jank/hookup
         Debug.jankModInstance = this;
+        AltoclefVoicechat.jankModInstance = this;
 
         // Tick with the client
         EventBus.subscribe(ClientTickEvent.class, evt -> onClientTick());
@@ -276,28 +282,56 @@ public class AltoClef implements ModInitializer {
         //);
         _modPrefixNoCodes = removeMCFormatCodes(this.getModSettings().getCommandPrefix());
         String _modChatPrefixNoCodes = removeMCFormatCodes(this.getModSettings().getChatLogPrefix());
-        // WORKING YUU HOO
+        // only work on vanilla servers and only for PLAYER CHAT messages, /tell goes here too
+        // PROBLEM: stupid message doubling
         ClientReceiveMessageEvents.ALLOW_CHAT.register((message, signedMessage, sender, params, receptionTimestamp) -> {
             String msg = mcTextToString(message);
-
+            // Check if this is a whisper/tell message
             //Debug.logMessage("ALLOW_CHAT DEBUG!!!! MSG CHAT CharReadMixin:\n==" + msg);
             if (!msg.startsWith(_modPrefixNoCodes)) {
+                if (msg.startsWith("[Baritone] Failed")){
+                    return false;  // FIX THIS BARITONE SPAM!!!!
+                }
+                //if (message instanceof PrivateMessage)
                 ChatMessageEvent evt = new ChatMessageEvent(msg);  //new ChatMessageEvent(msg, signedMessage, sender, params);
                 EventBus.publish(evt);
+                //Debug.logMessage("DEBUG WHISPER " + msg);
+                boolean isValidWhisperCommand = this.getButler().recieveWhisperCommand(AltoClef.getSelfName(), msg);
+                if (isValidWhisperCommand) {
+                    // Process the whisper message but don't display it in chat
+                    //processWhisperMessage(msg);
+                    return false; // Don't show in chat
+                }
             }
+
             return true;
         });
         // MAIN FOR SERVERS (definitely ALL MSGS including altoclef messages...)
+        // on vanilla servers NOT shows PLAYER standart chat and /tell messages
         ClientReceiveMessageEvents.ALLOW_GAME.register((message, overlay) -> {
 
                 String msg = mcTextToString(message);
-                //Debug.logInternal("ALLOW_GAME DEBUG!!!! MSG CHAT CharReadMixin:\n==" + msg);
+
                 if (msg.startsWith("[Baritone] Failed")){
                     return false;  // FIX THIS BARITONE SPAM!!!!
                 }
                 //Debug.logInternal("ALLOW_GAME DEBUG!!!! MSG CHAT CharReadMixin:\n==" + msg);
             // ISSUE WITH SYMBOL CODES!!!
                 if (!msg.contains(_modChatPrefixNoCodes)) {
+                    //.logInternal("ALLOW_GAME DEBUG!!!! MSG CHAT CharReadMixin:\n==\n" + msg + "\n==" + msg.contains(" -> я] "));
+                    // TODO TEMP, DEBUG TESTING!!
+                    // MinecraftClient.getInstance().inGameHud.getChatHud().restoreChatState();
+                    boolean isValidWhisperCommand = this.getButler().recieveWhisperCommand(AltoClef.getSelfName(), msg);
+                    if (isValidWhisperCommand) {
+                        // Process the whisper message but don't display it in chat
+                        // processWhisperMessage(msg);
+                        return false; // Don't show in chat
+                    }
+                    if (!this.getModSettings().showChat()) {
+                        // Debug.logMessage("lol got chat, removing it");
+                        return false;
+                    }
+
                     ChatMessageEvent evt = new ChatMessageEvent(msg, overlay);
                     EventBus.publish(evt);
                 }

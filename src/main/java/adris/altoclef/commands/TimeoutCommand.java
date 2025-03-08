@@ -23,7 +23,7 @@ public class TimeoutCommand extends Command {
         try {
             List<String> commandArgs = new ArrayList<>(Arrays.asList(parser.getArgUnits().clone()));
             //String commandName = commandArgs.remove(0);
-            Debug.logMessage("Running command with " + "timeout" + ": " + String.join(" ", commandArgs));
+            //Debug.logMessage("Running command with timeout" + ": " + String.join(" ", commandArgs));
             mod.setTimeoutTaskFlag(true);
             AltoClef.getCommandExecutor().executeWithPrefix(String.join(" ", parser.getArgUnits()));
             finish();

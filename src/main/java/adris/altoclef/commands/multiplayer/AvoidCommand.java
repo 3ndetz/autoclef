@@ -19,7 +19,9 @@ public class AvoidCommand extends Command {
             finish();
             return;
         }
-        mod.getInfoSender().avoidPlayer(username);
+        mod.getDamageTracker().getThreatTable().forget(username);
+        mod.getDamageTracker().getThreatTable().avoid(username);
+        //mod.getInfoSender().avoidPlayer(username);
         if(!mod.getTaskRunner().getCurrentTaskChain().isActive()){
             mod.runUserTask(new IdleTask());
         }

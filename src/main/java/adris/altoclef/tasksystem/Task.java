@@ -23,7 +23,7 @@ public abstract class Task {
         parentChain.addTaskToChain(this);
         if (_first) {
             Debug.logInternal("Task START: " + this);
-            mod.getInfoSender().onAutoclefEvent("[Baritone task] starting " + this);
+            mod.getInfoSender().onAutoclefEvent("Starting Baritone task " + this);
             _active = true;
             onStart(mod);
             _first = false;

@@ -518,7 +518,7 @@ public abstract class LookHelper {
         return getClosestPointOnBoundingBox(mod.getPlayer().getEyePos(), boundingBox);
     }
     public static boolean canHitEntity(AltoClef mod, Entity entity, float range){
-        Vec3d playerEyePos = mod.getPlayer().getEyePos();
+        //Vec3d playerEyePos = mod.getPlayer().getEyePos();
         Vec3d closestPoint = getClosestPointOnEntityHitbox(mod, entity);
         //double distance = playerEyePos.distanceTo(closestPoint);
         double distance = mod.getPlayer().getPos().distanceTo(entity.getPos());

@@ -427,7 +427,7 @@ public class ThreatTable {
      */
     public boolean forget() {
         for (Map.Entry<String, PlayerThreat> entry : playerThreats.entrySet()) {
-            Debug.logMessage("[DEBUG] forgetting "+ entry.getKey());
+            //Debug.logMessage("[DEBUG] forgetting "+ entry.getKey());
             forget(entry.getValue());
         }
         return true;

@@ -60,10 +60,23 @@ public class CombatTask extends Task {
     private Task _battleCryTask = null;
     private DoToClosestEntityTask _targetingTask = null;
     private static final double UNREACHABLE_TIME = 30; // Seconds until target considered unreachable
+    public boolean _isTimeout = false;
+    public TimerGame _combatTimeout = new TimerGame(10);
+    public TimerGame _spottedClearTimeout = new TimerGame(30);
 
     private final Set<String> _blacklistedPlayers = new HashSet<>();
     private final Map<String, TimerGame> _blacklistDuration = new HashMap<>();
     private Subscription<DeathEvent> _deathEventSubscribtion;
+
+    public CombatTask(String targetPlayerName, boolean shouldBuildGraves, boolean shouldUseGestures, double timeout) {
+        this._targetPlayerName = targetPlayerName;
+        this._shouldAttackPredicate = null;
+        this._shouldBuildGraves = shouldBuildGraves;
+        this._shouldUseGestures = shouldUseGestures;
+        this._combatTimeout.setInterval(timeout);
+        this._combatTimeout.reset();
+        this._isTimeout = true;
+    }
     // Single target constructor
     public CombatTask(String targetPlayerName, boolean shouldBuildGraves, boolean shouldUseGestures) {
         this._targetPlayerName = targetPlayerName;
@@ -222,7 +235,7 @@ public class CombatTask extends Task {
                         if (!_spottedTargets.contains(name) && player.distanceTo(mod.getPlayer()) > 15) {
                             _spottedTargets.add(name);
                             _battleCryTask = new GestureTask(player, GestureTask.Gesture.Fight);
-                            Debug.logMessage("New target spotted! Showing battle cry gesture!");
+                            // Debug.logMessage("New target spotted! Showing battle cry gesture!");
                             return _battleCryTask;
                         }
 
@@ -265,7 +278,10 @@ public class CombatTask extends Task {
 
     @Override
     protected void onStop(AltoClef mod, Task interruptTask) {
-        _spottedTargets.clear();
+        if (_spottedClearTimeout.elapsed()) {
+            _spottedTargets.clear();
+            _spottedClearTimeout.reset();
+        }
         mod.getBehaviour().pop();
         EventBus.unsubscribe(_deathEventSubscribtion);
     }
@@ -273,14 +289,17 @@ public class CombatTask extends Task {
     @Override
     protected boolean isEqual(Task other) {
         return other instanceof CombatTask task
-             && (this._targetPlayerName == null && task._targetPlayerName == null
+        && (
+             this._targetPlayerName == null && task._targetPlayerName == null
              || (
                      this._targetPlayerName != null
                       && task._targetPlayerName != null
                       && task._targetPlayerName.equals(this._targetPlayerName)
-        ))
-             && task._shouldBuildGraves == this._shouldBuildGraves
-             && task._shouldUseGestures == this._shouldUseGestures;
+             )
+        )
+        && task._shouldBuildGraves == this._shouldBuildGraves
+        && task._shouldUseGestures == this._shouldUseGestures
+        && task._isTimeout == this._isTimeout;
     }
 
     @Override
@@ -307,5 +326,13 @@ public class CombatTask extends Task {
             _blacklistDuration.put(playerName, timer);
             Debug.logMessage("Blacklisting " + playerName + " as unreachable for " + UNREACHABLE_TIME + " seconds");
         }
+    }
+    @Override
+    public boolean isFinished(AltoClef mod) {
+        if (_isTimeout && _combatTimeout.elapsed()) {
+            Debug.logInternal("Combat task timed out.");
+            return true;
+        }
+        return false;
     }
 }

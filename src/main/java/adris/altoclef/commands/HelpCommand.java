@@ -13,9 +13,11 @@ public class HelpCommand extends Command {
 
     @Override
     protected void call(AltoClef mod, ArgParser parser) {
-        mod.log("########## HELP: ##########", MessagePriority.OPTIONAL);
+        StringBuilder result = new StringBuilder();
+        result.append("=== Commands HELP: ===\n");
+        // mod.log("########## HELP: ##########", MessagePriority.OPTIONAL);
         int padSize = 10;
-        for (Command c : mod.getCommandExecutor().allCommands()) {
+        for (Command c : AltoClef.getCommandExecutor().allCommands()) {
             StringBuilder line = new StringBuilder();
             //line.append("");
             line.append(c.getName()).append(": ");
@@ -24,9 +26,12 @@ public class HelpCommand extends Command {
                 line.append(" ");
             }
             line.append(c.getDescription());
-            mod.log(line.toString(), MessagePriority.OPTIONAL);
+            result.append(line.toString()).append("\n");
+            // mod.log(line.toString(), MessagePriority.OPTIONAL);
         }
-        mod.log("###########################", MessagePriority.OPTIONAL);
+        result.append("=== Command help end ===");
+        mod.log(result.toString(), MessagePriority.OPTIONAL);
+        // mod.log("###########################", MessagePriority.OPTIONAL);
         finish();
     }
 }

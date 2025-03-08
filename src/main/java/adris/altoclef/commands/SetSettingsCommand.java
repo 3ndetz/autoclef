@@ -48,6 +48,11 @@ public class SetSettingsCommand extends Command {
                 mod.getModSettings().setShowTaskChainSetting(Boolean.parseBoolean(new_value));
                 mod.log("Set setting "+setting_name+" from "+old_value+" to "+new_value+"!");
                 break;
+            case "chat":
+                old_value = mod.getModSettings().showChat();
+                mod.getModSettings().setShowChat(Boolean.parseBoolean(new_value));
+                mod.log("Set setting "+setting_name+" from "+old_value+" to "+new_value+"!");
+                break;
             default:
                 mod.log("setting "+setting_name+" not exists");
                 break;

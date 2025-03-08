@@ -3,6 +3,7 @@ package adris.altoclef.tasks.entity;
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.tasks.movement.ThrowEnderPearlSimpleProjectileTask;
+import adris.altoclef.tasks.stupid.MacePunchTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.agent.Pipeline;
 import adris.altoclef.util.progresscheck.IProgressChecker;
@@ -43,16 +44,24 @@ public class KillPlayerTask extends AbstractKillEntityTask {
         if (player.isEmpty()) {
             _distancePlayerCheck.reset();
         } else {
+            if (specialKillTask != null && specialKillTask.isActive()
+                    && !specialKillTask.isFinished(mod)
+                    && (specialKillTask instanceof MacePunchTask || !_rangedTimer.elapsed())
+            ) {
+                return specialKillTask;
+            } else {
+                specialKillTask = null;
+            }
+            if (MacePunchTask.canMacePunch(mod, player.get().getPos())) {
+                specialKillTask = new MacePunchTask(player.get());
+                return specialKillTask;
+            }
             double distSq = player.get().squaredDistanceTo(mod.getPlayer());
             if (distSq < 10 * 10) {
                 _distancePlayerCheck.reset();
             } else {
                 // TODO NOW UNTESTED!!!
-                if (specialKillTask != null && specialKillTask.isActive() && !specialKillTask.isFinished(mod) && !_rangedTimer.elapsed()) {
-                    return specialKillTask;
-                } else {
-                    specialKillTask = null;
-                }
+
                 if (distSq < AUTO_RANGED_DISTANCE * AUTO_RANGED_DISTANCE) {
                     // shoot bow!
                     boolean canBow = canUseRanged(mod, player.get());

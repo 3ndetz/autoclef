@@ -49,7 +49,7 @@ public class Py4jEntryPoint {
     AltoClef _mod;
     PythonCallback _cb;
     Executor _executor;
-
+    public static String last_talking_player = "";
     public Py4jEntryPoint(AltoClef mod)
     {
         _mod = mod;
@@ -446,11 +446,11 @@ public class Py4jEntryPoint {
             if (!field.isBlank() && !value.isBlank()) {
                 if (CentralGameInfoDict.containsKey(field)) {
                     if (!CentralGameInfoDict.get(field).equals(value)) {
-                        Debug.logMessage("changed srv INFO f>" + field + ", v>" + value);
+                        // Debug.logMessage("changed srv INFO f>" + field + ", v>" + value);
                         putInfo(field, value);
                     }
                 } else {
-                    Debug.logMessage("added srv INFO f>" + field + ", v>" + value);//, dict="+CentralGameInfoDict.toString());
+                    // Debug.logMessage("added srv INFO f>" + field + ", v>" + value);//, dict="+CentralGameInfoDict.toString());
                     putInfo(field, value);
                 }
             }
@@ -597,6 +597,7 @@ public class Py4jEntryPoint {
     public void callPythonMethod(){
         //_mod.getGateway().getGateway().getCallbackClient().sendCommand("trysi"); //command, blocking?
     }
+    public String getLastTalkingPlayer() {return last_talking_player;}
     public double getHealth(){
         return _mod.getPlayer() == null ? 0 :(double)_mod.getPlayer().getHealth();
     }

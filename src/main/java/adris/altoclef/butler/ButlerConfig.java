@@ -10,6 +10,8 @@ public class ButlerConfig {
         ConfigHelper.loadConfig("configs/butler.json", ButlerConfig::new, ButlerConfig.class, newConfig -> _instance = newConfig);
     }
 
+
+    public boolean sendCommandOutput = false;
     /**
      * If true, will use blacklist for rejecting users from using your player as a butler
      */
@@ -43,7 +45,13 @@ public class ButlerConfig {
             "{from} шепчет вам: {message}",
             "{from} шепчет: {message}",
             "{from} whispers: {message}",
-            "\\[{from} -> {to}\\] {message}"
+            "[{from} -> я] {message}",
+            "[{from} -> Я] {message}",
+            "[{from} -> me] {message}",
+            "[{from} -> Me] {message}",
+            "[{from} -> You] {message}",
+            "[{from} -> you] {message}",
+            "[{from} -> {to}] {message}"
     };
     /**
      * If set to true, will print information about whispers that are parsed and those
@@ -62,7 +70,7 @@ public class ButlerConfig {
      * The response sent in a failed execution due to non-authorization
      * {from}: the username of the player who triggered the failed authorization response
      */
-    public String failedAuthorizationResposne = "Sorry {from} but you are not authorized!";
+    public String failedAuthorizationResposne = "{from}, не пиши сюда, пожалуйста";
     /**
      * Use this to choose if the prefix should be required in messages
      * <p>
@@ -146,12 +154,14 @@ public class ButlerConfig {
             {"funnymc.ru","{global} ({clan}) {rank} {from} ➯ {message}","survival"},
             {"funnymc.ru","{global} [{rank}] {from} ➯ {message}","survival"},
             {"funnymc.ru","{global} {rank} {from} ➯ {message}","survival"},
-
+            // [Воин]  nik ➠ ахахаххаха
+            {"mlegacy.net","[{rank}] {from} ➠ {message}", "skypvp"},
             {"mlegacy.net","[{rank}] {from}  » {message}","skywars"},
             {"mlegacy.net","({rank}) {from} > {message}","skywars"},
+            {"mlegacy.net","{global} [{rank}] {from} ➯ {message}", "survival"},
+
             {"funnymc.ru","[{rank}] {from}  » {message}","skywars"},
             {"funnymc.ru","({rank}) {from} > {message}","skywars"},
-
             {"funnymc.ru","{from} » {message}","mudermystery"},
 
             {"mc.4obabke.ru","{from} whispers to you: {message}","skywars"}

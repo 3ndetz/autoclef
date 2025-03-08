@@ -92,6 +92,6 @@ public class DoToClosestEntityTask extends AbstractDoToClosestObjectTask<Entity>
 
     @Override
     protected String toDebugString() {
-        return "Манипуляция с ближайшей сущностью...";
+        return "Do to closest entity...";
     }
 }

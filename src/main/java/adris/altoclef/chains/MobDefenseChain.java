@@ -3,6 +3,7 @@ package adris.altoclef.chains;
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.control.KillAura;
+import adris.altoclef.tasks.entity.CombatTask;
 import adris.altoclef.tasks.entity.KillEntitiesTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.movement.*;
@@ -58,6 +59,7 @@ public class MobDefenseChain extends SingleTaskChain {
     private boolean _doingFunkyStuff = false;
     private boolean _wasPuttingOutFire = false;
     private CustomBaritoneGoalTask _runAwayTask;
+    public Task _killTask = null;
     private TimerGame _runAwayTimer = new TimerGame(2);
     private Rotation _suggestedProjectileRotation;
     public TimerGame _preProjectileTimer = new TimerGame(0.3);
@@ -340,9 +342,14 @@ public class MobDefenseChain extends SingleTaskChain {
         }
         Optional<Entity> toAttackPlayer = getAttackPlayer(mod);
         if (toAttackPlayer.isPresent() && toAttackPlayer.get() instanceof PlayerEntity player) {
-            setTask(new KillPlayerTask(player.getName().getString()));
+            //setTask(new KillPlayerTask(player.getName().getString()));
+            _killTask = new CombatTask(player.getName().getString(), false, true);
+            setTask(_killTask);
             return 65;
+        } else {
+            _killTask = null;
         }
+
         if (mod.getModSettings().shouldDealWithAnnoyingHostiles()) {
             // Deal with hostiles because they are annoying.
             List<Entity> hostiles = mod.getEntityTracker().getHostiles();
@@ -448,10 +455,11 @@ public class MobDefenseChain extends SingleTaskChain {
         return 0;
     }
     public void onPlayerItemUse(AltoClef mod, Entity entity, boolean released) {
-        if (entity instanceof PlayerEntity player && mod.getPlayer() != null) {
+        // DISABLED FOR NOW!
+        if (false && entity instanceof PlayerEntity player && mod.getPlayer() != null) {
             double prob = LookHelper.getLookingProbability(player, mod.getPlayer());
 
-            if (prob > 0.75) {
+            if (prob > 0.96) {
 
                 Rotation targetRotation = LookHelper.getLookRotation(mod, player.getPos());
 
@@ -464,7 +472,11 @@ public class MobDefenseChain extends SingleTaskChain {
                         if (invertedYaw < 0) invertedYaw += 360;
                         _suggestedProjectileRotation = new Rotation(invertedYaw, 0f);
                         _projectileTimer.reset();
-                        Debug.logMessage("PROJECTILE DODGING!");
+                if (entity.getName() != null) {
+                    Debug.logMessage("Dodging ranged attack from " + entity.getName().getString());
+                    mod.getDamageTracker().getThreatTable().pursue(entity.getName().getString());
+                }
+
                 //    }
                 //}
 
@@ -790,7 +802,10 @@ public class MobDefenseChain extends SingleTaskChain {
                 return mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
 
                         entity -> entity != null // && entity != _targetEntity  // kill even if it's target!
+                                && entity.getName() != null
                                 && entity.distanceTo(mod.getPlayer()) < DANGER_KEEP_DISTANCE
+                                && mod.getEntityTracker().isEntityReachable(entity)
+                                && mod.getEntityTracker().isPlayerLoaded(entity.getName().getString())
                                 && mod.getDamageTracker().getThreatTable()
                                 .shouldAttack(entity.getName().getString()),
                         PlayerEntity.class);
