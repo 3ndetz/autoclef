@@ -58,7 +58,14 @@ public class Py4jEntryPoint {
         _executor = Util.getMainWorkerExecutor(); // for files writing // UNTESTED
                 //executeInNetworkThread
     }
-
+    public void onVoiceFeed(String playerName, byte[] audio){
+        // java short (int16) PCM -> bytes PCM
+        executeInNetworkThread(() -> {
+            if (IsCallbackServerStarted()) {
+                _cb.onVoiceFeed(playerName, audio);
+            }
+        });
+    }
     private void executeInNetworkThread(Runnable task) {
         try {
             _executor.execute(() -> {

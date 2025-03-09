@@ -14,5 +14,6 @@ public interface PythonCallback {
     public void onDamage(float s);
     public void onDamageConfirmed(String damaged, String attacker, float amount);
     public void onCaptchaSolveRequest(byte[] image_bytes);
+    public void onVoiceFeed(String s, byte[] audio);
     public String agentCommandRequest(String s);
 }

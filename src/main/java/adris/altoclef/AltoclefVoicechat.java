@@ -186,7 +186,7 @@ public class AltoclefVoicechat implements VoicechatPlugin {
 
             // Check sound type
             if (event instanceof ClientReceiveSoundEvent.EntitySound entitySound) {
-                VoiceChatIntegration.onSound(entitySound);
+                VoiceChatIntegration.onSound(jankModInstance, entitySound);
                 // Debug.logMessage("Entity sound received, whispering: " + entitySound.isWhispering());
 
             } else if (event instanceof ClientReceiveSoundEvent.LocationalSound) {
