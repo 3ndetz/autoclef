@@ -55,7 +55,7 @@ public class SlotHandler {
 
         if (slot.getWindowSlot() == -1) {
             clickSlot(PlayerSlot.UNDEFINED, 0, SlotActionType.PICKUP);
-            Debug.logWarning("Попытка переопределения курсора не успешна!"); //TRS "Tried to click the cursor slot. Shouldn't do this!"
+            Debug.logWarning("Tried to click the cursor slot. Shouldn't do this!");
             return;
         }
         // NOT THE CASE! We may have something in the cursor slot to place.

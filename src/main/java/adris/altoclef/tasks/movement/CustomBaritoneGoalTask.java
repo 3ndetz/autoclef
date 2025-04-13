@@ -124,7 +124,7 @@ public abstract class CustomBaritoneGoalTask extends Task implements ITaskRequir
             mod.getInputControls().release(Input.MOVE_FORWARD);
         }
         if (_unstuckTask != null && _unstuckTask.isActive() && !_unstuckTask.isFinished(mod) && stuckInBlock(mod) != null) {
-            setDebugState("Попытка вылезти из этой ***."); //"Getting unstuck from block."
+            setDebugState("Getting unstuck from block.");
             stuckCheck.reset();
             // Stop other tasks, we are JUST shimmying
             mod.getClientBaritone().getCustomGoalProcess().onLostControl();

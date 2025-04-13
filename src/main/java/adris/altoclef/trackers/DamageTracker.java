@@ -149,8 +149,8 @@ public class DamageTracker extends Tracker {
 
         if (att_name != null) {
             _mod.getInfoSender().onDamageConfirmed(name, att_name, amount);
-            Debug.logMessage("Damage " + att_name + " -> " + name
-                    + String.format(" (%.1f)", amount));
+            // Debug.logAgent("Damage " + att_name + " -> " + name
+            //         + String.format(" (%.1f)", amount));
         }
     }
 

@@ -82,6 +82,7 @@ public class ButlerConfig {
             //Команда не найдена.
             //[NetTyan -> я] 1
             {"universal","<{from}> {message}","survival"},
+            {"mc.vifela.ru","{from}: {message}","survival"},
             {"mc.musteryworld.net","[Зритель] {from}: {message}","murdermystery"},
             {"mc.musteryworld.net","{from}: {message}","murdermystery"},
 

@@ -247,14 +247,15 @@ public class WorldSurvivalChain extends SingleTaskChain {
         return WorldHelper.isInNetherPortal(mod) && !mod.getUserTaskChain().getCurrentTask().thisOrChildSatisfies(task -> task instanceof EnterNetherPortalTask);
     }
     // FAR TODO here: add avoid behavior removing based on center blockPos
+    // TODO add tries for certain block. For example if 0,0,0 2 tries to break and failed, then block break avoidance
     private void checkLastPlacedBlock(AltoClef mod) {
         if (_lastPlacedBlock && _lastPlacedBlockPos != null && _blockPlaceCheckTimer.elapsed()) {
             if (WorldHelper.isAir(mod, _lastPlacedBlockPos)) {
                 Debug.logWarning("Block at " + _lastPlacedBlockPos + " failed to place!");
-                //if (!_isAvoidingBlockPlace || _placeAvoidTimer.elapsed()) {
-                //    Debug.logMessage("Adding temporary block " + _lastPlacedBlockPos + " avoidance for block placement.");
-                //    addTemporaryPlaceAvoidance(mod, _lastPlacedBlockPos);
-                //}
+                if (!_isAvoidingBlockPlace || _placeAvoidTimer.elapsed()) {
+                    Debug.logMessage("Adding temporary block " + _lastPlacedBlockPos + " avoidance for block placement.");
+                    addTemporaryPlaceAvoidance(mod, _lastPlacedBlockPos);
+                }
             }
             _lastPlacedBlock = false;
             _lastPlacedBlockPos = null;
@@ -273,11 +274,10 @@ public class WorldSurvivalChain extends SingleTaskChain {
         if (_lastBrokenBlock && _lastBrokenBlockPos != null && _blockBreakCheckTimer.elapsed()) {
             if (!WorldHelper.isAir(mod, _lastBrokenBlockPos)) {
                 Debug.logWarning("Block at " + _lastBrokenBlockPos + " failed to break! Maybe private area, try another place.");
-                //
-                //if (!_isAvoidingBlockBreak || _breakAvoidTimer.elapsed()) {
-                //    Debug.logMessage("Adding temporary block " + _lastBrokenBlockPos + " avoidance for block breaking.");
-                //    addTemporaryBreakAvoidance(mod, _lastBrokenBlockPos);
-                //}
+                if (!_isAvoidingBlockBreak || _breakAvoidTimer.elapsed()) {
+                    Debug.logMessage("Adding temporary block " + _lastBrokenBlockPos + " avoidance for block breaking.");
+                    addTemporaryBreakAvoidance(mod, _lastBrokenBlockPos);
+                }
             }
             _lastBrokenBlock = false;
             _lastBrokenBlockPos = null;

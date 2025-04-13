@@ -18,6 +18,8 @@ import net.minecraft.util.math.Direction;
 
 import java.util.Objects;
 
+import static adris.altoclef.tasks.construction.compound.ConstructIronGolemTask.getBuildHeight;
+
 /**
  * Construct grave task should be like a construct golem task and needed to:
  * find a place for grave to fit grave
@@ -80,22 +82,9 @@ public class ConstructGraveTask extends Task {
             _useSmoothStoneSlabs = false;
         }
 
-
-
         // Find position for grave if not set
-        if (_position == null) {
-            for (BlockPos pos : WorldHelper.scanRegion(mod,
-                    new BlockPos(mod.getPlayer().getBlockX(), 64, mod.getPlayer().getBlockZ()),
-                    new BlockPos(mod.getPlayer().getBlockX(), 128, mod.getPlayer().getBlockZ()))) {
-                if (mod.getWorld().getBlockState(pos).getBlock() == Blocks.AIR) {
-                    _position = pos;
-                    break;
-                }
-            }
-            if (_position == null) {
-                _position = mod.getPlayer().getBlockPos();
-            }
-        }
+        if (_position == null)
+            _position = getBuildHeight(mod);
 
         // Build the vertical cobblestone blocks
         if (_checkpoint <= 0) {

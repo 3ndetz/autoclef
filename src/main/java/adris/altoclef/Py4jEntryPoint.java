@@ -2,16 +2,13 @@ package adris.altoclef;
 
 import adris.altoclef.butler.WhisperChecker;
 import adris.altoclef.tasks.entity.AbstractKillEntityTask;
-import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasks.movement.IdleTask;
 import adris.altoclef.tasks.multiplayer.GestureTask;
 import adris.altoclef.tasks.speedrun.WaitForDragonAndPearlTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.trackers.threats.PlayerThreat;
 import adris.altoclef.ui.MessagePriority;
-import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.agent.AgentState;
-import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.agent.Pipeline;
@@ -19,30 +16,28 @@ import baritone.api.pathing.calc.IPath;
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.Rotation;
 
+import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.FutureTask;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.option.Perspective;
+import net.minecraft.client.texture.NativeImage;
+import net.minecraft.client.util.ScreenshotRecorder;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import py4j.Py4JException;
-import py4j.Py4JJavaServer;
 
-import static adris.altoclef.util.helpers.EntityHelper.getWeaponInHand;
 import static adris.altoclef.util.helpers.LookHelper.getLookingProbability;
 
 public class Py4jEntryPoint {
@@ -157,6 +152,45 @@ public class Py4jEntryPoint {
         //        ", isRunningIdleTask = " + _mod.getUserTaskChain().isRunningIdleTask());
         //return checkActiveTask;
     }
+
+    public byte[] getScreenshot() {
+        try {
+            AtomicReference<NativeImage> screenshot = new AtomicReference<>();
+            // Используем CompletableFuture для синхронизации
+            CompletableFuture<Void> future = new CompletableFuture<>();
+
+            // Выполняем операцию скриншота в основном потоке игры
+            MinecraftClient.getInstance().execute(() -> {
+                try {
+                    Framebuffer buffer = MinecraftClient.getInstance().getFramebuffer();
+                    screenshot.set(ScreenshotRecorder.takeScreenshot(buffer));
+                    future.complete(null);
+                } catch (Exception e) {
+                    future.completeExceptionally(e);
+                    Debug.logInternal("Error taking screenshot: " + e.getMessage());
+                }
+            });
+
+            // Ждем завершения операции
+            try {
+                future.get(5, TimeUnit.SECONDS); // Тайм-аут 5 секунд
+            } catch (Exception e) {
+                Debug.logInternal("Timeout or error waiting for screenshot: " + e.getMessage());
+                return null;
+            }
+
+            if (screenshot.get() == null) {
+                Debug.logInternal("Screenshot is null");
+                return null;
+            }
+
+            return screenshot.get().getBytes();
+        } catch (Exception e) {
+            Debug.logInternal("Error taking screenshot: " + e.getMessage());
+        }
+        return null;
+    }
+
     public String getPipelineDescription(){
         return Objects.requireNonNullElse(AltoClef._pipeline, Pipeline.None).getDescription();
     }

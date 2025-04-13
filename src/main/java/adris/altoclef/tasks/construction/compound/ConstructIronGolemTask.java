@@ -8,12 +8,15 @@ import adris.altoclef.tasksystem.Task;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.StorageHelper;
 import adris.altoclef.util.helpers.WorldHelper;
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.item.Items;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
@@ -36,25 +39,34 @@ public class ConstructIronGolemTask extends Task {
         mod.getClientBaritoneSettings().blocksToAvoidBreaking.value.add(Blocks.IRON_BLOCK);
     }
 
+    @NotNull
+    public static BlockPos getBuildHeight(AltoClef mod) {
+        int x = mod.getPlayer().getBlockX();
+        int y = mod.getPlayer().getBlockY();
+        int z = mod.getPlayer().getBlockZ();
+        BlockPos _position = null;
+        // for (BlockPos pos : WorldHelper.scanRegion(mod,
+        //         new BlockPos(x, MathHelper.clamp(y - 32, -63, 319), z),
+        //         new BlockPos(x, MathHelper.clamp(y + 32, -63, 319), z))) {
+        //     if (mod.getWorld().getBlockState(pos).getBlock() == Blocks.AIR) {
+        //         _position = pos;
+        //         break;
+        //     }
+        // }
+        if (_position == null) {
+            _position = mod.getPlayer().getBlockPos();
+        }
+        return _position;
+    }
+
     @Override
     protected Task onTick(AltoClef mod) {
         if (!StorageHelper.itemTargetsMetInventory(mod, golemMaterials(mod))) {
             setDebugState("Getting materials for the iron golem");
             return new CataloguedResourceTask(golemMaterials(mod));
         }
-        if (_position == null) {
-            for (BlockPos pos : WorldHelper.scanRegion(mod,
-                    new BlockPos(mod.getPlayer().getBlockX(), 64, mod.getPlayer().getBlockZ()),
-                    new BlockPos(mod.getPlayer().getBlockX(), 128, mod.getPlayer().getBlockZ()))) {
-                if (mod.getWorld().getBlockState(pos).getBlock() == Blocks.AIR) {
-                    _position = pos;
-                    break;
-                }
-            }
-            if (_position == null) {
-                _position = mod.getPlayer().getBlockPos();
-            }
-        }
+        if (_position == null)
+            _position = getBuildHeight(mod);
         if (!WorldHelper.isBlock(mod, _position, Blocks.IRON_BLOCK)) {
             if (!WorldHelper.isBlock(mod, _position, Blocks.AIR)) {
                 setDebugState("Destroying block in way of base iron block");

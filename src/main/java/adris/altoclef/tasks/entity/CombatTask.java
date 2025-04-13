@@ -310,11 +310,13 @@ public class CombatTask extends Task {
     private boolean isValidTarget(PlayerEntity player, AltoClef mod) {
         if (player == null || player == mod.getPlayer() || player.getName() == null) return false;
         String name = player.getName().getString();
-        if (_targetPlayerName != null && _targetPlayerName.equals(name)) return true;
-        if (_blacklistedPlayers.contains(name)) return false;
         // TODO untested
         if (player.isInCreativeMode() || player.isSpectator() || !player.isAlive()) return false;
         if (_shouldAttackPredicate != null) return _shouldAttackPredicate.test(player);
+        if (_targetPlayerName != null) {
+            return _targetPlayerName.equals(name);
+        }
+        if (_blacklistedPlayers.contains(name)) return false;
         return true;
     }
 
