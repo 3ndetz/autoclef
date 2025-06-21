@@ -23,6 +23,7 @@ public class AltoClefCommands {
                 new ShiftCommand(),
                 new GraveCommand(),
                 new SignCommand(),
+                new TimeoutSpecificCommand(),
                 new TimeoutCommand(),
                 new GestureCommand(),
                 new PursueCommand(),

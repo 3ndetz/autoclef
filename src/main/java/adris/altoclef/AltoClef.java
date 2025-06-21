@@ -382,7 +382,7 @@ public class AltoClef implements ModInitializer {
         System.out.println("Gateway STOP Initiated...");
         _gatewayServer.shutdown();
     }
-    //TODO untested and idk how to test
+
     public void reloadPythonSender() {
         System.out.println("Gateway Reload Initiated...");
         _py4jEntryPoint = null;
@@ -654,12 +654,16 @@ public class AltoClef implements ModInitializer {
 
     // For timeout command handling
     private boolean _isTimeoutTask = false;
-    private static double DEFAULT_TIMEOUT_SECONDS = 30;
+    public static double DEFAULT_TIMEOUT_SECONDS = 30;
+    public static double TIMEOUT_SECONDS = DEFAULT_TIMEOUT_SECONDS;
 
     public void setTimeoutTaskFlag(boolean isTimeout) {
         _isTimeoutTask = isTimeout;
     }
-
+    public void setTimeoutTask(double timeoutSeconds) {
+        TIMEOUT_SECONDS = timeoutSeconds;
+        setTimeoutTaskFlag(true);
+    }
     /**
      * Run a user task
      */
@@ -673,8 +677,11 @@ public class AltoClef implements ModInitializer {
     public void runUserTask(Task task, Runnable onFinish) {
         if (_isTimeoutTask) {
             // If this is a timeout task, wrap it in a forced task
-            _supervisorTaskChain.runTask(this, task, DEFAULT_TIMEOUT_SECONDS);
+            _supervisorTaskChain.runTask(this, task, TIMEOUT_SECONDS);
             _isTimeoutTask = false; // Reset flag
+            TIMEOUT_SECONDS = DEFAULT_TIMEOUT_SECONDS; // Reset timeout
+            // TODO DEAL WITH onFinish in _supervisorTaskChain
+            // CURRENT APPROACH IS CRITICAL: WE JUST DONT HAVE onFinish!!!
         } else {
             // Normal execution
             _userTaskChain.runTask(this, task, onFinish);

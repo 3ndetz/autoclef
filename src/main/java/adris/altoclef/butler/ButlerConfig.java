@@ -83,6 +83,8 @@ public class ButlerConfig {
             //[NetTyan -> я] 1
             {"universal","<{from}> {message}","survival"},
             {"mc.vifela.ru","{from}: {message}","survival"},
+            // [Чат пати] _Flame_Girl_ ➠ как строится дом
+            {"mc.musteryworld.net","[Чат пати] {from} ➠ {message}","murdermystery"},
             {"mc.musteryworld.net","[Зритель] {from}: {message}","murdermystery"},
             {"mc.musteryworld.net","{from}: {message}","murdermystery"},
 
@@ -156,7 +158,9 @@ public class ButlerConfig {
             {"funnymc.ru","{global} [{rank}] {from} ➯ {message}","survival"},
             {"funnymc.ru","{global} {rank} {from} ➯ {message}","survival"},
             // [Воин]  nik ➠ ахахаххаха
-            {"mlegacy.net","[{rank}] {from} ➠ {message}", "skypvp"},
+            // (#Зло) [Солдат] wearthkii ➠ yt
+            {"mlegacy.net","({clan}) [{rank}] {from} ➠ {message}", "skypvp"},
+            {"mlegacy.net","[{rank}]  {from} ➠ {message}", "skypvp"},
             {"mlegacy.net","[{rank}] {from}  » {message}","skywars"},
             {"mlegacy.net","({rank}) {from} > {message}","skywars"},
             {"mlegacy.net","{global} [{rank}] {from} ➯ {message}", "survival"},

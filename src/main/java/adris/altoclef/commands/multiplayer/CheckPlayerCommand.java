@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public class CheckPlayerCommand extends Command {
     public CheckPlayerCommand() throws CommandException {
-        super("checkPlayer", "Checks the status of some player", new Arg(String.class, "username", null, 0));
+        super("check_player", "Checks the status of some player", new Arg(String.class, "username", null, 0));
     }
 
     @Override
@@ -32,9 +32,12 @@ public class CheckPlayerCommand extends Command {
         Optional<Vec3d> lastPos = mod.getEntityTracker().getPlayerMostRecentPosition(username);
 
         if (lastPos.isEmpty()) {
-            throw new CommandException("check player failed: Player " + username + " not found.");
+            throw new CommandException("checking player failed: Player " + username + " not found.");
         }
-        mod.log("Player " + username + " is found at " + lastPos.get().toString() + ".");
+        Vec3d pos = lastPos.get();
+        mod.log("Player " + username + " is found at x="
+                + Math.round(pos.getX()) + ", y=" + Math.round(pos.getY())
+                + ", z=" + Math.round(pos.getZ()) + ".");
         // TODO get more info about player
     }
 }

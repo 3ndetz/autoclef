@@ -7,6 +7,7 @@ import adris.altoclef.commandsystem.Command;
 import adris.altoclef.commandsystem.CommandException;
 import adris.altoclef.tasks.multiplayer.GestureTask;
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.Optional;
 
@@ -24,13 +25,8 @@ public class GestureCommand extends Command {
             return;
         }
 
-        Optional<Entity> entity = getPlayerTarget(mod, username);
+        Entity entity = getValidPlayer(mod, username);
 
-        if (entity.isEmpty()) {
-            mod.logWarning("GestureAction: Player " + username + " not found.");
-            finish();
-            return;
-        }
         String gesture_str = parser.get(String.class);
         GestureTask.Gesture gesture = GestureTask.Gesture.Hey;;
         if (gesture_str != null) {
@@ -41,12 +37,37 @@ public class GestureCommand extends Command {
                 mod.logWarning("GestureAction: Invalid gesture: " + gesture_str);
             }
         }
-        mod.runForcedTask(new GestureTask(entity.get(), gesture), 3);
+        mod.runForcedTask(new GestureTask(entity, gesture), 3);
     }
+
     public static Optional<Entity> getPlayerTarget(AltoClef mod, String username){
         if (mod.getEntityTracker().isPlayerLoaded(username)) {
             return mod.getEntityTracker().getPlayerEntity(username).map(Entity.class::cast);
         }
         return Optional.empty();
+    }
+
+    // UNTESTED
+    public static Entity getValidPlayer(AltoClef mod, String username)
+            throws CommandException
+    {
+        if (mod.getEntityTracker().isPlayerLoaded(username)) {
+            Optional<Entity> player;
+            player = mod.getEntityTracker().getPlayerEntity(username).map(Entity.class::cast);
+            if (player.isPresent()){
+                return player.get();
+            } else {
+                Optional<Vec3d> pos = mod.getEntityTracker().getPlayerMostRecentPosition(username);
+                if (pos.isPresent()) {
+                    throw new CommandException("Player " + username
+                            + " is not in view now, but last time was present on position "
+                            + pos.get().toString() + ".");
+                } else {
+                    throw new CommandException("Player " + username + " is unreachable: too far or not visible.");
+                }
+
+            }
+        }
+        throw new CommandException("Player " + username + " never appeared in the game.");
     }
 }
