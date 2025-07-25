@@ -78,7 +78,8 @@ public class GameMenuTaskChain extends SingleTaskChain {
 
     public static boolean isMinigamePipeline(Pipeline pipeline) {
         return pipeline.equals(Pipeline.SkyWars)
-                || pipeline.equals(Pipeline.MurderMystery);
+                || pipeline.equals(Pipeline.MurderMystery)
+                || pipeline.equals(Pipeline.BedWars);
 //                || pipeline.equals(Pipeline.KitPVP);
     }
 
@@ -123,7 +124,10 @@ public class GameMenuTaskChain extends SingleTaskChain {
                 String[] ClickTitles;
                 switch (AltoClef.getPipeline()) {
                     case SkyWars:
-                        ClickTitles = new String[] {"SkyWars", "skywars", "скайварс", "скай-варс"};;
+                        ClickTitles = new String[] {"SkyWars", "skywars", "скайварс", "скай-варс"};
+                        break;
+                    case BedWars:
+                        ClickTitles = new String[] {"BedWars", "bedwars", "бедварс"};
                         break;
                     case MurderMystery:
                         ClickTitles = new String[] {"MurderMystery", "murdermystery", "МардерМистери", "Murder"};;
@@ -150,6 +154,7 @@ public class GameMenuTaskChain extends SingleTaskChain {
             }
             boolean isMinigame = isMinigamePipeline(AltoClef.getPipeline());
             //setDebugState("Chill");
+            // TODO ADD WAIT BEFORE MINIGAME REJOIN
             if (isMinigame) {
                 if (clickTimer.elapsed()) {
                     if (ItemHelper.clickCustomItem(mod, "Выбор сервера", "Выбор лобби")) {

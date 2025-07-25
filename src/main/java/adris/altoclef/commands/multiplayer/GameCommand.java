@@ -6,6 +6,7 @@ import adris.altoclef.commandsystem.Arg;
 import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.commandsystem.Command;
 import adris.altoclef.commandsystem.CommandException;
+import adris.altoclef.tasks.multiplayer.minigames.BedWarsTask;
 import adris.altoclef.tasks.speedrun.BeatMinecraft2Task;
 import adris.altoclef.tasks.multiplayer.minigames.BattleRoyaleTask;
 import adris.altoclef.tasks.multiplayer.minigames.MurderMysteryTask;
@@ -49,6 +50,11 @@ public class GameCommand extends Command {
                 AltoClef._pipeline = Pipeline.MurderMystery;
                 Debug.logMessage("Pipeline set to mm");
                 mod.runUserTask(new MurderMysteryTask(-1), this::finish);
+                break;
+            case "bw", "bed", "bedwars":
+                AltoClef._pipeline = Pipeline.BedWars;
+                Debug.logMessage("Pipeline set to bw");
+                mod.runUserTask(new BedWarsTask(mod), this::finish);
                 break;
             case "megabattle", "mega", "evil", "yandere":
                 AltoClef._pipeline = Pipeline.BattleRoyale;
