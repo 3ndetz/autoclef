@@ -11,6 +11,7 @@ import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.events.*;
 import adris.altoclef.eventbus.events.multiplayer.ItemUseEvent;
 import adris.altoclef.eventbus.events.multiplayer.ProjectileEvent;
+import adris.altoclef.mixins.MinecraftClientSessionMixin;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.tasksystem.TaskRunner;
 import adris.altoclef.trackers.*;
@@ -34,6 +35,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
+import net.minecraft.client.session.Session;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.item.Item;
@@ -196,6 +198,14 @@ public class AltoClef implements ModInitializer {
     public void onInitializeLoad() {
         // This code should be run after Minecraft loads everything else in.
         // This is the actual start point, controlled by a mixin.
+
+
+        // UNTESTED NEW!!!! NICKNAME CHANGE
+        // changing only for debug mode when username is like "PlayerNNN"
+        if (AltoClef.getSelfName() != null
+        && AltoClef.getSelfName().toLowerCase().contains("player")) {
+            changePlayerName("NetTyan");
+        }
 
         initializeBaritoneSettings();
 
@@ -360,7 +370,6 @@ public class AltoClef implements ModInitializer {
         EventBus.subscribe(ProjectileEvent.class, evt -> {
             getMobDefenseChain().onProjectileLaunched(this, evt.entity, evt.sticked);
         });
-
     }
     public void timelyDisableBlockBreaking(double timeoutSeconds){
         getClientBaritoneSettings().allowBreak.value = false;
@@ -427,6 +436,53 @@ public class AltoClef implements ModInitializer {
         _inputControls.onTickPost();
         _gameMenuTaskChain.onTickPost(this);
     }
+
+// ...existing code...
+
+    /**
+     * Changes the player's username (requires restart to take effect on servers)
+     * WARNING: This is for offline mode only and may not work on authenticated servers
+     */
+    public static boolean changePlayerName(String newUsername) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        if (client == null) {
+            Debug.logWarning("Cannot change username: MinecraftClient is null");
+            return false;
+        }
+        
+        try {
+            // Create new session with different username but same UUID
+            Session currentSession = client.getSession();
+            if (currentSession == null) {
+                Debug.logWarning("Cannot change username: Current session is null");
+                return false;
+            }
+            
+            // For offline mode servers - create new session with same UUID but different name
+            Session newSession = new Session(
+                newUsername,
+                currentSession.getUuidOrNull(), // Keep same UUID
+                currentSession.getAccessToken(),
+                currentSession.getXuid(),
+                currentSession.getClientId(),
+                currentSession.getAccountType()
+            );
+            
+            // Use mixin to set new session
+            MinecraftClientSessionMixin clientMixin = (MinecraftClientSessionMixin) client;
+            clientMixin.setSession(newSession);
+            
+            Debug.logMessage("Username changed to: " + newUsername);
+            return true;
+            
+        } catch (Exception e) {
+            Debug.logError("Failed to change username: " + e.getMessage());
+            return false;
+        }
+    }
+
+// ...existing code...
+
 
     /// GETTERS AND SETTERS
 

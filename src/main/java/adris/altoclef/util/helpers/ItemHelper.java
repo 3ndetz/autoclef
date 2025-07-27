@@ -546,6 +546,22 @@ public class ItemHelper {
         return false;
     }
 
+    public static Slot getCustomItemSlot(AltoClef mod, Item... checkItem){
+        Iterable<Slot> slots = Slot.getCurrentScreenSlots();
+        if (AltoClef.inGame() && mod.getPlayer() != null && slots != null) {
+            for (Slot slot : slots){
+                ItemStack itemStack = StorageHelper.getItemStackInSlot(slot);
+                if(itemStack != null && itemStack.getItem() instanceof Item item){
+                      if (Arrays.asList(checkItem).contains(item)) {
+                          return slot;  // mod.getItemStorage().getSlotsWithItemPlayerInventory(true, item.getItem()).get(0);
+                      }
+                }
+            }
+
+        }
+        return null;
+    }
+
     public static Slot getCustomItemSlot(AltoClef mod, String... checkItemName){
 
         //List<ItemStack> invertoryItems = mod.getItemStorage().getItemStacksPlayerInventory(true); //mod.getPlayer().getInventory().get;

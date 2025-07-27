@@ -14,6 +14,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockTypes;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -27,6 +28,7 @@ import java.util.Random;
 public class ShiftEntityTask extends AbstractDoToEntityTask {
 
     private Entity _target;
+    private String _targetName;
     private int _phase = 0;
     private double _interactDistance = 2.5d;
     private double _shiftDistance = 0.7d;
@@ -44,11 +46,30 @@ public class ShiftEntityTask extends AbstractDoToEntityTask {
         _target = target;
         _shiftType = type;
     }
+
+    public ShiftEntityTask(String target, ShiftType type) {
+        super(2, -1, -1);
+        _targetName = target;
+        _shiftType = type;
+    }
+    public ShiftEntityTask(String target) {
+        this(target, ShiftType.values()[new Random().nextInt(ShiftType.values().length-1)]);
+    }
     public ShiftEntityTask(Entity target) {
         this(target, ShiftType.values()[new Random().nextInt(ShiftType.values().length-1)]); // random
     }
     @Override
     protected Optional<Entity> getEntityTarget(AltoClef mod) {
+        if (_target == null) {
+            if (_targetName != null && mod.getEntityTracker().isPlayerLoaded(_targetName)) {
+                return mod.getEntityTracker().getPlayerEntity(_targetName).map(Entity.class::cast);
+            }
+            return Optional.empty();
+        }
+        // if we constructed via entity
+        if (_target instanceof PlayerEntity && _targetName == null) {
+            _targetName = _target.getName().getString();
+        }
         return Optional.of(_target);
     }
 

@@ -3,6 +3,8 @@ package adris.altoclef.chains;
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.butler.ButlerConfig;
+import adris.altoclef.eventbus.EventBus;
+import adris.altoclef.eventbus.events.multiplayer.RejoinEvent;
 import adris.altoclef.mixins.DeathScreenAccessor;
 import adris.altoclef.tasks.fix.StuckFixingTask;
 import adris.altoclef.tasks.movement.GetToXZTask;
@@ -88,8 +90,31 @@ public class GameMenuTaskChain extends SingleTaskChain {
     public TimerReal clickTimer = new TimerReal(0.7);
     public TimerReal _reloadInfoSenderTimer = new TimerReal(10);
     private boolean _infoSenderLoaded = true;
+    
+    // Timers for different click operations
+    private final TimerReal _slotClickTimer = new TimerReal(0.5);
+    private final TimerReal _worldJoinTimer = new TimerReal(3);
+    private final TimerReal _minigameButtonTimer = new TimerReal(1.0);
+    private final TimerReal _lobbyButtonTimer = new TimerReal(1.0);
+    private final TimerReal _mouseClickTimer = new TimerReal(0.3);
+
+    public boolean rejoinEventPublished = false;
+
     @Override
     public float getPriority(AltoClef mod) {
+
+        if (!AltoClef.inGame()) {
+            rejoinEventPublished = false;
+            _worldJoinTimer.reset();
+            // Debug.logInternal("[DEBUG GameMenuTaskChain, TODO REMOVE] NOT IN GAME");
+        } else {
+            if (_worldJoinTimer.elapsed() && !rejoinEventPublished) {
+                EventBus.publish(new RejoinEvent());
+                rejoinEventPublished = true;
+            }
+        }
+
+        // Python sender auto-reload
         if (mod.getModSettings().shouldReloadInfoSender() && _reloadInfoSenderTimer.elapsed() ){
             if (!mod.getInfoSender().getCallbackServerStatusFast()) {
                 if (_infoSenderLoaded) {
@@ -107,63 +132,73 @@ public class GameMenuTaskChain extends SingleTaskChain {
         }
 
         if (ButlerConfig.getInstance().autoJoin) {
+            // TODO add timers and timeouts
             // in choose menu
             if (ContainerType.screenHandlerMatches(ContainerType.CHEST)) {
                 Text title = MinecraftClient.getInstance().currentScreen != null ? MinecraftClient.getInstance().currentScreen.getTitle() : null;
 
                 // mc выбор режима
                 // выбор сервера
-                if (title != null && title.getString() != null && title.getString().toLowerCase().contains("выбор сервера")){
+                if (title != null && title.getString() != null) 
+                {
+                    String t = title.getString().toLowerCase();
 
-                }
+                    if (t.contains("выбор сервера") || t.contains("мини-игры")) {
+                        //StorageHelper.closeScreen();
+                        //_lootTask = null;
+                        String[] MinigamesTitles = new String[] {"мини-игры", "МИНИ-ИГРЫ", "МИНИИГРЫ"};
 
-                //StorageHelper.closeScreen();
-                //_lootTask = null;
-                String[] MinigamesTitles = new String[] {"мини-игры", "МИНИ-ИГРЫ", "МИНИИГРЫ"};
+                        String[] ClickTitles;
+                        switch (AltoClef.getPipeline()) {
+                            case SkyWars:
+                                ClickTitles = new String[] {"SkyWars", "skywars", "скайварс", "скай-варс"};
+                                break;
+                            case BedWars:
+                                ClickTitles = new String[] {"BedWars", "bedwars", "бедварс"};
+                                break;
+                            case MurderMystery:
+                                ClickTitles = new String[] {"MurderMystery", "murdermystery", "МардерМистери", "Murder"};;
+                                break;
+                            case null, default:
+                                //return null;
+                                ClickTitles = null;
+                                break;
+                        }
+                        if (ClickTitles != null && _worldJoinTimer.elapsed()) {
+                            Slot slot = ItemHelper.getCustomItemSlot(mod, ArrayUtils.addAll(MinigamesTitles));
 
-                String[] ClickTitles;
-                switch (AltoClef.getPipeline()) {
-                    case SkyWars:
-                        ClickTitles = new String[] {"SkyWars", "skywars", "скайварс", "скай-варс"};
-                        break;
-                    case BedWars:
-                        ClickTitles = new String[] {"BedWars", "bedwars", "бедварс"};
-                        break;
-                    case MurderMystery:
-                        ClickTitles = new String[] {"MurderMystery", "murdermystery", "МардерМистери", "Murder"};;
-                        break;
-                    case null, default:
-                        //return null;
-                        ClickTitles = null;
-                        break;
-                }
-                if (ClickTitles != null) {
-                    Slot slot = ItemHelper.getCustomItemSlot(mod, ArrayUtils.addAll(MinigamesTitles));
-
-                    if (slot != null) {
-                        mod.getSlotHandler().clickSlot(slot, 0, SlotActionType.PICKUP);
-                    } else {
-                        slot = ItemHelper.getCustomItemSlot(mod, ArrayUtils.addAll(MinigamesTitles, ClickTitles));
-                        if (slot != null) {
-                            mod.getSlotHandler().clickSlot(slot, 0, SlotActionType.PICKUP);
-                            _clicked = true;
+                            if (slot != null && _slotClickTimer.elapsed()) {
+                                mod.getSlotHandler().clickSlot(slot, 0, SlotActionType.PICKUP);
+                                _slotClickTimer.reset();
+                                return 90;
+                            } else {
+                                slot = ItemHelper.getCustomItemSlot(mod, ArrayUtils.addAll(MinigamesTitles, ClickTitles));
+                                if (slot != null && _slotClickTimer.elapsed()) {
+                                    mod.getSlotHandler().clickSlot(slot, 0, SlotActionType.PICKUP);
+                                    _slotClickTimer.reset();
+                                    _clicked = true;
+                                    return 90;
+                                }
+                            }
+                            
                         }
                     }
-                    return 90;
                 }
             }
             boolean isMinigame = isMinigamePipeline(AltoClef.getPipeline());
             //setDebugState("Chill");
             // TODO ADD WAIT BEFORE MINIGAME REJOIN
             if (isMinigame) {
-                if (clickTimer.elapsed()) {
-                    if (ItemHelper.clickCustomItem(mod, "Выбор сервера", "Выбор лобби")) {
+                if (clickTimer.elapsed()  && _worldJoinTimer.elapsed()) {
+                    if (_lobbyButtonTimer.elapsed() && ItemHelper.clickCustomItem(mod, "Выбор сервера", "Выбор лобби")) {
                         clickTimer.reset();
+                        _lobbyButtonTimer.reset();
                         //reset();
                     }
 
-                    if (ItemHelper.clickCustomItem(mod, "новая игра", "начать игру", "быстро играть (пкм)")) {
+                    if (_minigameButtonTimer.elapsed() && ItemHelper.clickCustomItem(mod, "новая игра", "начать игру", "быстро играть (пкм)")) {
                         clickTimer.reset();
+                        _minigameButtonTimer.reset();
                         //reset();
                     }
                 }
@@ -246,14 +281,17 @@ public class GameMenuTaskChain extends SingleTaskChain {
 //                    Debug.logMessage("worldScreen.changeFocus(true) " + worldScreen.changeFocus(true));
                     double x = worldScreen.width / 2 - 154;
                     double y = worldScreen.height - 52;
-                    worldScreen.mouseClicked(x, y, 0);
-                    worldScreen.mouseReleased(x, y, 0);
-                    if (worldScreen.hoveredElement(x, y).isPresent()) {
-                        Element hoveredElement = worldScreen.hoveredElement(x, y).get();
-                        hoveredElement.mouseClicked(0, 0, 0);
-                        hoveredElement.mouseReleased(0, 0, 0);
-                        mod.cancelUserTask();
-                        Runnable doOnStuckFixFinish = new Thread(() -> {
+                    
+                    if (_mouseClickTimer.elapsed()) {
+                        worldScreen.mouseClicked(x, y, 0);
+                        worldScreen.mouseReleased(x, y, 0);
+                        
+                        if (worldScreen.hoveredElement(x, y).isPresent()) {
+                            Element hoveredElement = worldScreen.hoveredElement(x, y).get();
+                            hoveredElement.mouseClicked(0, 0, 0);
+                            hoveredElement.mouseReleased(0, 0, 0);
+                            mod.cancelUserTask();
+                            Runnable doOnStuckFixFinish = new Thread(() -> {
                             MinecraftClient clientt = MinecraftClient.getInstance();
                             clientt.setScreen(new GameMenuScreen(true));
 
@@ -276,6 +314,8 @@ public class GameMenuTaskChain extends SingleTaskChain {
                             _reconnectTimer.reset();
                         });
                         mod.runUserTask(new StuckFixingTask(), doOnStuckFixFinish);
+                        }
+                        _mouseClickTimer.reset();
                     }
                     _needUnStuckFix = false;
                 }

@@ -2,27 +2,28 @@ package adris.altoclef.tasks.multiplayer.minigames;
 
 import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
-import adris.altoclef.tasks.DoToClosestBlockTask;
-import adris.altoclef.tasks.InteractWithBlockTask;
+import adris.altoclef.eventbus.EventBus;
+import adris.altoclef.eventbus.Subscription;
+import adris.altoclef.eventbus.events.BlockBrokenEvent;
+import adris.altoclef.eventbus.events.multiplayer.RejoinEvent;
+import adris.altoclef.tasks.construction.DestroyBlockTask;
 import adris.altoclef.tasks.container.LootContainerTask;
 import adris.altoclef.tasks.entity.DoToClosestEntityTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
 import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasks.movement.GetToEntityTask;
 import adris.altoclef.tasks.movement.PickupDroppedItemTask;
-import adris.altoclef.tasks.multiplayer.GestureTask;
-import adris.altoclef.tasks.slot.ClickSlotTask;
 import adris.altoclef.tasksystem.Task;
 import adris.altoclef.trackers.storage.ContainerType;
 import adris.altoclef.util.ItemTarget;
 import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.StorageHelper;
-import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.slots.Slot;
+import adris.altoclef.util.time.TimerReal;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.component.DataComponentTypes;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.type.DyedColorComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -35,29 +36,74 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ColorHelper;
-import net.minecraft.util.math.Vec3d;
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.*;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 public class BedWarsTask extends Task {
     public BedWarsTask(AltoClef mod) {
         // This task is a placeholder for the Bed Wars minigame.
         // It can be extended with specific logic for the game.
-        ourColor = getHelmetColor(mod.getPlayer());
-        ourColorName = getClosestColorName(ourColor);
+        initializeNewGame(mod);
     }
 
     BlockPos bedPos = null; // TODO: get bed pos
     public int ourColor = -1;
-    public String ourColorName = "";
+    public String ourColorName = "Unknown";
     private Task _pickupTask;
+    
+    public boolean virtualResourcesType = true;
 
+    // Shop timer fields using TimerGame
+    private final TimerReal shopTimer = new TimerReal(7); // shopping process time
+    private final TimerReal shopCooldown = new TimerReal(20); // cooldown between shop sessions
+    private final TimerReal _teamDetermineCooldown = new TimerReal(10); // re-determine undetermined team cooldown
+    private boolean inShop = false;
+
+    public boolean teamDetermined = false;
+
+    protected boolean getSelfColor(AltoClef mod) {
+        // get self color from helmet
+        ourColor = getHelmetColor(mod.getPlayer());
+        if (ourColor == -1) {
+            // Debug.logWarning("Could not determine our team color from helmet. Defaulting to unknown.");
+            ourColorName = "Unknown";
+            teamDetermined = false;
+            return false;
+        }
+        ourColorName = getClosestColorName(ourColor);
+        teamDetermined = true;
+        // Debug.logMessage("Our color: " + ourColorName + " (" + Integer.toHexString(ourColor) + ")");
+        return true;
+    }
+
+    public void initializeNewGame(AltoClef mod) {
+        // resetting variables
+        // Reset shop timers when starting new game
+        shopTimer.forceElapse();
+        shopCooldown.forceElapse();
+        ourColor = -1;
+        _pickupTask = null;
+        virtualResourcesType = true; // Reset virtual resources type
+        teamDetermined = false;
+        bedPos = null;
+        inShop = false;
+        // get our team color and name
+        getSelfColor(mod);
+    }
+
+    private Subscription<RejoinEvent> _rejoinSubscription;
 
     @Override
     protected void onStart(AltoClef mod) {
         mod.getBehaviour().push();
         mod.getBlockTracker().trackBlock(ItemHelper.itemsToBlocks(ItemHelper.BED));
+        
+
+        _rejoinSubscription = EventBus.subscribe(RejoinEvent.class, evt -> {
+            Debug.logMessage("Rejoined game, resetting BedWars task.");
+            initializeNewGame(mod);
+        });
     }
     // Red Yellow Orange Green Gray Cyan Blue LIGHT_BLUE
     // got from real bedwars helmet colors
@@ -147,6 +193,30 @@ public class BedWarsTask extends Task {
 
     public int getMoney(AltoClef mod) {
         // for experience bar resource bedwars system
+
+        if (!teamDetermined) {
+            if (_teamDetermineCooldown.elapsed()) {
+                getSelfColor(mod);
+                _teamDetermineCooldown.reset();
+            }
+        }
+
+        if (!virtualResourcesType) {
+            // get count of items for shop
+            // count iron ingots * 4 + gold ingots * 16
+            // if count iron is less than 64 or gold less than 64, return 0
+            // BAD approach since for virtual resources we should calculate resources for EVERY item
+            // with acknowledging type
+
+            int ironCount = mod.getItemStorage().getItemCountInventoryOnly(Items.IRON_INGOT);
+            int goldCount = mod.getItemStorage().getItemCountInventoryOnly(Items.GOLD_INGOT);
+            if (ironCount < 64 || goldCount < 64) {
+                return 0;
+            } else {
+                return ironCount * 4 + goldCount * 16;
+            }
+        }
+
         return mod.getPlayer().experienceLevel;
     }
 
@@ -160,8 +230,11 @@ public class BedWarsTask extends Task {
         List<Item> shoplist = new ArrayList<>();
         // should be hierarchical:
         // Weapons: if we have wooden axe, then we need iron sword, have iron sword, then diamond sword, etc
-        shoplist.add(Items.WOODEN_AXE);
-        shoplist.add(Items.IRON_SWORD);
+        // shoplist.add(Items.WOODEN_AXE);
+        // shoplist.add(Items.IRON_SWORD);
+        if (!mod.getItemStorage().hasItemInventoryOnly(Items.IRON_SWORD)) {
+            shoplist.add(Items.IRON_SWORD);
+        }
         // if we have diamond sword / diamond axe, we no need weapons more
 
         // bow
@@ -198,7 +271,8 @@ public class BedWarsTask extends Task {
         }
         return lootable;
     }
-
+    List<Block> enemyBeds;
+    Block ourBedBlock;
     /**
      * @param mod
      * @return
@@ -208,41 +282,82 @@ public class BedWarsTask extends Task {
         if ( mod.getPlayer() == null) {
             return null;
         }
+        
+        // Reset shop state if we're not in a chest anymore
+        if (inShop && !ContainerType.screenHandlerMatches(ContainerType.CHEST)) {
+            inShop = false;
+        }
+        
+        if (virtualResourcesType) {
+            if (mod.getItemStorage().hasItemInventoryOnly(Items.GOLD_INGOT, Items.IRON_INGOT)) {
+                virtualResourcesType = false;
+                Debug.logMessage("Virtual resources type disabled, using real resources");
+            }
+        }
 
         if (bedPos == null) {
-            Block ourBedBlock = BEDWARS_BED_COLORS.get(ourColorName);
+            ourBedBlock = BEDWARS_BED_COLORS.get(ourColorName);
             if (ourBedBlock != null) {
                 Optional<BlockPos> bedPosOpt = mod.getBlockTracker().getNearestTracking(ourBedBlock);
                 if (bedPosOpt.isPresent()) {
                     Debug.logMessage("Found our bed at " + bedPosOpt.get().toShortString());
                     bedPos = bedPosOpt.get();
                 }
+                enemyBeds = new ArrayList<>(Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.BED)).toList());
+                enemyBeds.remove(ourBedBlock);
             }
         } else {
-            Optional<Entity> closestEnemyBed = mod.getEntityTracker().getClosestEntity(
+            Optional<Entity> closestEnemyNearBed = mod.getEntityTracker().getClosestEntity(
                     bedPos.toCenterPos(),
                     toPunk -> !inOurTeam((PlayerEntity) toPunk) && toPunk.getPos().isInRange(bedPos.toCenterPos(), 10),
                     PlayerEntity.class);
-            if (closestEnemyBed.isPresent()) {
-                Entity enemyBed = closestEnemyBed.get();
+            if (closestEnemyNearBed.isPresent()) {
+                Entity enemyBed = closestEnemyNearBed.get();
                 setDebugState("PROTECTING BED FROM " + enemyBed.getName().getString());
                 return new KillPlayerTask(enemyBed.getName().getString());
             }
+
+            // Enemy beds = all beds - our bed
+
+            Optional<BlockPos> enemyBedPosOpt = mod.getBlockTracker()
+                    .getNearestTracking(mod.getPlayer().getPos(),
+                            to -> to.isWithinDistance(mod.getPlayer().getBlockPos(), 10),
+                            enemyBeds.toArray(Block[]::new));
+            if (enemyBedPosOpt.isPresent()) {
+                BlockPos enemyBedPos = enemyBedPosOpt.get();
+                setDebugState("Destroying enemy bed at " + enemyBedPos.toShortString());
+                return new DestroyBlockTask(enemyBedPos);
+            }
         }
 
-
+        boolean inChest = ContainerType.screenHandlerMatches(ContainerType.CHEST);
         // we in chest
-        if (ContainerType.screenHandlerMatches(ContainerType.CHEST)) {
-            // todo add shoptimer
-            return new LootContainerTask(new BlockPos(0,0,0), itemsToBuy(mod));
+        if (inChest) {
+            // todo add shoptimer *NEED TEST*
+            if (!inShop) {
+                inShop = true;
+                shopTimer.reset();
+            }
+            
+            // Check if shop timeout reached
+            if (shopTimer.elapsed()) {
+                inShop = false;
+                shopCooldown.reset();
+                StorageHelper.closeScreen();
+                return null;
+            }
+            
+            // return new LootContainerTask(new BlockPos(0,0,0), itemsToBuy(mod));
             //StorageHelper.closeScreen();
 
-
-            //Slot slot = ItemHelper.getCustomItemSlot(mod, ArrayUtils.addAll(MinigamesTitles));
-            //
-            //if (slot != null) {
-                //    mod.getSlotHandler().clickSlot(slot, 0, SlotActionType.PICKUP);
-                //}
+            // can be category in shop...
+            // Slot slot = ItemHelper.getCustomItemSlot(mod, itemsToBuy(mod).toArray(Item[]::new));
+            
+            // general category, skipping categories
+            Slot slot = getSlotShopBW(mod, false, itemsToBuy(mod).toArray(Item[]::new));
+            if (slot != null) {
+                mod.getSlotHandler().clickSlot(slot, 0, SlotActionType.PICKUP);
+            }
         }
 
         Optional<Entity> closestEnemy = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> !inOurTeam((PlayerEntity) toPunk), PlayerEntity.class);
@@ -256,9 +371,8 @@ public class BedWarsTask extends Task {
 
         // AutoShop
 
-        // if enough resources & shop timer elapsed
-
-        if (getMoney(mod) >= 500) {
+        // if enough resources & shop timer elapsed *NEED TEST*
+        if (!inChest && getMoney(mod) >= 500 && shopCooldown.elapsed()) {
             // 1. Get to villager entity in 3 blocks & ensure line of sight clear
 
             // max shop time - 15 secs, then shop timeout
@@ -269,6 +383,9 @@ public class BedWarsTask extends Task {
                                 setDebugState("Found villager: " + entity.getName().getString());
                                 LookHelper.smoothLookAt(mod, entity);
                                 mod.getController().interactEntity(mod.getPlayer(), entity, Hand.MAIN_HAND);
+                                
+                                // Reset shop state when we start interacting with villager
+                                inShop = false;
 
                                 return null; // new ClickSlotTask();
                             } else {
@@ -293,7 +410,7 @@ public class BedWarsTask extends Task {
                                 && mod.getPlayer().getPos().isInRange(ent.getEyePos(), 400),check);
                 //
                 if(closestEnt.isPresent()) {
-                    setDebugState("Сбор ресурсов");
+                    setDebugState("Resource collecting");
                     _pickupTask = new PickupDroppedItemTask(new ItemTarget(check), false, false);
                     return _pickupTask;
                 }
@@ -302,6 +419,34 @@ public class BedWarsTask extends Task {
 
         return null;
     }
+
+    public static Slot getSlotShopBW(AltoClef mod, boolean chooseCategories, Item... checkItem) {
+        Iterable<Slot> slots = Slot.getCurrentScreenSlots();
+        if (AltoClef.inGame() && mod.getPlayer() != null && slots != null) {
+            for (Slot slot : slots) {
+                // specifically for bedwars shop with categories; 0-8 slots are categories
+                // should skip
+                int invSlot = slot.getInventorySlot();
+                boolean check;
+                if (chooseCategories){
+                    check = invSlot >= 0 && invSlot < 9; // check only first 9 slots
+                } else {
+                    check = invSlot >= 9;
+                }
+                if (check) {
+                    ItemStack itemStack = StorageHelper.getItemStackInSlot(slot);
+                    if(itemStack != null && itemStack.getItem() instanceof Item item){
+                        if (Arrays.asList(checkItem).contains(item)) {
+                            return slot;
+                        }
+                    }
+                }
+            }
+
+        }
+        return null;
+    }
+
     public boolean isValidTrader(Entity villager, AltoClef mod) {
         return villager.isAlive() && villager.getName() != null && villager.getName()
                 .getString().toLowerCase().contains("магазин");
@@ -310,6 +455,7 @@ public class BedWarsTask extends Task {
     protected void onStop(AltoClef mod, Task interruptTask) {
         mod.getBlockTracker().stopTracking(ItemHelper.itemsToBlocks(ItemHelper.BED));
         mod.getBehaviour().pop();
+        EventBus.unsubscribe(_rejoinSubscription);
     }
 
     @Override
