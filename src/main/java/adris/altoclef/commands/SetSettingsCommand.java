@@ -8,56 +8,83 @@ import adris.altoclef.commandsystem.ArgParser;
 import adris.altoclef.commandsystem.Command;
 import adris.altoclef.commandsystem.CommandException;
 import adris.altoclef.util.helpers.ConfigHelper;
+import adris.altoclef.util.helpers.SettingsReflectionHelper;
+
+import java.util.List;
 
 public class SetSettingsCommand extends Command {
     public SetSettingsCommand() throws CommandException {
-        super("set", "set <setting name> <new value>", new Arg(String.class, "setting"), new Arg(String.class, "new value", 1, 1));
+        super("set", "set <setting name> <new value> | set list", new Arg(String.class, "setting"), new Arg(String.class, "new value", 0, 1));
     }
 
     @Override
     protected void call(AltoClef mod, ArgParser parser) throws CommandException {
         String setting_name = parser.get(String.class).toLowerCase();
+        
+        // Special case: list all available settings
+        if (setting_name.equals("list")) {
+            listAllSettings(mod);
+            finish();
+            return;
+        }
+        
         String new_value = parser.get(String.class);
-        //ConfigHelper.reloadAllConfigs();
-        boolean old_value;
-        switch (setting_name) {
-            case "":
-                // None specified
-                Debug.logWarning("Please specify a SETTING");
-                break;
-            case "pass":
-                //String old_value_str = ButlerConfig.getInstance().multiplayer_password;
-                ButlerConfig.getInstance().multiplayer_password = new_value;
-                ConfigHelper.saveConfig("configs/butler.json", ButlerConfig.getInstance());
-                //mod.log("Set setting "+setting_name+" from "+old_value+" to "+new_value+"!");
-                ConfigHelper.reloadAllConfigs();
-                mod.log("Pass updated.");
-                break;
-            case "autojoin":
-                old_value = ButlerConfig.getInstance().autoJoin;
-                ButlerConfig.getInstance().autoJoin = Boolean.parseBoolean(new_value);
-                mod.log("Set setting "+setting_name+" from "+old_value+" to "+new_value+"!");
-                break;
-            case "stuckfix":
-                old_value = ButlerConfig.getInstance().autoStuckFix;
-                ButlerConfig.getInstance().autoStuckFix = Boolean.parseBoolean(new_value);
-                mod.log("Set setting "+setting_name+" from "+old_value+" to "+new_value+"!");
-                break;
-            case "hud":
-                old_value = mod.getModSettings().shouldShowTaskChain();
-                mod.getModSettings().setShowTaskChainSetting(Boolean.parseBoolean(new_value));
-                mod.log("Set setting "+setting_name+" from "+old_value+" to "+new_value+"!");
-                break;
-            case "chat":
-                old_value = mod.getModSettings().showChat();
-                mod.getModSettings().setShowChat(Boolean.parseBoolean(new_value));
-                mod.log("Set setting "+setting_name+" from "+old_value+" to "+new_value+"!");
-                break;
-            default:
-                mod.log("setting "+setting_name+" not exists");
-                break;
+        if (new_value == null) {
+            mod.log("Please specify a new value for setting: " + setting_name);
+            finish();
+            return;
+        }
+
+        // Try to set the setting using our reflection helper
+        boolean success = false;
+        
+        // Try main settings first
+        if (SettingsReflectionHelper.setSetting(mod.getModSettings(), setting_name, new_value)) {
+            ConfigHelper.saveConfig("altoclef_settings.json", mod.getModSettings());
+            ConfigHelper.reloadAllConfigs();
+            mod.log("Successfully updated main setting!");
+            success = true;
+        } 
+        // Try butler settings
+        else if (SettingsReflectionHelper.setSetting(ButlerConfig.getInstance(), setting_name, new_value)) {
+            ConfigHelper.saveConfig("configs/butler.json", ButlerConfig.getInstance());
+            ConfigHelper.reloadAllConfigs();
+            mod.log("Successfully updated butler setting!");
+            success = true;
+        }
+        
+        if (!success) {
+            mod.log("Setting '" + setting_name + "' not found. Use 'set list' to see all available settings.");
         }
 
         finish();
+    }
+
+    private void listAllSettings(AltoClef mod) {
+        mod.log("=== Available Settings ===");
+        
+        // List main settings
+        mod.log("Main Settings (altoclef_settings.json):");
+        List<SettingsReflectionHelper.SettingInfo> mainSettings = 
+            SettingsReflectionHelper.getSettableFields(mod.getModSettings());
+        for (SettingsReflectionHelper.SettingInfo setting : mainSettings) {
+            mod.log("  " + setting.toString());
+        }
+        
+        // List butler settings
+        mod.log("Butler Settings (configs/butler.json):");
+        List<SettingsReflectionHelper.SettingInfo> butlerSettings = 
+            SettingsReflectionHelper.getSettableFields(ButlerConfig.getInstance());
+        for (SettingsReflectionHelper.SettingInfo setting : butlerSettings) {
+            mod.log("  " + setting.toString());
+        }
+        
+        mod.log("=== Usage Examples ===");
+        mod.log("  @set hud true");
+        mod.log("  @set chat false");
+        mod.log("  @set timer true");
+        mod.log("  @set mobdefense false");
+        mod.log("  @set autojoin true");
+        mod.log("  @set containerItemMoveDelay 0.5");
     }
 }
