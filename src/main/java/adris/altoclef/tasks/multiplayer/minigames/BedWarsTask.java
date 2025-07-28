@@ -4,12 +4,11 @@ import adris.altoclef.AltoClef;
 import adris.altoclef.Debug;
 import adris.altoclef.eventbus.EventBus;
 import adris.altoclef.eventbus.Subscription;
-import adris.altoclef.eventbus.events.BlockBrokenEvent;
 import adris.altoclef.eventbus.events.multiplayer.RejoinEvent;
 import adris.altoclef.tasks.construction.DestroyBlockTask;
-import adris.altoclef.tasks.container.LootContainerTask;
 import adris.altoclef.tasks.entity.DoToClosestEntityTask;
 import adris.altoclef.tasks.entity.KillPlayerTask;
+import adris.altoclef.tasks.entity.ShootArrowSimpleProjectileTask;
 import adris.altoclef.tasks.movement.GetCloseToBlockTask;
 import adris.altoclef.tasks.movement.GetToEntityTask;
 import adris.altoclef.tasks.movement.PickupDroppedItemTask;
@@ -23,7 +22,6 @@ import adris.altoclef.util.slots.Slot;
 import adris.altoclef.util.time.TimerReal;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.type.DyedColorComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -37,8 +35,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ColorHelper;
 import java.util.*;
-
-import org.apache.commons.lang3.ArrayUtils;
 
 public class BedWarsTask extends Task {
     public BedWarsTask(AltoClef mod) {
@@ -191,15 +187,8 @@ public class BedWarsTask extends Task {
         return -1;
     }
 
-    public int getMoney(AltoClef mod) {
+    public int getBalance(AltoClef mod) {
         // for experience bar resource bedwars system
-
-        if (!teamDetermined) {
-            if (_teamDetermineCooldown.elapsed()) {
-                getSelfColor(mod);
-                _teamDetermineCooldown.reset();
-            }
-        }
 
         if (!virtualResourcesType) {
             // get count of items for shop
@@ -287,7 +276,14 @@ public class BedWarsTask extends Task {
         if (inShop && !ContainerType.screenHandlerMatches(ContainerType.CHEST)) {
             inShop = false;
         }
-        
+
+        if (!teamDetermined) {
+            if (_teamDetermineCooldown.elapsed()) {
+                getSelfColor(mod);
+                _teamDetermineCooldown.reset();
+            }
+        }
+
         if (virtualResourcesType) {
             if (mod.getItemStorage().hasItemInventoryOnly(Items.GOLD_INGOT, Items.IRON_INGOT)) {
                 virtualResourcesType = false;
@@ -309,7 +305,7 @@ public class BedWarsTask extends Task {
         } else {
             Optional<Entity> closestEnemyNearBed = mod.getEntityTracker().getClosestEntity(
                     bedPos.toCenterPos(),
-                    toPunk -> !inOurTeam((PlayerEntity) toPunk) && toPunk.getPos().isInRange(bedPos.toCenterPos(), 10),
+                    toPunk -> isValidEnemy(toPunk) && toPunk.getPos().isInRange(bedPos.toCenterPos(), 15),
                     PlayerEntity.class);
             if (closestEnemyNearBed.isPresent()) {
                 Entity enemyBed = closestEnemyNearBed.get();
@@ -354,25 +350,45 @@ public class BedWarsTask extends Task {
             // Slot slot = ItemHelper.getCustomItemSlot(mod, itemsToBuy(mod).toArray(Item[]::new));
             
             // general category, skipping categories
-            Slot slot = getSlotShopBW(mod, false, itemsToBuy(mod).toArray(Item[]::new));
-            if (slot != null) {
-                mod.getSlotHandler().clickSlot(slot, 0, SlotActionType.PICKUP);
+            List<Item> toBuy = itemsToBuy(mod);
+            if (!toBuy.isEmpty()) {
+                Slot slot = getSlotShopBW(mod, false, toBuy.toArray(Item[]::new));
+                if (slot != null) {
+                    mod.getSlotHandler().clickSlot(slot, 0, SlotActionType.PICKUP);
+                    return null;
+                } else {
+                    // shop finished!
+                    shopCooldown.reset();
+                }
+            } else {
+                shopCooldown.reset();
+                // shop finished!
             }
         }
 
-        Optional<Entity> closestEnemy = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(), toPunk -> !inOurTeam((PlayerEntity) toPunk), PlayerEntity.class);
+        Optional<Entity> closestEnemy = mod.getEntityTracker().getClosestEntity(mod.getPlayer().getPos(),
+                toPunk -> isValidEnemy(toPunk)
+                , PlayerEntity.class);
         if (closestEnemy.isPresent()) {
             Entity enemy = closestEnemy.get();
-            if (enemy.getPos().isInRange(mod.getPlayer().getPos(), 25)) {
+            double range = mod.getPlayer().getPos().distanceTo(enemy.getPos());
+            if (range <= 20) {
                 setDebugState("Attacking enemy: " + enemy.getName().getString());
                 return new KillPlayerTask(enemy.getName().getString());
+            } else {
+                boolean preferBow = ShootArrowSimpleProjectileTask.canUseRanged(mod, enemy) &&
+                        mod.getItemStorage().getItemCountInventoryOnly(ItemHelper.ARROWS) > 20;
+                if (preferBow) {
+                    setDebugState("Attacking ranged enemy: " + enemy.getName().getString());
+                    return new ShootArrowSimpleProjectileTask(enemy);
+                }
             }
         }
 
         // AutoShop
 
         // if enough resources & shop timer elapsed *NEED TEST*
-        if (!inChest && getMoney(mod) >= 500 && shopCooldown.elapsed()) {
+        if (!inChest && getBalance(mod) >= 200 && shopCooldown.elapsed()) {
             // 1. Get to villager entity in 3 blocks & ensure line of sight clear
 
             // max shop time - 15 secs, then shop timeout
@@ -398,7 +414,6 @@ public class BedWarsTask extends Task {
                     },
                     entity -> isValidTrader(entity, mod),
                     VillagerEntity.class
-
             );
         }
 
@@ -426,16 +441,20 @@ public class BedWarsTask extends Task {
             for (Slot slot : slots) {
                 // specifically for bedwars shop with categories; 0-8 slots are categories
                 // should skip
-                int invSlot = slot.getInventorySlot();
+                // int invSlot = slot.getInventorySlot();  // CAN BE NEGATIVE
+                int windowSlot = slot.getWindowSlot();
+
                 boolean check;
                 if (chooseCategories){
-                    check = invSlot >= 0 && invSlot < 9; // check only first 9 slots
+                    check = windowSlot >= 0 && windowSlot < 9; // check only first 9 slots
                 } else {
-                    check = invSlot >= 9;
+                    check = windowSlot >= 9;
                 }
                 if (check) {
                     ItemStack itemStack = StorageHelper.getItemStackInSlot(slot);
-                    if(itemStack != null && itemStack.getItem() instanceof Item item){
+                    if (itemStack != null && itemStack.getItem() instanceof Item item && !(item.equals(Items.AIR))) {
+                        // Debug.logMessage("Checking slot " + windowSlot + " for item " + item.getName().getString());
+                        // Debug.logMessage("All items: " + Arrays.asList(checkItem));
                         if (Arrays.asList(checkItem).contains(item)) {
                             return slot;
                         }
@@ -447,10 +466,17 @@ public class BedWarsTask extends Task {
         return null;
     }
 
+    protected boolean isValidEnemy(Entity entity) {
+        return entity instanceof PlayerEntity player && !inOurTeam(player)
+                && MurderMysteryTask.isValidPlayerMM(player); // TODO untested!
+                // && player.isAlive() && !player.isInvisible();
+    }
+
     public boolean isValidTrader(Entity villager, AltoClef mod) {
         return villager.isAlive() && villager.getName() != null && villager.getName()
                 .getString().toLowerCase().contains("магазин");
     }
+
     @Override
     protected void onStop(AltoClef mod, Task interruptTask) {
         mod.getBlockTracker().stopTracking(ItemHelper.itemsToBlocks(ItemHelper.BED));

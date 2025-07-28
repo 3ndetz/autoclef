@@ -285,13 +285,13 @@ public class MurderMysteryTask extends Task {
         }
         return false;
     }
-    private boolean hasKillerWeapon(AltoClef mod){
+    public static boolean hasKillerWeapon(AltoClef mod){
         return mod.getItemStorage().hasItemInventoryOnly(ItemHelper.MMKillerWeapons);
     }
-    private boolean isValidTargetMM(PlayerEntity player){
+    public static boolean isValidTargetMM(PlayerEntity player){
         return isValidPlayerMM(player) && !isInjured(player);
     }
-    private boolean isValidPlayerMM(PlayerEntity player){
+    public static boolean isValidPlayerMM(PlayerEntity player){
         if (player == null || player.isDead() || !player.isAlive()) return false;
         if (player.isCreative() || player.isSpectator()) return false;
         if (player.isSleeping() || player.hasVehicle()) return false;
@@ -299,7 +299,7 @@ public class MurderMysteryTask extends Task {
         if (player.getName() == null) return false;
         return true;
     }
-    private boolean isInjured(PlayerEntity player){
+    private static boolean isInjured(PlayerEntity player){
         if (player == null) return false;
         return player.hasVehicle();
     }

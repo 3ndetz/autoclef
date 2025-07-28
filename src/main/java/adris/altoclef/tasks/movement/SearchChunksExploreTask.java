@@ -46,23 +46,23 @@ public abstract class SearchChunksExploreTask extends Task {
     protected Task onTick(AltoClef mod) {
         synchronized (_searcherMutex) {
             if (_searcher == null) {
-                setDebugState("Сканирование подходящего чанка..."); //TRS "Exploring/Searching for valid chunk"
+                setDebugState("Exploring/Searching for valid chunk");
                 // Explore
                 return getWanderTask(mod);
             }
 
             if (_searcher.isActive() && _searcher.isFinished(mod)) {
-                Debug.logWarning("Сканирование целевого объекта провалено.");//TRS  "Target object search failed."
+                Debug.logWarning("Target object search failed.");
                 _alreadyExplored.addAll(_searcher.getSearchedChunks());
                 _searcher = null;
             } else if (_searcher.finished()) {
-                setDebugState("Сканирование целевого объекта...");//TRS "Searching for target object..."
-                Debug.logMessage("Сканирование завершено.");//TRS "Search finished."
+                setDebugState("Searching for target object...");
+                Debug.logMessage("Search finished.");
                 _alreadyExplored.addAll(_searcher.getSearchedChunks());
                 _searcher = null;
             }
             //Debug.logMessage("wtf: " + (_searcher == null? "(null)" :_searcher.finished()));
-            setDebugState("Сканирование чанков...");//TRS "Searching within chunks..."
+            setDebugState("Searching within chunks...");//TRS ""
             return _searcher;
         }
     }
@@ -79,7 +79,7 @@ public abstract class SearchChunksExploreTask extends Task {
         if (isChunkWithinSearchSpace(_mod, pos)) {
             synchronized (_searcherMutex) {
                 if (!_alreadyExplored.contains(pos)) {
-                    Debug.logMessage("Новый поиск: " + pos); //TRS "New searcher: "
+                    Debug.logMessage("New search: " + pos);
                     _searcher = new SearchSubTask(pos);
                 }
             }
@@ -132,7 +132,7 @@ public abstract class SearchChunksExploreTask extends Task {
 
         @Override
         protected String toDebugString() {
-            return "Процесс поиска чанков..."; //"Searching chunks..."
+            return "Searching chunks...";
         }
     }
 
