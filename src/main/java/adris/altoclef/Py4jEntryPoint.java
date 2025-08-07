@@ -787,8 +787,11 @@ public class Py4jEntryPoint {
             return GameMode.SPECTATOR;
         return GameMode.SURVIVAL;
     }
+    boolean changePlayerNickName(String newNickname) {
+        return AltoClef.changePlayerName(newNickname);
+    }
 
-    public List<Map<String, String>>  getPlayersInfo(int limit){
+    public List<Map<String, String>> getPlayersInfo(int limit){
         // ordered players info
 
         PlayerEntity self = _mod.getPlayer();

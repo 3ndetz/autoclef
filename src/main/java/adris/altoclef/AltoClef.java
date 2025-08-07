@@ -200,7 +200,6 @@ public class AltoClef implements ModInitializer {
         // This is the actual start point, controlled by a mixin.
 
 
-        // UNTESTED NEW!!!! NICKNAME CHANGE
         // changing only for debug mode when username is like "PlayerNNN"
         if (AltoClef.getSelfName() != null
         && AltoClef.getSelfName().toLowerCase().contains("player")) {
@@ -444,6 +443,11 @@ public class AltoClef implements ModInitializer {
      * WARNING: This is for offline mode only and may not work on authenticated servers
      */
     public static boolean changePlayerName(String newUsername) {
+        if(newUsername == null || newUsername.isBlank()) {
+            Debug.logWarning("Cannot change username: New username is null or blank");
+            return false;
+        }
+
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) {
             Debug.logWarning("Cannot change username: MinecraftClient is null");

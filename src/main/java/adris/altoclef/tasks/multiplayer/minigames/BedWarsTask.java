@@ -34,7 +34,12 @@ import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ColorHelper;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class BedWarsTask extends Task {
     public BedWarsTask(AltoClef mod) {
@@ -49,16 +54,18 @@ public class BedWarsTask extends Task {
     private Task _pickupTask;
     
     public boolean virtualResourcesType = true;
+    public boolean ownBedDestroyed = false; // if our bed is destroyed, we should not respawn
 
     // Shop timer fields using TimerGame
     private final TimerReal shopTimer = new TimerReal(7); // shopping process time
     private final TimerReal shopCooldown = new TimerReal(20); // cooldown between shop sessions
+    private final TimerReal preShopTimer = new TimerReal(15); // shopping process time + go to villager
     private final TimerReal _teamDetermineCooldown = new TimerReal(10); // re-determine undetermined team cooldown
     private boolean inShop = false;
 
     public boolean teamDetermined = false;
 
-    protected boolean getSelfColor(AltoClef mod) {
+    protected boolean determineSelfColor(AltoClef mod) {
         // get self color from helmet
         ourColor = getHelmetColor(mod.getPlayer());
         if (ourColor == -1) {
@@ -84,8 +91,17 @@ public class BedWarsTask extends Task {
         teamDetermined = false;
         bedPos = null;
         inShop = false;
+        ownBedDestroyed = false;
         // get our team color and name
-        getSelfColor(mod);
+
+        if (determineSelfColor(mod))
+            ourBedBlock = BEDWARS_BED_COLORS.get(ourColorName);
+        else
+            ourBedBlock = null;
+
+        enemyBedBlocks = new ArrayList<>(Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.BED)).toList());
+        if (ourBedBlock != null)
+            enemyBedBlocks.remove(ourBedBlock);
     }
 
     private Subscription<RejoinEvent> _rejoinSubscription;
@@ -199,7 +215,7 @@ public class BedWarsTask extends Task {
 
             int ironCount = mod.getItemStorage().getItemCountInventoryOnly(Items.IRON_INGOT);
             int goldCount = mod.getItemStorage().getItemCountInventoryOnly(Items.GOLD_INGOT);
-            if (ironCount < 64 || goldCount < 64) {
+            if (ironCount < 64 || goldCount < 45) {
                 return 0;
             } else {
                 return ironCount * 4 + goldCount * 16;
@@ -217,10 +233,18 @@ public class BedWarsTask extends Task {
 
     public List<Item> itemsToBuy(AltoClef mod) {
         List<Item> shoplist = new ArrayList<>();
+
+        // Build materials
+        // if we have enough blocks, we no need more
+        if (mod.getItemStorage().getItemCountInventoryOnly(ItemHelper.WOOL) < 64) {
+            shoplist.addAll(List.of(ItemHelper.WOOL));
+        }
+
         // should be hierarchical:
         // Weapons: if we have wooden axe, then we need iron sword, have iron sword, then diamond sword, etc
         // shoplist.add(Items.WOODEN_AXE);
         // shoplist.add(Items.IRON_SWORD);
+
         if (!mod.getItemStorage().hasItemInventoryOnly(Items.IRON_SWORD)) {
             shoplist.add(Items.IRON_SWORD);
         }
@@ -233,13 +257,10 @@ public class BedWarsTask extends Task {
         if (mod.getItemStorage().getItemCountInventoryOnly(ItemHelper.ARROWS) < 64) {
             shoplist.addAll(List.of(ItemHelper.ARROWS));
         }
-
-        // Build materials
-        // if we have enough blocks, we no need more
-        if (mod.getItemStorage().getItemCountInventoryOnly(ItemHelper.WOOL) < 64) {
-            shoplist.addAll(List.of(ItemHelper.WOOL));
+        // getItemCountInventoryOnly DOES NOT COUNT ARMOR SLOTS!!!
+        if (!mod.getItemStorage().hasItem(Items.IRON_BOOTS)) {
+            shoplist.add(Items.IRON_BOOTS);
         }
-
         return shoplist;
     }
 
@@ -260,7 +281,7 @@ public class BedWarsTask extends Task {
         }
         return lootable;
     }
-    List<Block> enemyBeds;
+    List<Block> enemyBedBlocks;
     Block ourBedBlock;
     /**
      * @param mod
@@ -271,15 +292,17 @@ public class BedWarsTask extends Task {
         if ( mod.getPlayer() == null) {
             return null;
         }
-        
+        // Debug.logInternal("t" + mod.getItemStorage().hasItem(Items.IRON_BOOTS));
+        boolean inChest = ContainerType.screenHandlerMatches(ContainerType.CHEST);
+
         // Reset shop state if we're not in a chest anymore
-        if (inShop && !ContainerType.screenHandlerMatches(ContainerType.CHEST)) {
+        if (inShop && !inChest) {
             inShop = false;
         }
 
         if (!teamDetermined) {
             if (_teamDetermineCooldown.elapsed()) {
-                getSelfColor(mod);
+                determineSelfColor(mod);
                 _teamDetermineCooldown.reset();
             }
         }
@@ -290,53 +313,55 @@ public class BedWarsTask extends Task {
                 Debug.logMessage("Virtual resources type disabled, using real resources");
             }
         }
-
-        if (bedPos == null) {
-            ourBedBlock = BEDWARS_BED_COLORS.get(ourColorName);
-            if (ourBedBlock != null) {
+        if (ourBedBlock != null) {
+            if (bedPos == null) {
                 Optional<BlockPos> bedPosOpt = mod.getBlockTracker().getNearestTracking(ourBedBlock);
                 if (bedPosOpt.isPresent()) {
                     Debug.logMessage("Found our bed at " + bedPosOpt.get().toShortString());
                     bedPos = bedPosOpt.get();
                 }
-                enemyBeds = new ArrayList<>(Arrays.stream(ItemHelper.itemsToBlocks(ItemHelper.BED)).toList());
-                enemyBeds.remove(ourBedBlock);
-            }
-        } else {
-            Optional<Entity> closestEnemyNearBed = mod.getEntityTracker().getClosestEntity(
-                    bedPos.toCenterPos(),
-                    toPunk -> isValidEnemy(toPunk) && toPunk.getPos().isInRange(bedPos.toCenterPos(), 15),
-                    PlayerEntity.class);
-            if (closestEnemyNearBed.isPresent()) {
-                Entity enemyBed = closestEnemyNearBed.get();
-                setDebugState("PROTECTING BED FROM " + enemyBed.getName().getString());
-                return new KillPlayerTask(enemyBed.getName().getString());
-            }
 
-            // Enemy beds = all beds - our bed
-
-            Optional<BlockPos> enemyBedPosOpt = mod.getBlockTracker()
-                    .getNearestTracking(mod.getPlayer().getPos(),
-                            to -> to.isWithinDistance(mod.getPlayer().getBlockPos(), 10),
-                            enemyBeds.toArray(Block[]::new));
-            if (enemyBedPosOpt.isPresent()) {
-                BlockPos enemyBedPos = enemyBedPosOpt.get();
-                setDebugState("Destroying enemy bed at " + enemyBedPos.toShortString());
-                return new DestroyBlockTask(enemyBedPos);
+            } else {
+                if (!ownBedDestroyed) {
+                    Optional<BlockPos> bedPosOpt = mod.getBlockTracker().getNearestTracking(ourBedBlock);
+                    if (bedPosOpt.isEmpty() && mod.getPlayer().getPos().distanceTo(bedPos.toCenterPos()) < 25) {
+                        ownBedDestroyed = true;
+                    }
+                    Optional<Entity> closestEnemyNearBed = mod.getEntityTracker().getClosestEntity(
+                            bedPos.toCenterPos(),
+                            toPunk -> isValidEnemy(toPunk) && toPunk.getPos().isInRange(bedPos.toCenterPos(), 15),
+                            PlayerEntity.class);
+                    if (closestEnemyNearBed.isPresent()) {
+                        Entity enemyBed = closestEnemyNearBed.get();
+                        setDebugState("PROTECTING BED FROM " + enemyBed.getName().getString());
+                        return new KillPlayerTask(enemyBed.getName().getString());
+                    }
+                }
+                // Enemy beds = all beds - our bed
             }
         }
 
-        boolean inChest = ContainerType.screenHandlerMatches(ContainerType.CHEST);
+        Optional<BlockPos> enemyBedPosOpt = mod.getBlockTracker()
+                .getNearestTracking(mod.getPlayer().getPos(),
+                        to -> to.isWithinDistance(mod.getPlayer().getBlockPos(), 10),
+                        enemyBedBlocks.toArray(Block[]::new));
+        if (enemyBedPosOpt.isPresent()) {
+            BlockPos enemyBedPos = enemyBedPosOpt.get();
+            setDebugState("Destroying enemy bed at " + enemyBedPos.toShortString());
+            return new DestroyBlockTask(enemyBedPos);
+        }
+
         // we in chest
         if (inChest) {
-            // todo add shoptimer *NEED TEST*
-            if (!inShop) {
+            setDebugState("shopping");
+
+            if (!inShop && !preShopTimer.elapsed()) {
                 inShop = true;
                 shopTimer.reset();
             }
             
-            // Check if shop timeout reached
-            if (shopTimer.elapsed()) {
+            // Check if shop timeout reached OR maximum shop time elapsed
+            if (shopTimer.elapsed() || preShopTimer.elapsed()) {
                 inShop = false;
                 shopCooldown.reset();
                 StorageHelper.closeScreen();
@@ -388,7 +413,7 @@ public class BedWarsTask extends Task {
         // AutoShop
 
         // if enough resources & shop timer elapsed *NEED TEST*
-        if (!inChest && getBalance(mod) >= 200 && shopCooldown.elapsed()) {
+        if (!inChest && getBalance(mod) >= 350 && shopCooldown.elapsed()) {
             // 1. Get to villager entity in 3 blocks & ensure line of sight clear
 
             // max shop time - 15 secs, then shop timeout
@@ -399,7 +424,7 @@ public class BedWarsTask extends Task {
                                 setDebugState("Found villager: " + entity.getName().getString());
                                 LookHelper.smoothLookAt(mod, entity);
                                 mod.getController().interactEntity(mod.getPlayer(), entity, Hand.MAIN_HAND);
-                                
+                                preShopTimer.reset();
                                 // Reset shop state when we start interacting with villager
                                 inShop = false;
 
