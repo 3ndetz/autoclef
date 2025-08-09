@@ -65,9 +65,10 @@ public class Py4jEntryPoint {
         try {
             _executor.execute(() -> {
                 try {
-                    if (AltoClef.inGame()) {
+                    // if (AltoClef.inGame()) {  // TODO untested!
+                    // maybe replace to callbackserverstarted??
                         task.run();
-                    }
+                    // }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -343,6 +344,7 @@ public class Py4jEntryPoint {
         return _cb;
     }
     AgentState _state = new AgentState();
+    public boolean handshake() { return true; }
     public String saayHellooo(String name) {
         return "Hello, " + name + "!" + Items.SOUL_SAND.getName().getString();
     }
@@ -429,10 +431,10 @@ public class Py4jEntryPoint {
     }
     public void RunInnerCommand(String command){
         MinecraftClient.getInstance().execute(() -> {
-            if(AltoClef.inGame()) {
+            //if(AltoClef.inGame()) {  // REMOVED THIS CHECK!!! looks like working
                 // execute in network thread
                 AltoClef.getCommandExecutor().execute(command); //@stop
-            };
+            //};
         });
     }
 
@@ -473,9 +475,9 @@ public class Py4jEntryPoint {
 
     public void ExecuteCommand(String cmd){
         executeInNetworkThread(() -> {
-            if(AltoClef.inGame()) {
+            // if(AltoClef.inGame()) {  // TODO untested!
                 _mod.getCommandExecutor().execute(cmd);
-            }
+            // }
         });
     }
 

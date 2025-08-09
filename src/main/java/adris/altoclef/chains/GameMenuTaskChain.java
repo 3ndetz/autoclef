@@ -116,7 +116,7 @@ public class GameMenuTaskChain extends SingleTaskChain {
 
         // Python sender auto-reload
         if (mod.getModSettings().shouldReloadInfoSender() && _reloadInfoSenderTimer.elapsed() ){
-            if (!mod.getInfoSender().getCallbackServerStatusFast()) {
+            if (!mod.getInfoSender().IsCallbackServerStarted()) {
                 if (_infoSenderLoaded) {
                     Debug.logMessage("[InfoSender] Python callback connection lost. Retry...");
                     _infoSenderLoaded = false;
@@ -408,8 +408,23 @@ public class GameMenuTaskChain extends SingleTaskChain {
 
     public void connectToServer(String ip) {
         _connectOverrideServerEntry = new ServerInfo("CustomServer", ip, ServerInfo.ServerType.OTHER);
-        _reJoinAfterDisconnect = true;
-        _needDisconnect = true;
+        // if we already somewhere
+        if (AltoClef.inGame()) {
+            _reJoinAfterDisconnect = true;
+            _needDisconnect = true;
+        } else {
+            // if we are not in game, just set the server entry
+            _prevServerEntry = _connectOverrideServerEntry;
+            Screen screen = MinecraftClient.getInstance().currentScreen;
+            Debug.logMessage("RECONNECT CHAIN: Not in game; Connecting to server from menu: " + ip);
+            if ( !(screen instanceof MultiplayerScreen) ) {
+                Debug.logMessage("RECONNECT CHAIN: Setting to MultiplayerScreen " + ip);
+                MinecraftClient.getInstance().setScreen(new MultiplayerScreen(new TitleScreen()));
+            }
+            _needDisconnect = false;
+            _reconnecting = true;
+            _reconnectTimer.reset();
+        }
     }
 
     public static void StuckFixActivate(){
