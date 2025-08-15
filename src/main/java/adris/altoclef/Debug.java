@@ -27,7 +27,7 @@ public class Debug {
         if (jankModInstance != null) {
             return jankModInstance.getModSettings().getChatLogPrefix();
         }
-        return "[NetTyanBaritone] ";
+        return "[AutoClef] ";
     }
 
     public static void logAgent(String message) {

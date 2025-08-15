@@ -194,7 +194,7 @@ public class AltoClef implements ModInitializer {
 
     }
 
-    public String _modPrefixNoCodes = "[NetTyanBaritone]";
+    public String _modPrefixNoCodes = "[AutoClef]";
     public void onInitializeLoad() {
         // This code should be run after Minecraft loads everything else in.
         // This is the actual start point, controlled by a mixin.
@@ -245,7 +245,7 @@ public class AltoClef implements ModInitializer {
         _butler = new Butler(this);
 
         initializeCommands();
-        initializePythonSender();
+
         // Load settings
         adris.altoclef.Settings.load(newSettings -> {
             _settings = newSettings;
@@ -369,6 +369,8 @@ public class AltoClef implements ModInitializer {
         EventBus.subscribe(ProjectileEvent.class, evt -> {
             getMobDefenseChain().onProjectileLaunched(this, evt.entity, evt.sticked);
         });
+
+        initializePythonSender();  // moved to end since we need loaded settings (and also its logical)
     }
     public void timelyDisableBlockBreaking(double timeoutSeconds){
         getClientBaritoneSettings().allowBreak.value = false;
@@ -379,11 +381,27 @@ public class AltoClef implements ModInitializer {
 
     public void initializePythonSender() {
         _py4jEntryPoint = new Py4jEntryPoint(this);
+        // 25333
+        // TODO get gateway ports from config
+        // default ports: gatewayport DEFAULT_PORT 25333, pythonGatewayPort DEFAULT_PYTHON_PORT 25334
+        final int JAVA_GATEWAY_PORT = this.getModSettings().getPythonGatewayPort();
+        final int PYTHON_CALLBACK_PORT = this.getModSettings().getPythonGatewayPort() + 1;
         _gatewayServer = new GatewayServer(_py4jEntryPoint);
+        // TODO UNTESTED
+        _gatewayServer = new py4j.GatewayServer(
+                _py4jEntryPoint,
+                JAVA_GATEWAY_PORT,
+                PYTHON_CALLBACK_PORT,
+                py4j.GatewayServer.DEFAULT_CONNECT_TIMEOUT,
+                py4j.GatewayServer.DEFAULT_READ_TIMEOUT,
+                null // customCommands
+        );
         _gatewayServer.start();
         if (_gatewayServer != null ) {
-            System.out.println("Gateway Server started on port "+_gatewayServer.getPort()+". Listeting port: "+_gatewayServer.getListeningPort());
+            System.out.println("Gateway Server started on port "+_gatewayServer.getPort() + ". Listeting port: "+_gatewayServer.getListeningPort() + 
+                ", Python callback port=" + _gatewayServer.getPythonPort());
         }
+
         _py4jEntryPoint.InitPythonCallback();
     }
     public void stopPythonSender() {
@@ -394,15 +412,9 @@ public class AltoClef implements ModInitializer {
     public void reloadPythonSender() {
         System.out.println("Gateway Reload Initiated...");
         _py4jEntryPoint = null;
-        _gatewayServer.shutdown();
+        stopPythonSender();
         _gatewayServer = null;
-        _py4jEntryPoint = new Py4jEntryPoint(this);
-        _gatewayServer = new GatewayServer(_py4jEntryPoint);
-        _gatewayServer.start();
-        if (_gatewayServer != null ) {
-            System.out.println("Gateway Server started on port "+_gatewayServer.getPort()+". Listeting port: "+_gatewayServer.getListeningPort());
-        }
-        _py4jEntryPoint.InitPythonCallback();
+        initializePythonSender();
     }
     // Client tick
     private void onClientTick() {
