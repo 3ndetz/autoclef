@@ -71,7 +71,7 @@ public class Settings implements IFailableConfigFile {
     /**
      * When logging to chat, will prepend this to each log.
      */
-    private String chatLogPrefix = "[NetTyanBaritone] ";
+    private String chatLogPrefix = "[AutoClef] ";
 
     /**
      * If true, will show a timer.
@@ -440,12 +440,23 @@ public class Settings implements IFailableConfigFile {
      */
     private List<BlockRange> areasToProtect = Collections.emptyList();
 
+    /**
+     * Java gateway port.
+     * <p>
+     * Python callback port will be set to "YourJavaGatewayPort plus 1", default to 25334
+     */
+    private int pythonGatewayPort = 25333;
+
     //////////////////////////////////////////////////////////////////////////////////////////
     ////////** END SETTINGS w/ COMMENTS **////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////
 
     public static void load(Consumer<Settings> onReload) {
         ConfigHelper.loadConfig(SETTINGS_PATH, Settings::new, Settings.class, onReload);
+    }
+
+    public int getPythonGatewayPort() {
+        return pythonGatewayPort;
     }
 
     public boolean shouldShowTaskChain() {
