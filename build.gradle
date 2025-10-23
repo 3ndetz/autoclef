@@ -58,7 +58,7 @@ dependencies {
     include "net.sf.py4j:py4j:0.10.9.7"
 
     //VOICE CHAT API
-    implementation "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}"
+    implementation "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}:fabric-stub"
 
     // Nether pathfinder
     implementation 'dev.babbaj:nether-pathfinder:1.5'
