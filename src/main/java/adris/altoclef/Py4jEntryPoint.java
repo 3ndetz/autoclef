@@ -484,6 +484,11 @@ public class Py4jEntryPoint {
 
 
     public Map<String,String> CentralGameInfoDict = new HashMap<>();
+
+    public Map<String,String> getServerInfoDict(){
+        return CentralGameInfoDict;
+    }
+
     public void UpdateServerInfo(String field, String value){
         executeInNetworkThread(() -> {
             if (!field.isBlank() && !value.isBlank()) {
