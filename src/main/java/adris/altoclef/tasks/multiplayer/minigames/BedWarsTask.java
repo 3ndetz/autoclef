@@ -258,7 +258,9 @@ public class BedWarsTask extends Task {
             shoplist.addAll(List.of(ItemHelper.ARROWS));
         }
         // getItemCountInventoryOnly DOES NOT COUNT ARMOR SLOTS!!!
-        if (!mod.getItemStorage().hasItem(Items.IRON_BOOTS)) {
+        // hasItem counts chest slots (in shop!!!)
+        // CORRECT CHECK FOR ARMOR!
+        if (!StorageHelper.isArmorEquipped(mod, Items.IRON_BOOTS)) {
             shoplist.add(Items.IRON_BOOTS);
         }
         return shoplist;
@@ -292,6 +294,7 @@ public class BedWarsTask extends Task {
         if ( mod.getPlayer() == null) {
             return null;
         }
+
         // Debug.logInternal("t" + mod.getItemStorage().hasItem(Items.IRON_BOOTS));
         boolean inChest = ContainerType.screenHandlerMatches(ContainerType.CHEST);
 
