@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "redhat.java",
+        "vscjava.vscode-gradle",
+        "visualstudioexptteam.vscodeintellicode",
+        "vscjava.vscode-maven",
+        "vscjava.vscode-java-dependency"
+    ]
+}
