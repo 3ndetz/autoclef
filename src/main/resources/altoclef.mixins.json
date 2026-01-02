@@ -5,6 +5,7 @@
   "client": [
     "MinecraftClientSessionMixin",
     "CameraMixin",
+    "MouseMixin",
     "AbstractFurnaceScreenHandlerAccessor",
     "BlockModifiedByPlayerMixin",
     "ClientBlockBreakAccessor",

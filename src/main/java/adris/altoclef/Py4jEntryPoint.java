@@ -9,6 +9,7 @@ import adris.altoclef.tasksystem.Task;
 import adris.altoclef.trackers.threats.PlayerThreat;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.util.agent.AgentState;
+import adris.altoclef.util.agent.AgentActionButtons;
 import adris.altoclef.util.helpers.LookHelper;
 import adris.altoclef.util.helpers.WorldHelper;
 import adris.altoclef.util.agent.Pipeline;
@@ -157,10 +158,8 @@ public class Py4jEntryPoint {
     public byte[] getScreenshot() {
         try {
             AtomicReference<NativeImage> screenshot = new AtomicReference<>();
-            // Используем CompletableFuture для синхронизации
             CompletableFuture<Void> future = new CompletableFuture<>();
 
-            // Выполняем операцию скриншота в основном потоке игры
             MinecraftClient.getInstance().execute(() -> {
                 try {
                     Framebuffer buffer = MinecraftClient.getInstance().getFramebuffer();
@@ -172,9 +171,8 @@ public class Py4jEntryPoint {
                 }
             });
 
-            // Ждем завершения операции
             try {
-                future.get(5, TimeUnit.SECONDS); // Тайм-аут 5 секунд
+                future.get(5, TimeUnit.SECONDS);
             } catch (Exception e) {
                 Debug.logInternal("Timeout or error waiting for screenshot: " + e.getMessage());
                 return null;
@@ -185,7 +183,13 @@ public class Py4jEntryPoint {
                 return null;
             }
 
-            return screenshot.get().getBytes();
+            // NEED TEST: Close NativeImage after getting bytes to prevent memory leak
+            NativeImage img = screenshot.get();
+            try {
+                return img.getBytes();
+            } finally {
+                img.close();  // ← CRITICAL: Close native resource
+            }
         } catch (Exception e) {
             Debug.logInternal("Error taking screenshot: " + e.getMessage());
         }
@@ -899,6 +903,16 @@ public class Py4jEntryPoint {
         return result.toString();
     }
 
-
+    /**
+     * Execute control actions from Python agent
+     * Receives a dictionary with control states (0 or 1)
+     * Example: {"forward": 1, "jump": 0, "attack": 0, "camera": [0.0, 0.0]}
+     * @param controlDict Dictionary with button states
+     */
+    public void executeAgentActions(Map<String, Object> controlDict) {
+        executeInNetworkThread(() -> {
+            AgentActionButtons.executeActions(_mod, controlDict);
+        });
+    }
 
 }
