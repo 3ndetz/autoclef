@@ -6,10 +6,13 @@
       "name": "Minecraft Client",
       "request": "launch",
       "cwd": "${workspaceFolder}/run",
-      "console": "integratedTerminal",
+      "console": "internalConsole",
       "stopOnEntry": false,
       "mainClass": "net.fabricmc.devlaunchinjector.Main",
       "vmArgs": "-Dfabric.dli.config\u003d${workspaceFolder}/.gradle/loom-cache/launch.cfg -Dfabric.dli.env\u003dclient -Dfabric.dli.main\u003dnet.fabricmc.loader.impl.launch.knot.KnotClient -Dfile.encoding=UTF-8",
+      "osx": {
+          "vmArgs": "-XstartOnFirstThread -Dfabric.dli.config=${workspaceFolder}/.gradle/loom-cache/launch.cfg -Dfabric.dli.env=client -Dfabric.dli.main=net.fabricmc.loader.impl.launch.knot.KnotClient -Dfile.encoding=UTF-8"
+      },
     },
     {
       "type": "java",
