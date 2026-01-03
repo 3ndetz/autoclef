@@ -20,6 +20,7 @@ import adris.altoclef.trackers.storage.ItemStorageTracker;
 import adris.altoclef.ui.CommandStatusOverlay;
 import adris.altoclef.ui.MessagePriority;
 import adris.altoclef.ui.MessageSender;
+import adris.altoclef.util.agent.AgentInputBridge;
 import adris.altoclef.util.agent.Pipeline;
 import adris.altoclef.util.helpers.InputHelper;
 import adris.altoclef.util.helpers.LookHelper;
@@ -168,7 +169,7 @@ public class AltoClef implements ModInitializer {
         //may be unstable, not tested, new
         MinecraftClient client = MinecraftClient.getInstance();
         if (client == null) return false;
-        if (client.isWindowFocused()) {
+        if (client.isWindowFocused() || AgentInputBridge.isAgentInputActive) {
             return true;
             // Human input detected.
             //Debug.logInternal("[IdleTask] Window is focused, resuming.");

@@ -91,6 +91,7 @@ public class MouseMixin {
             // (если вдруг окно в фокусе и ванильная логика сработает следом)
             this.cursorDeltaX = 0;
             this.cursorDeltaY = 0;
+            AgentInputBridge.afterTick();
         }
     }
 }
