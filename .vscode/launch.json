@@ -13,6 +13,7 @@
       "osx": {
           "vmArgs": "-XstartOnFirstThread -Dfabric.dli.config=${workspaceFolder}/.gradle/loom-cache/launch.cfg -Dfabric.dli.env=client -Dfabric.dli.main=net.fabricmc.loader.impl.launch.knot.KnotClient -Dfile.encoding=UTF-8"
       },
+      "projectName": "${workspaceFolderBasename}"
     },
     {
       "type": "java",
