@@ -1,0 +1,8 @@
+# Getting Started
+
+## Development Setup Instructions
+
+1. Open project with vs code (clone repo and open it in IDE)
+2. Install recommended extensions for VSC
+3. Wait for gradle to configure the project
+4. Run via `Run and Debug` menu / `Minecraft Client` option.

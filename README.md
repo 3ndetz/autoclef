@@ -13,10 +13,7 @@ Plays block game. Allows multiplayer and py-scripts support.
 [<img src="https://img.shields.io/github/stars/3ndetz/NeuroDeva?style=flat&label=virtual-streamer-repo&link=https%3A%2F%2Fgithub.com%2F3ndetz%2FNeuroDeva"/>](https://github.com/3ndetz/NeuroDeva)
 
 
-A**l**toClef can do a minecraft walkthrough. A**u**toClef can do walkthrough skywars.
-
-_SkyWars is a Minecraft multiplayer minigame with islands._
-
+A**l**toClef could perform a full minecraft walkthrough. A**u**toClef enables it for multiplayer.
 
 > [!CAUTION]
 > <details><summary>RepoCodeDisclaimer ⚠️</summary>
@@ -28,12 +25,7 @@ _SkyWars is a Minecraft multiplayer minigame with islands._
 > In the code you can see huge commented out dumps, don't pay attention, because I had a choice to publish the code or not. I didn't format it in any way and didn't prepare it for publishing, so I didn't hesitate to leave crutches and other nasty things in there, like debug prints.
 > </details>
 
-
-<details><summary>IDE and other software</summary>
-
-- JB Intellij Idea
-- Made on Windows 10
-</details>
+*See [getting-started](docs/getting-started.md) for developement instructions.*
 
 <details><summary>Features differs from the orig AltoClef</summary>
 

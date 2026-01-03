@@ -121,3 +121,7 @@ run/
 
 # Ignore Gradle build output directory
 build
+
+# Logs
+logs/
+crash-reports/

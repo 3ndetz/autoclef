@@ -1,0 +1,39 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Client (Debug Mode)",
+            "type": "shell",
+            "command": "./gradlew runClient --debug-jvm", 
+            "windows": {
+                "command": ".\\gradlew runClient --debug-jvm"
+            },
+            "isBackground": true,
+            "problemMatcher": {
+                "pattern": [
+                    {
+                        "regexp": "\\b\\B",
+                        "file": 1,
+                        "location": 2,
+                        "message": 3
+                    }
+                ],
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": "^.*Listening for transport dt_socket at address.*",
+                    "endsPattern": "^.*Listening for transport dt_socket at address.*"
+                }
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "TestGradleVsCodeRunClient",
+            "type": "shell",
+            "command": "gradlew",
+            "args": ["runClient", "--debug-jvm"],
+        }
+    ]
+}
