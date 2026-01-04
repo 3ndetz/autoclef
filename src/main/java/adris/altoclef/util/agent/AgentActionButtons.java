@@ -87,8 +87,11 @@ public class AgentActionButtons {
                 if (cameraList.size() >= 2) {
                     try {
                         double agentSensivity = 1.0d;
-                        double yawDelta = toDouble(cameraList.get(0)) * agentSensivity;
-                        double pitchDelta = toDouble(cameraList.get(1)) * agentSensivity;
+                        // SWAPPED! Since cameraList[0] is pitch (up/down), cameraList[1] is yaw (left/right)
+                        // This is in MineStudio VPT config
+                        // They also using SENS = camera scaler like 360.0 / 2400.0
+                        double yawDelta = toDouble(cameraList.get(1)) * agentSensivity;
+                        double pitchDelta = toDouble(cameraList.get(0)) * agentSensivity;
                         //long windowHandle = MinecraftClient.getInstance().getWindow().getHandle();
                         
                         // x and y are screen coordinates (pixels), typically from top-left
@@ -104,6 +107,7 @@ public class AgentActionButtons {
             }
         }
         // UNTESTED SECTION
+        // looks like not working :(
         MinecraftClient client = MinecraftClient.getInstance();
         // "drop" -> defaults to Q
         handleNativeKey(controlDict, "drop", client.options.dropKey);
@@ -138,11 +142,19 @@ public class AgentActionButtons {
         }
     }
     
+    public static void handleNativeKeyDropTest(AltoClef mod) {
+        // Drops the currently selected item
+        MinecraftClient client = MinecraftClient.getInstance();
+        KeyBinding keyBinding = client.options.dropKey;
+        boolean pressed = true;
+        keyBinding.setPressed(pressed);
+    }
+
     /**
      * Handles Native Minecraft KeyBindings.
      * This bypasses Baritone and speaks directly to the game options.
      */
-    private static void handleNativeKey(Map<String, Object> controlDict, String key, KeyBinding keyBinding) {
+    public static void handleNativeKey(Map<String, Object> controlDict, String key, KeyBinding keyBinding) {
         if (!controlDict.containsKey(key)) return;
         
         boolean pressed = isPressed(controlDict.get(key));
