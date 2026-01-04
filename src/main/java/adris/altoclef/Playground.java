@@ -38,6 +38,7 @@ import adris.altoclef.tasks.speedrun.KillEnderDragonWithBedsTask;
 import adris.altoclef.tasks.speedrun.WaitForDragonAndPearlTask;
 import adris.altoclef.tasks.stupid.*;
 import adris.altoclef.util.*;
+import adris.altoclef.util.agent.AgentActionButtons;
 import adris.altoclef.util.agent.AgentInputBridge;
 import adris.altoclef.util.helpers.ItemHelper;
 import adris.altoclef.util.helpers.MapItemHelper;
@@ -588,6 +589,9 @@ public class Playground {
                 Debug.logMessage("AgentInputActive is: " + AgentInputBridge.isAgentInputActive);
                 AgentInputBridge.isAgentInputActive = !AgentInputBridge.isAgentInputActive;
                 Debug.logMessage("AgentInputActive now: " + AgentInputBridge.isAgentInputActive);
+                break;
+            case "drop":
+                AgentActionButtons.handleNativeKeyDropTest(mod);
                 break;
             default:
                 mod.logWarning("Test not found: \"" + arg + "\".");
