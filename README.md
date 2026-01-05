@@ -6,8 +6,9 @@ Plays block game. Allows multiplayer and py-scripts support.
 
 ![Победа над игроком и сбор выпавших ресурсов](https://github.com/3ndetz/autoclef/assets/30196290/7377ec79-1c3d-493b-9a1d-5d701f19d9c9)
 
-
+![qwenie_00065_ - Copy](https://github.com/user-attachments/assets/64b98492-ceca-410f-b3bc-efbd8ea09dcb)
 [<img src="https://img.shields.io/badge/Habr-%D0%A7%D0%B8%D1%82%D0%B0%D1%82%D1%8C-%23000000?style=for-the-badge&link=https://habr.com/ru/articles/812387&logo=habr&logoColor=%23FFFFFF&labelColor=%2365A3BE"/>](https://habr.com/ru/articles/812387/#SkyWarsBot)
+
 
 [<img src="https://img.shields.io/github/stars/3ndetz/AutoClef?style=flat&label=this-repo-stars&link=https%3A%2F%2Fgithub.com%2F3ndetz%2FAutoClef"/>](https://github.com/3ndetz/autoclef)
 [<img src="https://img.shields.io/github/stars/3ndetz/NeuroDeva?style=flat&label=virtual-streamer-repo&link=https%3A%2F%2Fgithub.com%2F3ndetz%2FNeuroDeva"/>](https://github.com/3ndetz/NeuroDeva)
