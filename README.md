@@ -1,6 +1,8 @@
 AutoClef - multiplayer [altoclef](https://github.com/gaucho-matrero/altoclef)
 =========
 
+> [!CAUTION]
+> **THIS REPO ARCHIVED - MOVED TO [UnionClef](https://github.com/3ndetz/unionclef)**
 
 Plays block game. Allows multiplayer and py-scripts support. 
 
